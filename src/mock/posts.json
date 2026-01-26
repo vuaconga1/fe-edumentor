@@ -1,0 +1,68 @@
+[
+  {
+    "id": "post_01",
+    "createdAt": "2 hours ago",
+    "content": "🔥 Just finished a deep dive session on React Performance Optimization. Here is a cheat sheet I created for understanding useMemo vs useCallback. Hope it helps everyone!\n\n#ReactJS #WebDev #Performance",
+    "media": {
+      "type": "image",
+      "url": "https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=1000&q=80"
+    },
+    "author": {
+      "id": "u1",
+      "name": "Sarah Johnson",
+      "role": "Senior Mentor",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
+    },
+    "stats": {
+      "likes": 124,
+      "comments": 45
+    },
+    "userInteraction": {
+      "isLiked": false,
+      "isFollowing": false
+    }
+  },
+  {
+    "id": "post_02",
+    "createdAt": "4 hours ago",
+    "content": "Can anyone recommend good resources for learning Docker + Kubernetes for beginners? I'm feeling a bit overwhelmed by the documentation 😅",
+    "media": null,
+    "author": {
+      "id": "u2",
+      "name": "David Chen",
+      "role": "Student",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
+    },
+    "stats": {
+      "likes": 32,
+      "comments": 18
+    },
+    "userInteraction": {
+      "isLiked": true,
+      "isFollowing": true
+    }
+  },
+  {
+    "id": "post_03",
+    "createdAt": "1 day ago",
+    "content": "Working on a new dashboard design for a Fintech app. Dark mode is definitely the way to go! What do you guys think about this color palette?",
+    "media": {
+      "type": "image",
+      "url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1000&q=80"
+    },
+    "author": {
+      "id": "u3",
+      "name": "Emily Davis",
+      "role": "UI/UX Designer",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80"
+    },
+    "stats": {
+      "likes": 89,
+      "comments": 24
+    },
+    "userInteraction": {
+      "isLiked": false,
+      "isFollowing": false
+    }
+  }
+]

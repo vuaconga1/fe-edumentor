@@ -1,0 +1,49 @@
+{
+  "total": 6,
+  "mentors": [
+    {
+      "mentorId": 1,
+      "fullName": "Nguyễn Văn Minh",
+      "title": "Senior Software Engineer",
+      "avatarUrl": "https://i.pravatar.cc/150?img=1",
+      "isOnline": true,
+      "ratingAvg": 4.9,
+      "ratingCount": 127,
+      "skills": ["React", "TypeScript", "Node.js"],
+      "hourlyRate": 200000
+    },
+    {
+      "mentorId": 2,
+      "fullName": "Lê Minh Tuấn",
+      "title": "DevOps Engineer",
+      "avatarUrl": "https://i.pravatar.cc/150?img=2",
+      "isOnline": true,
+      "ratingAvg": 4.9,
+      "ratingCount": 112,
+      "skills": ["AWS", "Docker", "Kubernetes"],
+      "hourlyRate": 190000
+    },
+    {
+      "mentorId": 3,
+      "fullName": "Đặng Quốc Bảo",
+      "title": "Backend Architect",
+      "avatarUrl": "https://i.pravatar.cc/150?img=3",
+      "isOnline": false,
+      "ratingAvg": 4.9,
+      "ratingCount": 134,
+      "skills": ["Java", "Spring Boot", "JavaScript", "Microservices"],
+      "hourlyRate": 250000
+    },
+    {
+      "mentorId": 4,
+      "fullName": "Trần Thị Hương",
+      "title": "UX/UI Designer Lead",
+      "avatarUrl": "https://i.pravatar.cc/150?img=4",
+      "isOnline": true,
+      "ratingAvg": 4.8,
+      "ratingCount": 98,
+      "skills": ["Figma", "UI/UX Design", "User Research"],
+      "hourlyRate": 180000
+    }
+  ]
+}

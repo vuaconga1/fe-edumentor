@@ -1,0 +1,92 @@
+import React from 'react';
+import { Star, Clock, Users, ChevronRight, MessageCircle } from 'lucide-react';
+
+const MentorCard = ({ mentor }) => {
+  // Mock data if no prop is provided for demo
+  const {
+    name = "John Doe",
+    title = "Senior Frontend Engineer @ Google",
+    avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    skills = ["React", "Node.js", "System Design"],
+    rating = 4.9,
+    reviews = 120,
+    price = 500000,
+    isOnline = true,
+    experience = "8 years",
+    totalSessions = 245
+  } = mentor || {};
+
+  return (
+    <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+      {/* --- Top Section: Avatar & Badge --- */}
+      <div className="flex items-start justify-between mb-4">
+        <div className="relative">
+          <img 
+            src={avatar} 
+            alt={name} 
+            className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-neutral-800 shadow-sm"
+          />
+          <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-900 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+        </div>
+        
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-lg">
+            <Star size={14} fill="currentColor" />
+            <span className="text-sm">{rating}</span>
+            <span className="text-xs text-neutral-400 font-normal">({reviews})</span>
+          </div>
+          <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{totalSessions} sessions</span>
+        </div>
+      </div>
+
+      {/* --- Info Section --- */}
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 transition-colors">
+          {name}
+        </h3>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium mb-1 line-clamp-1">
+          {title}
+        </p>
+        <div className="flex items-center gap-2 text-xs text-neutral-400">
+          <Clock size={12} /> {experience} experience
+        </div>
+      </div>
+
+      {/* --- Skills Section --- */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {skills.map((skill, index) => (
+          <span 
+            key={index} 
+            className="px-2.5 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
+          >
+            {skill}
+          </span>
+        ))}
+        {skills.length > 3 && (
+          <span className="px-2 py-1 text-xs text-neutral-400">+2</span>
+        )}
+      </div>
+
+      {/* --- Footer: Price & Action --- */}
+      <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+        <div>
+          <span className="block text-xs text-neutral-400">Hourly Rate</span>
+          <span className="text-lg font-bold text-neutral-900 dark:text-white">
+            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price / 24000)}
+          </span>
+        </div>
+        
+        <div className="flex gap-2">
+          <button className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+            <MessageCircle size={20} />
+          </button>
+          <button className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/30">
+            Hire now <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MentorCard;

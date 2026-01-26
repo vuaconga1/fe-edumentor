@@ -1,0 +1,58 @@
+{
+  "conversations": [
+    {
+      "conversationId": 1,
+      "name": "Nguyễn Văn Minh",
+      "avatar": "https://i.pravatar.cc/150?img=1",
+      "lastMessage": "Chào bạn! Mình đã xem yêu cầu của bạn",
+      "date": "18-11",
+      "unread": 2,
+      "isOnline": true
+    },
+    {
+      "conversationId": 2,
+      "name": "Trần Thị Hương",
+      "avatar": "https://i.pravatar.cc/150?img=5",
+      "lastMessage": "Cảm ơn bạn đã đánh giá tốt!",
+      "date": "17-11",
+      "unread": 1,
+      "isOnline": false
+    },
+    {
+      "conversationId": 3,
+      "name": "Phạm Hoàng Nam",
+      "avatar": "https://i.pravatar.cc/150?img=12",
+      "lastMessage": "Hẹn gặp lại bạn ở buổi học tiếp theo nhé!",
+      "date": "16-11",
+      "unread": 0,
+      "isOnline": true
+    },
+    {
+      "conversationId": 4,
+      "name": "Lê Minh Tuấn",
+      "avatar": "https://i.pravatar.cc/150?img=8",
+      "lastMessage": "Bạn có thắc mắc gì cứ hỏi mình nhé!",
+      "date": "15-11",
+      "unread": 0,
+      "isOnline": true
+    },
+    {
+      "conversationId": 5,
+      "name": "Võ Thị Lan",
+      "avatar": "https://i.pravatar.cc/150?img=20",
+      "lastMessage": "Ok, mình sẽ chuẩn bị tài liệu cho bạn",
+      "date": "14-11",
+      "unread": 0,
+      "isOnline": false
+    },
+    {
+      "conversationId": 6,
+      "name": "Đặng Quốc Bảo",
+      "avatar": "https://i.pravatar.cc/150?img=15",
+      "lastMessage": "Rất vui được làm việc với bạn!",
+      "date": "13-11",
+      "unread": 0,
+      "isOnline": false
+    }
+  ]
+}

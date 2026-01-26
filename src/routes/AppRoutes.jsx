@@ -1,0 +1,94 @@
+import { Routes, Route } from 'react-router-dom';
+
+import LandingLayout from '../layouts/LandingLayout';
+import AdminLayout from '../layouts/AdminLayout';
+import MentorLayout from '../layouts/MentorLayout';
+import StudentLayout from '../layouts/StudentLayout';
+
+
+import LandingPage from '../pages/landing/LandingPage';
+import FAQPage from '../pages/landing/FAQPage';
+import PrivacyPage from '../pages/landing/PrivacyPage';
+import TermsPage from '../pages/landing/TermsPage';
+import Login from '../pages/auth/Login';
+import Register from '../pages/auth/Register';
+import VerifyEmail from '../pages/auth/VerifyEmail';
+import AdminDashboard from '../pages/admin/Dashboard';
+import UsersPage from '../pages/admin/UsersPage';
+import ReportsPage from '../pages/admin/ReportsPage';
+import CategoriesPage from '../pages/admin/CategoriesPage';
+import TransactionsPage from '../pages/admin/TransactionsPage';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
+import ChangePassword from '../pages/auth/ChangePassword';
+
+import StudentHome from '../pages/student/StudentHome';
+import Profile from '../pages/common/Profile';
+import FindMentorPage from '../pages/student/FindMentorPage';
+import Community from '../pages/common/Community';
+import MessagingPage from '../pages/messaging/MessagingPage';
+import WalletPage from '../pages/common/WalletPage';
+import OrderHistoryPage from '../pages/student/OrderHistoryPage';
+import MentorReviewsPage from '../pages/mentor/MentorReviewsPage';
+import ProfilePage from '../pages/common/ProfilePage';
+import StudentProfilePage from '../pages/student/StudentProfilePage';
+import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
+import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      {/* Landing */}
+      <Route path="/" element={<LandingLayout />}>
+        <Route index element={<LandingPage />} />
+        <Route path="faq" element={<FAQPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="terms" element={<TermsPage />} />
+      </Route>
+
+      {/* Admin */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<UsersPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+      </Route>
+
+      {/* Mentor */}
+      <Route path="/mentor" element={<MentorLayout />}>
+        <Route path="community" element={<Community />} />
+        <Route path="messaging" element={<MessagingPage />} />
+        <Route path="wallet" element={<WalletPage />} />
+        <Route path="reviews" element={<MentorReviewsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="profile/edit" element={<EditMentorProfilePage />} />
+        <Route path="change-password" element={<ChangePassword />} />
+      </Route>
+
+      {/* Student */}
+      <Route path="/student" element={<StudentLayout />}>
+        <Route index element={<StudentHome />} />
+        <Route path="profile" element={<StudentProfilePage />} />
+        <Route path="profile/edit" element={<EditStudentProfilePage />} />
+        <Route path="find-mentor" element={<FindMentorPage />} />
+        <Route path="community" element={<Community />} />
+        <Route path="messaging" element={<MessagingPage />} />
+        <Route path="wallet" element={<WalletPage />} />
+        <Route path="orders" element={<OrderHistoryPage />} />
+        <Route path="mentor/:mentorId" element={<ProfilePage />} />
+        <Route path="change-password" element={<ChangePassword />} />
+      </Route>
+
+      {/* Auth */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/change-password" element={<ChangePassword />} />
+    </Routes>
+  );
+};
+
+export default AppRoutes;

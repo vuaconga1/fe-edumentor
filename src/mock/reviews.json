@@ -1,0 +1,63 @@
+{
+  "averageRating": 4.9,
+  "totalReviews": 127,
+  "distribution": {
+    "5": 114,
+    "4": 10,
+    "3": 3,
+    "2": 0,
+    "1": 0
+  },
+  "reviews": [
+    {
+      "id": 1,
+      "studentName": "Nguyen Thi Anh",
+      "studentAvatar": "https://i.pravatar.cc/150?img=21",
+      "courseName": "Learn React hooks and State Management",
+      "rating": 5,
+      "date": "2024-11-10",
+      "comment": "Mr. Minh explained very clearly and easy to understand, helped me master React knowledge. Very worth the money!",
+      "tags": ["Enthusiastic", "Professional", "Clear"]
+    },
+    {
+      "id": 2,
+      "studentName": "Tran Van Binh",
+      "studentAvatar": "https://i.pravatar.cc/150?img=22",
+      "courseName": "TypeScript Advanced",
+      "rating": 5,
+      "date": "2024-11-12",
+      "comment": "Dedicated mentor, helped me debug code and understand TypeScript more deeply. Will continue learning with him!",
+      "tags": ["Dedicated", "Experienced", "Helpful"]
+    },
+    {
+      "id": 3,
+      "studentName": "Le Thi Mai",
+      "studentAvatar": "https://i.pravatar.cc/150?img=23",
+      "courseName": "Node.js Backend Development",
+      "rating": 5,
+      "date": "2024-11-08",
+      "comment": "Great mentor with deep knowledge. The teaching style is easy to follow and practical examples are excellent.",
+      "tags": ["Knowledgeable", "Patient", "Practical"]
+    },
+    {
+      "id": 4,
+      "studentName": "Pham Van Cuong",
+      "studentAvatar": "https://i.pravatar.cc/150?img=24",
+      "courseName": "Full Stack Web Development",
+      "rating": 4,
+      "date": "2024-11-05",
+      "comment": "Good experience overall. Mentor is knowledgeable but sometimes moves a bit fast.",
+      "tags": ["Knowledgeable", "Efficient"]
+    },
+    {
+      "id": 5,
+      "studentName": "Hoang Thi Dung",
+      "studentAvatar": "https://i.pravatar.cc/150?img=25",
+      "courseName": "React Native Mobile App",
+      "rating": 5,
+      "date": "2024-11-15",
+      "comment": "Excellent mentor! Very responsive and always willing to help. Learned a lot in a short time.",
+      "tags": ["Responsive", "Supportive", "Clear"]
+    }
+  ]
+}

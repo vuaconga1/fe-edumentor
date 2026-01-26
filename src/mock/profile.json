@@ -1,0 +1,52 @@
+{
+  "id": 1,
+  "name": "Nguyen Van Minh",
+  "role": "mentor",
+  "title": "Senior Software Engineer",
+  "avatar": "https://i.pravatar.cc/150?img=12",
+  "email": "mentor@example.com",
+  "phone": "0909876543",
+  "stats": {
+    "students": 45,
+    "sessions": 128,
+    "rating": 4.9,
+    "reviewsCount": 42,
+    "followers": 1450
+  },
+  "bio": "I have 8+ years of experience in web and mobile development. Passionate about teaching and helping students grow their technical skills. Specialized in modern JavaScript frameworks and cloud architecture.",
+  "careerInfo": {
+    "company": "Tech Corp Vietnam",
+    "experience": "8+ years",
+    "pricePerHour": 250000,
+    "location": "Ho Chi Minh City, Vietnam"
+  },
+  "otherInfo": {
+    "education": "Master of Computer Science - HCMC University of Technology",
+    "languages": ["Vietnamese", "English (Fluent)"],
+    "joinedAt": "2024-01-01"
+  },
+  "skills": ["React", "Node.js", "TypeScript", "MongoDB", "System Design", "AWS", "Docker", "GraphQL"],
+  "analytics": {
+    "totalStudents": 45,
+    "totalSessions": 128,
+    "averageRating": 4.9,
+    "totalIncome": 32000000
+  },
+  "activities": [
+    { "text": "Session with Le Thi Mai", "detail": "React Performance Optimization", "time": "Yesterday" },
+    { "text": "Received 5-star review", "detail": "From Nguyen Van A", "time": "3 days ago" },
+    { "text": "Completed session", "detail": "Node.js Advanced Concepts", "time": "1 week ago" },
+    { "text": "New student enrolled", "detail": "Tran Minh Hoang", "time": "2 weeks ago" },
+    { "text": "Updated course material", "detail": "React Hooks Deep Dive", "time": "3 weeks ago" }
+  ],
+  "followersList": [
+    { "id": 1, "name": "Le Minh Tuan", "avatar": "https://i.pravatar.cc/150?img=20", "role": "student" },
+    { "id": 2, "name": "Tran Thi Huong", "avatar": "https://i.pravatar.cc/150?img=21", "role": "mentor" },
+    { "id": 3, "name": "Pham Van Nam", "avatar": "https://i.pravatar.cc/150?img=22", "role": "student" },
+    { "id": 4, "name": "Nguyen Thu Ha", "avatar": "https://i.pravatar.cc/150?img=23", "role": "student" },
+    { "id": 5, "name": "Hoang Anh Tuan", "avatar": "https://i.pravatar.cc/150?img=24", "role": "mentor" },
+    { "id": 6, "name": "Vo Thi Lan", "avatar": "https://i.pravatar.cc/150?img=25", "role": "student" },
+    { "id": 7, "name": "Dang Minh Khoa", "avatar": "https://i.pravatar.cc/150?img=26", "role": "student" },
+    { "id": 8, "name": "Bui Thi Thao", "avatar": "https://i.pravatar.cc/150?img=27", "role": "mentor" }
+  ]
+}

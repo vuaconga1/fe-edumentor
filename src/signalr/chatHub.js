@@ -1,0 +1,144 @@
+import * as signalR from "@microsoft/signalr";
+
+let connection = null;
+let startingPromise = null;
+let stoppingPromise = null;
+
+// ===== Event handlers =====
+const handlers = {
+  ReceiveMessage: new Set(),
+  UserTyping: new Set(),
+  MessagesRead: new Set(),
+  UserOnline: new Set(),
+  UserOffline: new Set(),
+  OnlineUsers: new Set(),
+  NewMessageNotification: new Set(),
+  Error: new Set(),
+};
+
+// ===== Start Hub (safe, no race) =====
+export async function startChatHub(baseUrl, token) {
+  // Nếu đã connected/connecting → trả về luôn
+  if (
+    connection &&
+    connection.state !== signalR.HubConnectionState.Disconnected
+  ) {
+    return connection;
+  }
+
+  // Nếu đang start → chờ start xong
+  if (startingPromise) return startingPromise;
+
+  // Nếu đang stop → chờ stop xong rồi mới start
+  if (stoppingPromise) {
+    try {
+      await stoppingPromise;
+    } catch {}
+  }
+
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(`${baseUrl}/hubs/chat`, {
+      accessTokenFactory: () => token || "",
+      // ❌ Bỏ WS-only để SignalR tự negotiate (ổn định hơn)
+      // transport: signalR.HttpTransportType.WebSockets,
+      // skipNegotiation: true,
+    })
+    .withAutomaticReconnect([0, 2000, 5000, 10000])
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
+
+  // Bind server events → local handlers
+  Object.keys(handlers).forEach((event) => {
+    connection.on(event, (data) => {
+      handlers[event].forEach((cb) => cb(data));
+    });
+  });
+
+  startingPromise = connection
+    .start()
+    .then(() => connection)
+    .finally(() => {
+      startingPromise = null;
+    });
+
+  return startingPromise;
+}
+
+// ===== Stop Hub (safe, no race) =====
+export async function stopChatHub() {
+  if (!connection) return;
+
+  // Nếu đang start → đợi start xong rồi mới stop
+  if (startingPromise) {
+    try {
+      await startingPromise;
+    } catch {}
+  }
+
+  if (stoppingPromise) return stoppingPromise;
+
+  stoppingPromise = connection
+    .stop()
+    .finally(() => {
+      stoppingPromise = null;
+      connection = null;
+    });
+
+  return stoppingPromise;
+}
+
+// ===== Event bus =====
+export function on(event, cb) {
+  if (!handlers[event]) {
+    throw new Error(`Unknown event: ${event}`);
+  }
+  handlers[event].add(cb);
+  return () => handlers[event].delete(cb);
+}
+
+// ===== Helpers =====
+function ensureConnected() {
+  if (!connection) {
+    throw new Error("ChatHub not started. Call startChatHub() first.");
+  }
+  return connection;
+}
+
+// ===== Hub invokes =====
+export function joinConversation(id) {
+  return ensureConnected().invoke("JoinConversation", Number(id));
+}
+
+export function leaveConversation(id) {
+  return ensureConnected().invoke("LeaveConversation", Number(id));
+}
+
+export function sendMessage({ conversationId, content, messageType = 0 }) {
+  return ensureConnected().invoke("SendMessage", {
+    conversationId: Number(conversationId),
+    content,
+    messageType,
+  });
+}
+
+export function typing(conversationId, isTyping) {
+  return ensureConnected().invoke(
+    "Typing",
+    Number(conversationId),
+    Boolean(isTyping)
+  );
+}
+
+export function markAsRead(conversationId) {
+  return ensureConnected().invoke(
+    "MarkAsRead",
+    Number(conversationId)
+  );
+}
+
+export function getOnlineUsers(userIds) {
+  return ensureConnected().invoke(
+    "GetOnlineUsers",
+    userIds.map(Number)
+  );
+}

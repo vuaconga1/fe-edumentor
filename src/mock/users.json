@@ -1,0 +1,134 @@
+[
+  {
+    "id": 1,
+    "name": "John Smith",
+    "email": "john.smith@email.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2024-01-15",
+    "avatar": "https://randomuser.me/api/portraits/men/1.jpg",
+    "sessionsCount": 12,
+    "balance": 250000
+  },
+  {
+    "id": 2,
+    "name": "Dr. Sarah Johnson",
+    "email": "sarah.johnson@email.com",
+    "role": "mentor",
+    "status": "active",
+    "createdAt": "2024-01-10",
+    "avatar": "https://randomuser.me/api/portraits/women/2.jpg",
+    "sessionsCount": 45,
+    "balance": 1500000
+  },
+  {
+    "id": 3,
+    "name": "Michael Chen",
+    "email": "michael.chen@email.com",
+    "role": "student",
+    "status": "inactive",
+    "createdAt": "2024-02-20",
+    "avatar": "https://randomuser.me/api/portraits/men/3.jpg",
+    "sessionsCount": 3,
+    "balance": 50000
+  },
+  {
+    "id": 4,
+    "name": "Emily Davis",
+    "email": "emily.davis@email.com",
+    "role": "mentor",
+    "status": "pending",
+    "createdAt": "2024-03-01",
+    "avatar": "https://randomuser.me/api/portraits/women/4.jpg",
+    "sessionsCount": 0,
+    "balance": 0
+  },
+  {
+    "id": 5,
+    "name": "David Wilson",
+    "email": "david.wilson@email.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2024-01-25",
+    "avatar": "https://randomuser.me/api/portraits/men/5.jpg",
+    "sessionsCount": 8,
+    "balance": 150000
+  },
+  {
+    "id": 6,
+    "name": "Lisa Anderson",
+    "email": "lisa.anderson@email.com",
+    "role": "admin",
+    "status": "active",
+    "createdAt": "2024-01-01",
+    "avatar": "https://randomuser.me/api/portraits/women/6.jpg",
+    "sessionsCount": 0,
+    "balance": 0
+  },
+  {
+    "id": 7,
+    "name": "Robert Taylor",
+    "email": "robert.taylor@email.com",
+    "role": "mentor",
+    "status": "active",
+    "createdAt": "2024-02-05",
+    "avatar": "https://randomuser.me/api/portraits/men/7.jpg",
+    "sessionsCount": 28,
+    "balance": 980000
+  },
+  {
+    "id": 8,
+    "name": "Jennifer Martinez",
+    "email": "jennifer.m@email.com",
+    "role": "student",
+    "status": "suspended",
+    "createdAt": "2024-02-15",
+    "avatar": "https://randomuser.me/api/portraits/women/8.jpg",
+    "sessionsCount": 5,
+    "balance": 75000
+  },
+  {
+    "id": 9,
+    "name": "William Brown",
+    "email": "william.brown@email.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2024-03-10",
+    "avatar": "https://randomuser.me/api/portraits/men/9.jpg",
+    "sessionsCount": 2,
+    "balance": 300000
+  },
+  {
+    "id": 10,
+    "name": "Amanda Lee",
+    "email": "amanda.lee@email.com",
+    "role": "mentor",
+    "status": "active",
+    "createdAt": "2024-01-20",
+    "avatar": "https://randomuser.me/api/portraits/women/10.jpg",
+    "sessionsCount": 62,
+    "balance": 2100000
+  },
+  {
+    "id": 11,
+    "name": "James Garcia",
+    "email": "james.garcia@email.com",
+    "role": "student",
+    "status": "active",
+    "createdAt": "2024-02-28",
+    "avatar": "https://randomuser.me/api/portraits/men/11.jpg",
+    "sessionsCount": 15,
+    "balance": 180000
+  },
+  {
+    "id": 12,
+    "name": "Michelle White",
+    "email": "michelle.w@email.com",
+    "role": "mentor",
+    "status": "inactive",
+    "createdAt": "2024-01-08",
+    "avatar": "https://randomuser.me/api/portraits/women/12.jpg",
+    "sessionsCount": 35,
+    "balance": 450000
+  }
+]

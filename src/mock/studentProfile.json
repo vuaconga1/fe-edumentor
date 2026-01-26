@@ -1,0 +1,43 @@
+{
+  "id": 2,
+  "name": "Le Thi Mai",
+  "role": "student",
+  "title": "Computer Science Student",
+  "avatar": "https://i.pravatar.cc/150?img=5",
+  "email": "student@example.com",
+  "phone": "0901234567",
+  "location": "Hanoi, Vietnam",
+  "stats": {
+    "sessionsCompleted": 24,
+    "hoursLearned": 48,
+    "rating": 4.8,
+    "followers": 156
+  },
+  "bio": "Passionate about software development and always eager to learn new technologies. Currently focusing on full-stack development with React and Node.js. Looking for mentorship opportunities to advance my career.",
+  "otherInfo": {
+    "education": "Bachelor of Computer Science - Hanoi University of Technology",
+    "languages": ["Vietnamese", "English (Intermediate)"],
+    "joinedAt": "2024-06-15"
+  },
+  "learningGoals": [
+    "Master React and TypeScript",
+    "Learn cloud architecture (AWS)",
+    "Build a full-stack portfolio project",
+    "Improve system design skills"
+  ],
+  "interests": ["Web Development", "Machine Learning", "Mobile Apps", "DevOps"],
+  "completedCourses": [
+    { "name": "React Fundamentals", "mentor": "Nguyen Van Minh", "completedAt": "2024-08-15" },
+    { "name": "Node.js Backend", "mentor": "Tran Hoang Nam", "completedAt": "2024-09-20" },
+    { "name": "Git & GitHub", "mentor": "Le Minh Duc", "completedAt": "2024-07-10" }
+  ],
+  "currentMentors": [
+    { "id": 1, "name": "Nguyen Van Minh", "avatar": "https://i.pravatar.cc/150?img=12", "specialty": "React & Node.js" },
+    { "id": 2, "name": "Tran Hoang Nam", "avatar": "https://i.pravatar.cc/150?img=15", "specialty": "System Design" }
+  ],
+  "followersList": [
+    { "id": 1, "name": "Pham Van A", "avatar": "https://i.pravatar.cc/150?img=30", "role": "student" },
+    { "id": 2, "name": "Nguyen Thi B", "avatar": "https://i.pravatar.cc/150?img=31", "role": "student" },
+    { "id": 3, "name": "Hoang Van C", "avatar": "https://i.pravatar.cc/150?img=32", "role": "student" }
+  ]
+}
