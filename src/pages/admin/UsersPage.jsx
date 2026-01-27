@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { HiFilter, HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
+import { HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
 import Modal from '../../components/admin/Modal';
 import ActionButton from '../../components/admin/ActionButton';
+import AdminFilterBar from '../../components/admin/AdminFilterBar';
 import adminApi from '../../api/adminApi';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 const UsersPage = () => {
@@ -461,7 +462,7 @@ function mapUser(apiUser) {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Toast Notification */}
       {toast.show && (
         <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
@@ -471,16 +472,16 @@ function mapUser(apiUser) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Users</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Users</h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             Manage platform users {totalCount > 0 && `(${totalCount} total)`}
           </p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full sm:w-auto"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -490,50 +491,37 @@ function mapUser(apiUser) {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          placeholder="Search by name or email..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-        <select
-          value={filterRole}
-          onChange={(e) => { setFilterRole(e.target.value); setPageNumber(1); }}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="mentor">Mentor</option>
-          <option value="student">Student</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => { setFilterStatus(e.target.value); setPageNumber(1); }}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        {(filterRole !== 'all' || filterStatus !== 'all' || searchKeyword) && (
-          <button
-            onClick={() => { setFilterRole('all'); setFilterStatus('all'); setSearchKeyword(''); setPageNumber(1); }}
-            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
-          >
-            Clear filters
-          </button>
-        )}
-        <button
-          onClick={fetchUsers}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <HiRefresh className="w-5 h-5 text-neutral-500" />
-        </button>
-      </div>
+      <AdminFilterBar
+        searchValue={searchKeyword}
+        onSearchChange={setSearchKeyword}
+        searchPlaceholder="Search by name or email..."
+        filters={[
+          {
+            label: "Role",
+            value: filterRole,
+            onChange: (v) => { setFilterRole(v); setPageNumber(1); },
+            options: [
+              { value: "all", label: "All Roles" },
+              { value: "admin", label: "Admin" },
+              { value: "mentor", label: "Mentor" },
+              { value: "student", label: "Student" },
+            ]
+          },
+          {
+            label: "Status",
+            value: filterStatus,
+            onChange: (v) => { setFilterStatus(v); setPageNumber(1); },
+            options: [
+              { value: "all", label: "All Status" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]
+          }
+        ]}
+        showClear={filterRole !== 'all' || filterStatus !== 'all' || searchKeyword}
+        onClearFilters={() => { setFilterRole('all'); setFilterStatus('all'); setSearchKeyword(''); setPageNumber(1); }}
+        onRefresh={fetchUsers}
+      />
 
       {/* Table */}
       {loading ? (
@@ -555,25 +543,25 @@ function mapUser(apiUser) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-              <div className="text-sm text-neutral-500">
-                Showing {((pageNumber - 1) * pageSize) + 1} to {Math.min(pageNumber * pageSize, totalCount)} of {totalCount} users
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <div className="text-sm text-neutral-500 text-center sm:text-left">
+                Showing {((pageNumber - 1) * pageSize) + 1} to {Math.min(pageNumber * pageSize, totalCount)} of {totalCount}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPageNumber(p => Math.max(1, p - 1))}
                   disabled={pageNumber === 1}
-                  className="px-3 py-1 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
-                  Previous
+                  Prev
                 </button>
-                <span className="text-sm text-neutral-900 dark:text-white">
-                  Page {pageNumber} of {totalPages}
+                <span className="text-sm text-neutral-900 dark:text-white px-2">
+                  {pageNumber}/{totalPages}
                 </span>
                 <button
                   onClick={() => setPageNumber(p => Math.min(totalPages, p + 1))}
                   disabled={pageNumber === totalPages}
-                  className="px-3 py-1 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   Next
                 </button>

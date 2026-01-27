@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { HiEye, HiFilter, HiCheck, HiX, HiRefresh } from "react-icons/hi";
+import { HiEye, HiCheck, HiX, HiRefresh, HiChevronDown, HiChevronUp } from "react-icons/hi";
 import DataTable from "../../components/admin/DataTable";
 import Modal from "../../components/admin/Modal";
 import ActionButton from "../../components/admin/ActionButton";
@@ -340,11 +340,126 @@ const TransactionsPage = () => {
     },
   ];
 
+  // Transaction Filters Component (inline for simplicity)
+  const TransactionFilters = ({ searchKeyword, setSearchKeyword, filterType, setFilterType, filterStatus, setFilterStatus }) => {
+    const [showFilters, setShowFilters] = useState(false);
+    const hasActiveFilters = filterType !== "all" || filterStatus !== "all" || searchKeyword;
+
+    return (
+      <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        {/* Search + Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Search transactions..."
+            className="flex-1 min-w-0 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          
+          {/* Desktop Filters */}
+          <div className="hidden lg:flex items-center gap-3">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Types</option>
+              <option value="deposit">Deposit</option>
+              <option value="withdraw">Withdraw</option>
+              <option value="payment">Payment</option>
+              <option value="earning">Earning</option>
+              <option value="refund">Refund</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+              <option value="failed">Failed</option>
+            </select>
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setFilterType("all"); setFilterStatus("all"); setSearchKeyword(""); }}
+                className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          
+          {/* Mobile Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300"
+          >
+            {showFilters ? <HiChevronUp className="w-4 h-4" /> : <HiChevronDown className="w-4 h-4" />}
+            <span className="hidden sm:inline">Filters</span>
+            {hasActiveFilters && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+          </button>
+          
+          <button
+            onClick={() => window.location.reload()}
+            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <HiRefresh className="w-5 h-5 text-neutral-500" />
+          </button>
+        </div>
+        
+        {/* Mobile Filters Dropdown */}
+        {showFilters && (
+          <div className="lg:hidden mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Types</option>
+                <option value="deposit">Deposit</option>
+                <option value="withdraw">Withdraw</option>
+                <option value="payment">Payment</option>
+                <option value="earning">Earning</option>
+                <option value="refund">Refund</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setFilterType("all"); setFilterStatus("all"); setSearchKeyword(""); setShowFilters(false); }}
+                className="sm:col-span-2 flex items-center justify-center gap-1 text-sm text-blue-600"
+              >
+                <HiX className="w-4 h-4" /> Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">
           Transactions
         </h1>
         <p className="text-neutral-500 dark:text-neutral-400 text-sm">
@@ -353,82 +468,36 @@ const TransactionsPage = () => {
       </div>
 
       {/* Stats (keep same blocks) */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
           <p className="text-sm text-neutral-500 mb-1">Total Deposits</p>
-          <p className="text-2xl font-bold text-emerald-600">
+          <p className="text-xl sm:text-2xl font-bold text-emerald-600">
             {formatCurrency(totalDeposits)}
           </p>
         </div>
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
           <p className="text-sm text-neutral-500 mb-1">Total Withdrawals</p>
-          <p className="text-2xl font-bold text-red-600">
+          <p className="text-xl sm:text-2xl font-bold text-red-600">
             {formatCurrency(totalWithdrawals)}
           </p>
         </div>
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
           <p className="text-sm text-neutral-500 mb-1">Pending Amount</p>
-          <p className="text-2xl font-bold text-amber-600">
+          <p className="text-xl sm:text-2xl font-bold text-amber-600">
             {formatCurrency(pendingAmount)}
           </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          placeholder="Search by user or transaction ID..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Types</option>
-          <option value="deposit">Deposit</option>
-          <option value="withdraw">Withdraw</option>
-          <option value="payment">Payment</option>
-          <option value="earning">Earning</option>
-          <option value="refund">Refund</option>
-        </select>
-
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-        </select>
-
-        {(filterType !== "all" || filterStatus !== "all" || searchKeyword) && (
-          <button
-            onClick={() => {
-              setFilterType("all");
-              setFilterStatus("all");
-              setSearchKeyword("");
-            }}
-            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
-          >
-            Clear filters
-          </button>
-        )}
-        <button
-          onClick={() => window.location.reload()}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <HiRefresh className="w-5 h-5 text-neutral-500" />
-        </button>
-      </div>
+      {/* Filters - Mobile Responsive */}
+      <TransactionFilters
+        searchKeyword={searchKeyword}
+        setSearchKeyword={setSearchKeyword}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+      />
 
       {/* Error */}
       {error && (

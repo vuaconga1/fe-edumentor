@@ -1,6 +1,6 @@
 // src/pages/admin/HashtagsPage.jsx
 import React, { useEffect, useState } from "react";
-import { HiPlus, HiTrash, HiFilter, HiX, HiRefresh } from "react-icons/hi";
+import { HiPlus, HiTrash, HiX, HiRefresh, HiChevronDown, HiChevronUp } from "react-icons/hi";
 import adminApi from "../../api/adminApi";
 
 export default function HashtagsPage() {
@@ -73,48 +73,51 @@ export default function HashtagsPage() {
     };
 
     const totalPages = Math.ceil(totalCount / pageSize);
+    const [showFilters, setShowFilters] = useState(false);
+    const hasActiveFilters = keyword;
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Hashtags</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Hashtags</h1>
                     <p className="text-neutral-500 dark:text-neutral-400 text-sm">
                         Manage mentor skill tags {totalCount > 0 && `(${totalCount} total)`}
                     </p>
                 </div>
                 <button
                     onClick={() => setCreateOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                 >
                     <HiPlus className="w-4 h-4" />
                     New Hashtag
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-                <HiFilter className="w-5 h-5 text-neutral-400" />
-                <input
-                    type="text"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                    placeholder="Search hashtags..."
-                    className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-                />
-                {keyword && (
-                    <button
-                        onClick={() => setKeyword("")}
-                        className="text-sm text-blue-600 hover:underline whitespace-nowrap"
-                    >
-                        Clear filters
+            {/* Filters - Mobile Responsive */}
+            <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <input
+                        type="text"
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        placeholder="Search hashtags..."
+                        className="flex-1 min-w-0 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    />
+                    {hasActiveFilters && (
+                        <button
+                            onClick={() => setKeyword("")}
+                            className="flex items-center gap-1 text-sm text-blue-600 hover:underline whitespace-nowrap"
+                        >
+                            <HiX className="w-4 h-4" /> Clear
+                        </button>
+                    )}
+                    <button onClick={fetchHashtags} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors" title="Refresh">
+                        <HiRefresh className="w-5 h-5 text-neutral-500" />
                     </button>
-                )}
-                <button onClick={fetchHashtags} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors" title="Refresh">
-                    <HiRefresh className="w-5 h-5 text-neutral-500" />
-                </button>
+                </div>
             </div>
 
             {apiError && (
@@ -157,24 +160,26 @@ export default function HashtagsPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                        <button
-                            disabled={pageNumber === 1}
-                            onClick={() => setPageNumber((p) => p - 1)}
-                            className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 disabled:opacity-50"
-                        >
-                            Previous
-                        </button>
-                        <span className="text-sm text-neutral-500">
+                    <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <span className="text-sm text-neutral-500 text-center sm:text-left">
                             Page {pageNumber} of {totalPages}
                         </span>
-                        <button
-                            disabled={pageNumber === totalPages}
-                            onClick={() => setPageNumber((p) => p + 1)}
-                            className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 disabled:opacity-50"
-                        >
-                            Next
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                disabled={pageNumber === 1}
+                                onClick={() => setPageNumber((p) => p - 1)}
+                                className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+                            >
+                                Prev
+                            </button>
+                            <button
+                                disabled={pageNumber === totalPages}
+                                onClick={() => setPageNumber((p) => p + 1)}
+                                className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

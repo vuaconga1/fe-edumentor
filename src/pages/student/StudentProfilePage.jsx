@@ -17,6 +17,11 @@ import userProfileApi from "../../api/userProfile";
 import axiosClient from "../../api/axios";
 import studentData from "../../mock/studentProfile.json";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import mentorApi from "../../api/mentorApi";
+import MentorApplicationBanner from "../../components/mentor/MentorApplicationBanner";
+import ApplyMentorModal from "../../components/mentor/ApplyMentorModal";
+import ConfirmSwitchModal from "../../components/mentor/ConfirmSwitchModal";
+
 // ✅ fallback ONLY khi backend chưa có field
 
 
@@ -29,6 +34,13 @@ const StudentProfilePage = () => {
 
   // ✅ profile thật từ DB
   const [profile, setProfile] = useState(null);
+
+  // Mentor Application State
+  const [mentorStatus, setMentorStatus] = useState(null);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -75,11 +87,25 @@ const StudentProfilePage = () => {
   };
   const API_BASE = import.meta.env.VITE_API_BASE_URL; // ví dụ https://localhost:7082
 
+
   const toAbsoluteUrl = (url) => {
     if (!url) return "/avatar-default.jpg";
     if (url.startsWith("http")) return url;
     return `${API_BASE}${url}`;
   };
+
+  const fetchMentorStatus = async () => {
+    try {
+      const res = await mentorApi.getApplicationStatus();
+      if (res.data?.success) {
+        setMentorStatus(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch mentor status", err);
+    }
+  };
+
+
 
   // ✅ gọi API lấy profile thật + categories để map interests
   useEffect(() => {
@@ -97,6 +123,9 @@ const StudentProfilePage = () => {
 
         const u = profileRes?.data?.data;
         if (!u) throw new Error("No user profile data");
+
+        // Fetch mentor application status
+        fetchMentorStatus();
 
         const categories = categoriesRes?.data?.data ?? [];
         const interests = (categories || []).map(c => c.name).filter(Boolean);
@@ -298,6 +327,15 @@ const StudentProfilePage = () => {
           </div>
         </div>
 
+        {/* Mentor Application Banner */}
+        <MentorApplicationBanner
+          statusData={mentorStatus}
+          onOpenApply={() => setIsApplyModalOpen(true)}
+          onOpenConfirm={() => setIsConfirmModalOpen(true)}
+        />
+
+
+
         {/* About + Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-6">
@@ -445,8 +483,23 @@ const StudentProfilePage = () => {
         onClose={() => setIsFollowersModalOpen(false)}
         followers={p.followersList || []}
       />
+
+      <ApplyMentorModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+        onSuccess={fetchMentorStatus}
+      />
+
+      <ConfirmSwitchModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onSuccess={fetchMentorStatus}
+      />
+
+
     </div>
   );
 };
 
 export default StudentProfilePage;
+

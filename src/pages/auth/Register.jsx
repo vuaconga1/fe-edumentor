@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import registerAPI from '../../api/registerApi';
 import { HiEye, HiEyeOff } from "react-icons/hi";
 
 const Register = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isMentor, setIsMentor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [googleError, setGoogleError] = useState('');
@@ -17,6 +17,18 @@ const Register = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Check for Google OAuth error from URL
+  React.useEffect(() => {
+    const urlError = searchParams.get('error');
+    const cancelled = searchParams.get('cancelled');
+
+    if (cancelled === 'true') {
+      setGoogleError('Google sign up was cancelled. Please try again.');
+    } else if (urlError) {
+      setGoogleError(decodeURIComponent(urlError));
+    }
+  }, [searchParams]);
 
   const handleGoogleSignup = () => {
     setGoogleError('');
@@ -93,7 +105,7 @@ const Register = () => {
         email,
         password,
         confirmPassword,
-        role: isMentor ? 1 : 0 // 0=Student, 1=Mentor
+        role: 0 // Always register as Student first
       };
 
       const res = await registerAPI.register(payload);
@@ -106,7 +118,6 @@ const Register = () => {
       setEmail('');
       setPassword('');
       setConfirmPassword('');
-      setIsMentor(false);
 
       // Redirect to login after 3 seconds
       setTimeout(() => {
@@ -372,23 +383,7 @@ const Register = () => {
                 </label>
               </div>
 
-              {/* Mentor Checkbox */}
-              <div className="flex items-center">
-                <input
-                  id="isMentor"
-                  type="checkbox"
-                  checked={isMentor}
-                  onChange={(e) => setIsMentor(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                  disabled={loading || success}
-                />
-                <label
-                  htmlFor="isMentor"
-                  className="ml-2 text-sm text-gray-700 cursor-pointer"
-                >
-                  Register as a mentor
-                </label>
-              </div>
+
 
               {/* Submit Button */}
               <button

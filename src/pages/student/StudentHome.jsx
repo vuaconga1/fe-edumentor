@@ -9,12 +9,16 @@ import {
   HiStar,
   HiArrowRight,
 } from "react-icons/hi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import studentApi from "../../api/studentApi";
+import BecomeMentorBanner from "../../components/mentor/BecomeMentorBanner";
+import ApplyMentorModal from "../../components/mentor/ApplyMentorModal";
 
 const StudentHome = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   const [studentName, setStudentName] = useState("Student");
 
@@ -132,6 +136,8 @@ const StudentHome = () => {
           <HiArrowRight />
         </Link>
       </div>
+
+      <BecomeMentorBanner onTryIt={() => setIsApplyModalOpen(true)} />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -294,6 +300,12 @@ const StudentHome = () => {
           </div>
         </div>
       </div>
+
+      <ApplyMentorModal
+        isOpen={isApplyModalOpen}
+        onClose={() => setIsApplyModalOpen(false)}
+        onSuccess={() => navigate("/student/profile")}
+      />
     </div>
   );
 };

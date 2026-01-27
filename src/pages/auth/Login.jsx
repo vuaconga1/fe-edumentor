@@ -9,7 +9,6 @@ export default function FlowbiteLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [googleError, setGoogleError] = useState('');
   const [showResend, setShowResend] = useState(false);
@@ -19,10 +18,13 @@ export default function FlowbiteLogin() {
   // Check for Google OAuth error or token from URL
   React.useEffect(() => {
     const urlError = searchParams.get('error');
+    const cancelled = searchParams.get('cancelled');
     const token = searchParams.get('token');
     const refreshToken = searchParams.get('refreshToken');
 
-    if (urlError) {
+    if (cancelled === 'true') {
+      setGoogleError('Google login was cancelled. Please try again.');
+    } else if (urlError) {
       setGoogleError(decodeURIComponent(urlError));
     }
 
@@ -89,7 +91,7 @@ export default function FlowbiteLogin() {
     }
 
     try {
-      const res = await authAPI.login({ email, password, rememberMe });
+      const res = await authAPI.login({ email, password });
 
       const token =
         res.data?.data?.token ||
@@ -171,7 +173,7 @@ export default function FlowbiteLogin() {
           {/* Login Form Card */}
           <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8">
             <h1 className="text-2xl font-bold text-gray-900 text-center mb-8">
-              Sign in to your account
+              Sign in
             </h1>
 
             {/* Success Message */}
@@ -279,17 +281,8 @@ export default function FlowbiteLogin() {
                 </div>
               )}
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Remember me</span>
-                </label>
+              {/* Forgot Password */}
+              <div className="flex items-center justify-end">
                 <Link to="/forgot-password" className="text-blue-600 hover:underline text-sm">
                   Forgot password?
                 </Link>

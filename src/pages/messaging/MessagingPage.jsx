@@ -127,8 +127,8 @@ const MessagingPage = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-neutral-50 dark:bg-neutral-950">
-      {/* LEFT: conversations */}
-      <div className="w-[340px] border-r border-neutral-200 dark:border-neutral-800">
+      {/* LEFT: conversations - Ẩn trên mobile khi đang chat */}
+      <div className={`w-full md:w-80 lg:w-[340px] border-r border-neutral-200 dark:border-neutral-800 flex-shrink-0 ${activeConversationId ? 'hidden md:block' : 'block'}`}>
         <ConversationList
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -136,28 +136,16 @@ const MessagingPage = () => {
         />
       </div>
 
-      {/* RIGHT: chat */}
-      <div className="flex-1 min-w-0">
+      {/* RIGHT: chat - Ẩn trên mobile khi chưa chọn conversation */}
+      <div className={`flex-1 min-w-0 ${!activeConversationId ? 'hidden md:block' : 'block'}`}>
         <ChatWindow
           conversation={activeConversation}
           messages={messages}
           onSend={handleSend}
           currentUserId={currentUserId}
+          onBack={() => setActiveConversationId(null)}
         />
       </div>
-
-      {/* Mobile overlay */}
-      {activeConversation && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-neutral-950 md:hidden flex flex-col animate-in slide-in-from-right-full duration-300">
-          <ChatWindow
-            conversation={activeConversation}
-            messages={messages}
-            currentUserId={currentUserId}
-            onSend={handleSend}
-            onBack={() => setActiveConversationId(null)}
-          />
-        </div>
-      )}
     </div>
   );
 };

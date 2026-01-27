@@ -32,6 +32,24 @@ const mentorApi = {
   getReviewSummary(mentorId) {
     return axiosClient.get(`/api/Mentor/${mentorId}/reviews/summary`);
   },
+
+  // ============ Mentor Application Flow ============
+
+  // POST /api/Mentor/apply - Apply to become mentor
+  apply(data) {
+    return axiosClient.post("/api/Mentor/apply", data);
+  },
+
+  // GET /api/Mentor/application-status - Get current application status
+  getApplicationStatus() {
+    return axiosClient.get("/api/Mentor/application-status");
+  },
+
+  // POST /api/Mentor/confirm-switch - Confirm role switch to Mentor
+  confirmSwitch() {
+    return axiosClient.post("/api/Mentor/confirm-switch");
+  },
 };
 
 export default mentorApi;
+
