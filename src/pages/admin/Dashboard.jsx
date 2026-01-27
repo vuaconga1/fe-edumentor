@@ -176,12 +176,6 @@ const stats = [
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      {dashboardLoading && (
-        <div className="p-4 text-sm text-neutral-500">
-          Loading dashboard metrics...
-        </div>
-      )}
 
       {dashboardError && (
         <div className="p-4 text-sm text-red-500">

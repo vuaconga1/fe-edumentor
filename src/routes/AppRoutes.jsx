@@ -18,6 +18,16 @@ import UsersPage from '../pages/admin/UsersPage';
 import ReportsPage from '../pages/admin/ReportsPage';
 import CategoriesPage from '../pages/admin/CategoriesPage';
 import TransactionsPage from '../pages/admin/TransactionsPage';
+import OrdersPage from '../pages/admin/OrdersPage';
+import RequestsPage from '../pages/admin/RequestsPage';
+import ProposalsPage from '../pages/admin/ProposalsPage';
+import HashtagsPage from '../pages/admin/HashtagsPage';
+import CategoryHashtagsPage from '../pages/admin/CategoryHashtagsPage';
+import ReviewsPage from '../pages/admin/ReviewsPage';
+import WalletsPage from '../pages/admin/WalletsPage';
+import PostsPage from '../pages/admin/PostsPage';
+import CommentsPage from '../pages/admin/CommentsPage';
+import MentorApplicationsPage from '../pages/admin/MentorApplicationsPage';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import ChangePassword from '../pages/auth/ChangePassword';
@@ -50,9 +60,19 @@ const AppRoutes = () => {
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<UsersPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="mentor-applications" element={<MentorApplicationsPage />} />
         <Route path="categories" element={<CategoriesPage />} />
+        <Route path="category-hashtags" element={<CategoryHashtagsPage />} />
+        <Route path="hashtags" element={<HashtagsPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="requests" element={<RequestsPage />} />
+        <Route path="proposals" element={<ProposalsPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
+        <Route path="wallets" element={<WalletsPage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
+        <Route path="posts" element={<PostsPage />} />
+        <Route path="comments" element={<CommentsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
       </Route>
 
       {/* Mentor */}

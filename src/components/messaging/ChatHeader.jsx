@@ -25,18 +25,12 @@ const ChatHeader = ({ conversation, onBack }) => {
             alt={name}
             className="w-10 h-10 rounded-full object-cover border border-gray-100 dark:border-gray-700"
           />
-          {isOnline && (
-            <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full" />
-          )}
         </div>
         
         <div>
           <h3 className="font-bold text-gray-900 dark:text-white text-sm md:text-base">
             {name}
           </h3>
-          <p className="text-xs text-green-600 dark:text-green-400 font-medium">
-            {isOnline ? 'Online' : 'Offline'}
-          </p>
         </div>
       </div>
 

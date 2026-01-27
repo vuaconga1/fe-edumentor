@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { HiFilter, HiCheckCircle, HiXCircle, HiBan, HiShieldCheck } from 'react-icons/hi';
+import { HiFilter, HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
 import Modal from '../../components/admin/Modal';
+import ActionButton from '../../components/admin/ActionButton';
 import adminApi from '../../api/adminApi';
 
 const UsersPage = () => {
@@ -315,6 +316,13 @@ const UsersPage = () => {
 
   const columns = [
     {
+      key: 'id',
+      label: 'ID',
+      render: (value) => (
+        <span className="text-xs font-mono text-neutral-500">#{value}</span>
+      )
+    },
+    {
       key: 'name',
       label: 'User',
       render: (_, row) => (
@@ -375,67 +383,53 @@ const UsersPage = () => {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => { e.stopPropagation(); handleViewDetail(row); }}
-            className="p-2 rounded-lg text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            title="View Detail"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-            </svg>
-          </button>
+          <ActionButton
+            icon={<HiEye className="w-4 h-4" />}
+            tooltip="View Detail"
+            onClick={(e) => { e?.stopPropagation?.(); handleViewDetail(row); }}
+            variant="info"
+          />
           {row.status === 'inactive' ? (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction(row, 'activate'); }}
-              className="p-2 rounded-lg text-neutral-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
-              title="Activate"
-            >
-              <HiCheckCircle className="w-4 h-4" />
-            </button>
+            <ActionButton
+              icon={<HiCheckCircle className="w-4 h-4" />}
+              tooltip="Activate User"
+              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'activate'); }}
+              variant="success"
+            />
           ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction(row, 'deactivate'); }}
-              className="p-2 rounded-lg text-neutral-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-              title="Deactivate"
-            >
-              <HiXCircle className="w-4 h-4" />
-            </button>
+            <ActionButton
+              icon={<HiXCircle className="w-4 h-4" />}
+              tooltip="Deactivate User"
+              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'deactivate'); }}
+              variant="warning"
+            />
           )}
           {!row.isVerified && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleAction(row, 'verify'); }}
-              className="p-2 rounded-lg text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              title="Verify"
-            >
-              <HiShieldCheck className="w-4 h-4" />
-            </button>
+            <ActionButton
+              icon={<HiShieldCheck className="w-4 h-4" />}
+              tooltip="Verify User"
+              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'verify'); }}
+              variant="info"
+            />
           )}
-          <button
-            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-            className="p-2 rounded-lg text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            title="Edit User"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleAction(row, 'ban'); }}
-            className="p-2 rounded-lg text-neutral-500 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-            title="Ban User"
-          >
-            <HiBan className="w-4 h-4" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
-            className="p-2 rounded-lg text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-            title="Delete User"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          <ActionButton
+            icon={<HiPencil className="w-4 h-4" />}
+            tooltip="Edit User"
+            onClick={(e) => { e?.stopPropagation?.(); handleEdit(row); }}
+            variant="info"
+          />
+          <ActionButton
+            icon={<HiBan className="w-4 h-4" />}
+            tooltip="Ban User"
+            onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'ban'); }}
+            variant="warning"
+          />
+          <ActionButton
+            icon={<HiTrash className="w-4 h-4" />}
+            tooltip="Delete User"
+            onClick={(e) => { e?.stopPropagation?.(); handleDelete(row); }}
+            variant="danger"
+          />
         </div>
       )
     }
@@ -508,6 +502,13 @@ const UsersPage = () => {
             Clear filters
           </button>
         )}
+        <button
+          onClick={fetchUsers}
+          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+          title="Refresh"
+        >
+          <HiRefresh className="w-5 h-5 text-neutral-500" />
+        </button>
       </div>
 
       {/* Table */}

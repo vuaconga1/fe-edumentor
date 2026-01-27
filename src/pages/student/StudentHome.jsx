@@ -31,10 +31,10 @@ const StudentHome = () => {
 
   const stats = useMemo(() => {
     return [
-      { label: "Buổi học", value: overview.sessionsCount, icon: HiAcademicCap, change: "" },
-      { label: "Mentor", value: overview.mentorsCount, icon: HiUserGroup, change: "" },
-      { label: "Giờ học", value: overview.learningHours, icon: HiClock, change: "" },
-      { label: "Đánh giá TB", value: overview.avgRating, icon: HiStar, change: overview.avgRating >= 4.5 ? "Xuất sắc" : "" },
+      { label: "Sessions", value: overview.sessionsCount, icon: HiAcademicCap, change: "" },
+      { label: "Mentors", value: overview.mentorsCount, icon: HiUserGroup, change: "" },
+      { label: "Hours", value: overview.learningHours, icon: HiClock, change: "" },
+      { label: "Avg Rating", value: overview.avgRating, icon: HiStar, change: overview.avgRating >= 4.5 ? "Excellent" : "" },
     ];
   }, [overview]);
 
@@ -95,7 +95,7 @@ const StudentHome = () => {
         }
       } catch (e) {
         console.log("Student dashboard fetch failed", e);
-        if (mounted) setError("Không tải được dữ liệu dashboard.");
+        if (mounted) setError("Student dashboard fetch failed");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -113,10 +113,10 @@ const StudentHome = () => {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white">
-            Xin chào, {studentName} 👋
+            👋 Hello, {studentName}
           </h1>
           <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Chào mừng bạn quay trở lại! Hãy tiếp tục hành trình học tập của mình.
+            Welcome back! Continue your learning journey.
           </p>
 
           {error && (
@@ -128,7 +128,7 @@ const StudentHome = () => {
           to="/student/find-mentor"
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-xl hover:shadow-primary-600/30 hover:scale-105"
         >
-          Tìm Mentor
+          Find Mentor
           <HiArrowRight />
         </Link>
       </div>
@@ -164,13 +164,13 @@ const StudentHome = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
               <HiCalendar className="text-primary-600 dark:text-primary-400" />
-              Lịch học sắp tới
+              Upcoming Sessions
             </h2>
             <Link
               to="/student/orders"
               className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
             >
-              Xem tất cả
+              View all
             </Link>
           </div>
 
@@ -191,7 +191,7 @@ const StudentHome = () => {
                     {session.topic || session.subject || "Session"}
                   </h3>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    với {session.mentor || session.mentorName || "Mentor"}
+                    with {session.mentor || session.mentorName || "Mentor"}
                   </p>
                 </div>
                 <div className="text-right">
@@ -206,7 +206,7 @@ const StudentHome = () => {
             ))}
 
             {!loading && upcomingSessions.length === 0 && (
-              <div className="text-sm text-neutral-500">Chưa có lịch học sắp tới.</div>
+              <div className="text-sm text-neutral-500">No upcoming sessions.</div>
             )}
           </div>
         </div>
@@ -216,7 +216,7 @@ const StudentHome = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
               <HiTrendingUp className="text-primary-600 dark:text-primary-400" />
-              Gợi ý cho bạn
+              Recommended for you
             </h2>
           </div>
 
@@ -262,7 +262,7 @@ const StudentHome = () => {
             ))}
 
             {!loading && recommendedMentors.length === 0 && (
-              <div className="text-sm text-neutral-500">Chưa có gợi ý mentor.</div>
+              <div className="text-sm text-neutral-500">No recommended mentors.</div>
             )}
           </div>
 
@@ -270,7 +270,7 @@ const StudentHome = () => {
             to="/student/find-mentor"
             className="mt-4 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 rounded-xl hover:border-primary-300 hover:text-primary-600 dark:hover:border-primary-600 dark:hover:text-primary-400 transition-all duration-300"
           >
-            Khám phá thêm
+            Explore more
             <HiArrowRight />
           </Link>
         </div>
@@ -280,8 +280,8 @@ const StudentHome = () => {
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="text-white">
-            <h2 className="text-xl md:text-2xl font-bold mb-2">Cần hỗ trợ?</h2>
-            <p className="text-primary-100">Đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ bạn 24/7</p>
+            <h2 className="text-xl md:text-2xl font-bold mb-2">Need help?</h2>
+            <p className="text-primary-100">Our support team is always ready to help you 24/7</p>
           </div>
           <div className="flex gap-3">
             <Link
@@ -289,7 +289,7 @@ const StudentHome = () => {
               className="inline-flex items-center gap-2 px-5 py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-all duration-200 hover:scale-105"
             >
               <HiChat />
-              Nhắn tin
+              Message
             </Link>
           </div>
         </div>
