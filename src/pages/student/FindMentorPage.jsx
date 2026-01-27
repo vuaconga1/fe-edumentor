@@ -3,8 +3,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiSearch, HiFilter, HiX, HiStar, HiClock, HiChevronRight, HiChatAlt2 } from "react-icons/hi";
 import mentorApi from "../../api/mentorApi";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
-const DEFAULT_AVATAR = "/avatar-default.jpg";
+
 
 const FindMentorPage = () => {
   const navigate = useNavigate();
@@ -117,7 +118,14 @@ const FindMentorPage = () => {
           // sessions không có trong DTO => hiển thị bằng reviews để giữ layout
           sessions: m.ratingCount ?? 0,
           skills: (m.hashtags?.length ? m.hashtags : m.categories) ?? [],
-          avatar: m.avatarUrl || DEFAULT_AVATAR,
+          avatar:
+            normalizeAvatarUrl(m.avatarUrl) ||
+            buildDefaultAvatarUrl({
+              id: m.id,
+              email: m.email,          // nếu API có
+              fullName: m.fullName
+            }),
+
           isOnline: false, // API không có field này
         }));
 
@@ -263,8 +271,16 @@ const FindMentorPage = () => {
                     src={mentor.avatar}
                     alt={mentor.name}
                     className="w-14 h-14 rounded-xl object-cover border-2 border-white dark:border-neutral-800 shadow-sm group-hover:scale-105 transition-transform"
-                    onError={(e) => (e.currentTarget.src = DEFAULT_AVATAR)}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildDefaultAvatarUrl({
+                        id: mentor.id,
+                        email: mentor.email,
+                        fullName: mentor.name
+                      });
+                    }}
                   />
+
                   <span
                     className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-900 ${mentor.isOnline ? "bg-green-500" : "bg-neutral-400"
                       }`}

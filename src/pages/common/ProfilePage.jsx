@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Briefcase, GraduationCap, Calendar, Award } from "lucide-react";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 import ProfileHeader from "../../components/profile/ProfileHeader";
 import ProfileSection from "../../components/profile/ProfileSection";
@@ -27,16 +28,6 @@ const ProfilePage = () => {
     if (!dateString) return "—";
     return new Date(dateString).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
-
-  const normalizeAvatar = (url) => {
-    if (!url) return "/avatar-default.jpg";
-    if (url.startsWith("http")) return url;
-    const base = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-    if (!base) return url.startsWith("/") ? url : `/${url}`;
-    const cleaned = url.startsWith("/") ? url : `/${url}`;
-    return `${base}${cleaned}`;
-  };
-
   useEffect(() => {
     let mounted = true;
 
@@ -52,7 +43,15 @@ const ProfilePage = () => {
           name: u.fullName ?? "Mentor",
           title: u.mentorProfile?.title ?? "Mentor",
           email: u.email ?? "",
-          avatar: normalizeAvatar(u.avatarUrl),
+          avatarSeed: { id: u.id, email: u.email, fullName: u.fullName },
+          avatar:
+            normalizeAvatarUrl(u.avatarUrl) ||
+            buildDefaultAvatarUrl({
+              id: u.id,
+              email: u.email,
+              fullName: u.fullName
+            }),
+
 
           stats: {
             students: u.mentorProfile?.ratingCount ?? 0, // tạm, backend chưa có students

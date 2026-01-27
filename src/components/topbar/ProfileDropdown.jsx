@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Dropdown, DropdownDivider, DropdownHeader, DropdownItem } from "flowbite-react";
 import { HiCog, HiLogout, HiUser } from "react-icons/hi";
-import userProfileApi from "../../api/UserProfile";
+import userProfileApi from "../../api/userProfile";
 import { useUIContext } from "../../context/UIContext";
-
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 export default function ProfileDropdown() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,17 +30,14 @@ export default function ProfileDropdown() {
 
   const username = user?.fullName || "Guest User";
   const email = user?.email || "guest@example.com";
+  const avatar =
+    normalizeAvatarUrl(user?.avatarUrl) ||
+    buildDefaultAvatarUrl({
+      id: user?.id,
+      email: user?.email,
+      fullName: user?.fullName
+    });
 
-  const normalizeAvatar = (url) => {
-    if (!url) return "/avatar-default.jpg";
-    if (url.startsWith("http")) return url;
-    const base = import.meta.env.VITE_API_URL;
-    if (!base) return url.startsWith("/") ? url : `/${url}`;
-    const cleaned = url.startsWith("/") ? url : `/${url}`;
-    return `${base}${cleaned}`;
-  };
-
-  const avatar = normalizeAvatar(user?.avatarUrl);
 
   const getProfilePath = () => {
     if (location.pathname.startsWith("/mentor")) return "/mentor/profile";
@@ -67,7 +64,15 @@ export default function ProfileDropdown() {
           src={avatar}
           alt="avatar"
           className="w-10 h-10 rounded-full object-cover border border-neutral-200 dark:border-neutral-800"
-          onError={(e) => { e.currentTarget.src = "/avatar-default.jpg"; }}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = buildDefaultAvatarUrl({
+              id: user?.id,
+              email: user?.email,
+              fullName: user?.fullName
+            });
+          }}
+
         />
       }
       className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800"

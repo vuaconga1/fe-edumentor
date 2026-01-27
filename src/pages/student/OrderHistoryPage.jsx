@@ -1,20 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { HiChevronDown } from "react-icons/hi";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 import OrderDetailModal from "../../components/order/OrderDetailModal";
 import ReviewModal from "../../components/order/ReviewModal";
 import orderApi from "../../api/orderApi";
 
 // --- helpers ---
-const normalizeAvatar = (url) => {
-  if (!url) return "/avatar-default.jpg";
-  if (url.startsWith("http")) return url;
 
-  const base = import.meta.env.VITE_API_BASE_URL; // baseURL giống axios.js
-  if (!base) return url.startsWith("/") ? url : `/${url}`;
-  const cleaned = url.startsWith("/") ? url : `/${url}`;
-  return `${base}${cleaned}`;
-};
 
 const formatCurrency = (amount) =>
   new Intl.NumberFormat("vi-VN").format(Number(amount || 0));
@@ -142,7 +135,14 @@ const OrderHistoryPage = () => {
             mentor: {
               id: o.mentorId,
               name: o.mentorName ?? "Mentor",
-              avatar: normalizeAvatar(o.mentorAvatar),
+              avatar:
+                normalizeAvatarUrl(o.mentorAvatar) ||
+                buildDefaultAvatarUrl({
+                  id: o.mentorId,       // seed ổn định theo mentor
+                  email: o.mentorEmail, // nếu backend có thì tốt, không có cũng ok
+                  fullName: o.mentorName
+                }),
+
             },
 
             // UI đang dùng "service"
@@ -260,9 +260,8 @@ const OrderHistoryPage = () => {
             >
               <span>{statusConfig[filterStatus]?.label}</span>
               <HiChevronDown
-                className={`w-4 h-4 text-neutral-400 transition-transform ${
-                  isDropdownOpen ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 text-neutral-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                  }`}
               />
             </button>
 
@@ -275,11 +274,10 @@ const OrderHistoryPage = () => {
                       setFilterStatus(key);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                      filterStatus === key
-                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
-                    }`}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${filterStatus === key
+                      ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium"
+                      : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                      }`}
                   >
                     {statusConfig[key].label}
                   </button>
@@ -357,7 +355,16 @@ const OrderHistoryPage = () => {
                         src={order.mentor.avatar}
                         alt={order.mentor.name}
                         className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = buildDefaultAvatarUrl({
+                            id: order.mentor.id,
+                            email: order.mentor.email,
+                            fullName: order.mentor.name
+                          });
+                        }}
                       />
+
                       <div className="min-w-0">
                         <p className="font-medium text-neutral-900 dark:text-white truncate text-sm">
                           {order.mentor.name}

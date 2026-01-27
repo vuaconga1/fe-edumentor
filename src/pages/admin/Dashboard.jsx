@@ -11,7 +11,7 @@ import {
 import transactionsData from "../../mock/transactions.json";
 import reportsData from "../../mock/reports.json";
 import adminApi from "../../api/adminApi";
-
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const Dashboard = () => {
   // ✅ thêm state dashboard
@@ -27,50 +27,50 @@ const Dashboard = () => {
   const [dashboardError, setDashboardError] = useState("");
 
   useEffect(() => {
-  async function fetchUsers() {
-    try {
-      setLoadingUsers(true);
+    async function fetchUsers() {
+      try {
+        setLoadingUsers(true);
 
-      // lấy nhiều một chút để đủ tính mentor/student/recent
-      const res = await adminApi.getUsers({ pageNumber: 1, pageSize: 200 });
+        // lấy nhiều một chút để đủ tính mentor/student/recent
+        const res = await adminApi.getUsers({ pageNumber: 1, pageSize: 200 });
 
-      const data = res?.data?.data ?? res?.data;
+        const data = res?.data?.data ?? res?.data;
 
-      // backend thường trả { items: [...] }
-      const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
-      setUsers(list);
-    } catch (err) {
-      console.log("Failed to fetch users", err);
-      setUsers([]);
-    } finally {
-      setLoadingUsers(false);
+        // backend thường trả { items: [...] }
+        const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        setUsers(list);
+      } catch (err) {
+        console.log("Failed to fetch users", err);
+        setUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
     }
-  }
 
-  fetchUsers();
-}, []);
+    fetchUsers();
+  }, []);
 
 
   // ====== TÍNH STATS TỪ USERS THẬT ======
   const totalUsers = users.length;
 
-// ====== TÍNH STATS TỪ USERS THẬT ======
-const normalizeRole = (role) => {
-  if (role === null || role === undefined) return "";
-  const r = String(role).toLowerCase();
-  if (r === "0" || r.includes("student")) return "student";
-  if (r === "1" || r.includes("mentor")) return "mentor";
-  if (r === "2" || r.includes("admin")) return "admin";
-  return r;
-};
+  // ====== TÍNH STATS TỪ USERS THẬT ======
+  const normalizeRole = (role) => {
+    if (role === null || role === undefined) return "";
+    const r = String(role).toLowerCase();
+    if (r === "0" || r.includes("student")) return "student";
+    if (r === "1" || r.includes("mentor")) return "mentor";
+    if (r === "2" || r.includes("admin")) return "admin";
+    return r;
+  };
 
-const mentors = users.filter(
-  (u) => normalizeRole(u.role) === "mentor"
-).length;
+  const mentors = users.filter(
+    (u) => normalizeRole(u.role) === "mentor"
+  ).length;
 
-const students = users.filter(
-  (u) => normalizeRole(u.role) === "student"
-).length;
+  const students = users.filter(
+    (u) => normalizeRole(u.role) === "student"
+  ).length;
 
 
   // ====== MOCK TRANSACTIONS/REPORTS giữ nguyên ======
@@ -80,7 +80,7 @@ const students = users.filter(
 
   const pendingReports = reportsData.filter((r) => r.status === "pending").length;
 
- const activeUsers = users.filter((u) => u.isActive).length;
+  const activeUsers = users.filter((u) => u.isActive).length;
 
 
   // ====== RECENT USERS: sort theo joined/createdAt rồi lấy 5 ======
@@ -97,40 +97,40 @@ const students = users.filter(
 
   const recentTransactions = transactionsData.slice(0, 5);
 
- const totalUsersFromApi = dashboardData?.totalUsers;
-const revenueFromApi = dashboardData?.totalRevenue;
+  const totalUsersFromApi = dashboardData?.totalUsers;
+  const revenueFromApi = dashboardData?.totalRevenue;
 
-// mentors/students vẫn lấy từ users list như mày đang làm (vì dashboard api không trả)
-const stats = [
-  {
-    label: "Total Users",
-    value: totalUsersFromApi ?? totalUsers,   // <- ưu tiên API, fallback users.length
-    change: "+12%",
-    trend: "up",
-    icon: HiUsers,
-  },
-  {
-    label: "Mentors",
-    value: mentors, // <- giữ nguyên như UI cũ
-    change: "+8%",
-    trend: "up",
-    icon: HiAcademicCap,
-  },
-  {
-    label: "Students",
-    value: students, // <- giữ nguyên như UI cũ
-    change: "+15%",
-    trend: "up",
-    icon: HiUserGroup,
-  },
-  {
-    label: "Revenue",
-    value: `${(((revenueFromApi ?? totalRevenue) || 0) / 1000000).toFixed(1)}M`,
-    change: "+22%",
-    trend: "up",
-    icon: HiCurrencyDollar,
-  },
-];
+  // mentors/students vẫn lấy từ users list như mày đang làm (vì dashboard api không trả)
+  const stats = [
+    {
+      label: "Total Users",
+      value: totalUsersFromApi ?? totalUsers,   // <- ưu tiên API, fallback users.length
+      change: "+12%",
+      trend: "up",
+      icon: HiUsers,
+    },
+    {
+      label: "Mentors",
+      value: mentors, // <- giữ nguyên như UI cũ
+      change: "+8%",
+      trend: "up",
+      icon: HiAcademicCap,
+    },
+    {
+      label: "Students",
+      value: students, // <- giữ nguyên như UI cũ
+      change: "+15%",
+      trend: "up",
+      icon: HiUserGroup,
+    },
+    {
+      label: "Revenue",
+      value: `${(((revenueFromApi ?? totalRevenue) || 0) / 1000000).toFixed(1)}M`,
+      change: "+22%",
+      trend: "up",
+      icon: HiCurrencyDollar,
+    },
+  ];
 
 
   const formatCurrency = (amount) =>
@@ -244,10 +244,10 @@ const stats = [
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
           {/* ✅ activeUsers thật */}
-      <p className="text-3xl font-bold text-neutral-900 dark:text-white">
-  {activeUsers}
-</p>
-<p className="text-sm text-neutral-500">Active Users</p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-white">
+            {activeUsers}
+          </p>
+          <p className="text-sm text-neutral-500">Active Users</p>
 
         </div>
         <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
@@ -289,15 +289,25 @@ const stats = [
                   <div className="flex items-center gap-3">
                     <img
                       src={
-                        user.avatarUrl
-                          ? user.avatarUrl.startsWith("http")
-                            ? user.avatarUrl
-                            : `https://localhost:7082${user.avatarUrl}`
-                          : "/avatar-default.jpg"
+                        normalizeAvatarUrl(user.avatarUrl) ||
+                        buildDefaultAvatarUrl({
+                          id: user.id,
+                          email: user.email,
+                          fullName: user.fullName
+                        })
                       }
                       alt={user.fullName || user.email}
                       className="w-9 h-9 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = buildDefaultAvatarUrl({
+                          id: user.id,
+                          email: user.email,
+                          fullName: user.fullName
+                        });
+                      }}
                     />
+
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
                         {user.fullName || "(no name)"}
