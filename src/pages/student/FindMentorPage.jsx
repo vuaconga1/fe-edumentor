@@ -280,7 +280,7 @@ const FindMentorPage = () => {
                       });
                     }}
                   />
-
+                  
                   <span
                     className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-900 ${mentor.isOnline ? "bg-green-500" : "bg-neutral-400"
                       }`}

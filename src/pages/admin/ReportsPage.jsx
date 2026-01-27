@@ -3,6 +3,7 @@ import { HiEye, HiCheck, HiX, HiFilter } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import Modal from '../../components/admin/Modal';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
+import ActionButton from '../../components/admin/ActionButton';
 import adminApi from '../../api/adminApi';
 
 const ReportsPage = () => {
@@ -15,10 +16,21 @@ const ReportsPage = () => {
   const [confirmAction, setConfirmAction] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const filteredReports = reports.filter(report => {
     if (filterType !== 'all' && report.type !== filterType) return false;
     if (filterStatus !== 'all' && report.status !== filterStatus) return false;
+    
+    // Search filter
+    if (searchKeyword.trim()) {
+      const keyword = searchKeyword.toLowerCase();
+      const matchReason = (report.reason || '').toLowerCase().includes(keyword);
+      const matchReportedUser = (report.reportedUser || '').toLowerCase().includes(keyword);
+      const matchReportedBy = (report.reportedBy || '').toLowerCase().includes(keyword);
+      if (!matchReason && !matchReportedUser && !matchReportedBy) return false;
+    }
+    
     return true;
   });
   useEffect(() => {
@@ -71,13 +83,9 @@ const ReportsPage = () => {
     try {
       setIsConfirmOpen(false);
 
-      if (confirmAction === "resolve") {
-        // POST /api/Admin/reports/{id}/resolve (hoặc /resolve)
-        await adminApi.resolveReport(selectedReport.id, "Resolved by admin");
-      } else {
-        // dismiss -> map thành reject
-        await adminApi.rejectReport(selectedReport.id, "Rejected by admin");
-      }
+      // Backend sử dụng handleReport endpoint
+      const status = confirmAction === "resolve" ? "Resolved" : "Dismissed";
+      await adminApi.handleReport(selectedReport.id, { status, banUser: false });
 
       // Update UI nhanh (optimistic)
       const newStatus = confirmAction === "resolve" ? "resolved" : "dismissed";
@@ -174,29 +182,26 @@ const ReportsPage = () => {
       sortable: false,
       render: (_, row) => (
         <div className="flex items-center justify-end gap-1">
-          <button
-            onClick={(e) => { e.stopPropagation(); handleView(row); }}
-            className="p-2 rounded-lg text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-            title="View details"
-          >
-            <HiEye className="w-4 h-4" />
-          </button>
+          <ActionButton
+            icon={<HiEye className="w-4 h-4" />}
+            tooltip="View Details"
+            onClick={(e) => { e?.stopPropagation?.(); handleView(row); }}
+            variant="info"
+          />
           {row.status === 'pending' || row.status === 'investigating' ? (
             <>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleAction(row, 'resolve'); }}
-                className="p-2 rounded-lg text-neutral-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                title="Resolve"
-              >
-                <HiCheck className="w-4 h-4" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); handleAction(row, 'dismiss'); }}
-                className="p-2 rounded-lg text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                title="Dismiss"
-              >
-                <HiX className="w-4 h-4" />
-              </button>
+              <ActionButton
+                icon={<HiCheck className="w-4 h-4" />}
+                tooltip="Resolve Report"
+                onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'resolve'); }}
+                variant="success"
+              />
+              <ActionButton
+                icon={<HiX className="w-4 h-4" />}
+                tooltip="Dismiss Report"
+                onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'dismiss'); }}
+                variant="danger"
+              />
             </>
           ) : null}
         </div>
@@ -228,6 +233,13 @@ const ReportsPage = () => {
       {/* Filters */}
       <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
         <HiFilter className="w-5 h-5 text-neutral-400" />
+        <input
+          type="text"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          placeholder="Search by reason, reported user or reporter..."
+          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
+        />
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
@@ -250,9 +262,9 @@ const ReportsPage = () => {
           <option value="resolved">Resolved</option>
           <option value="dismissed">Dismissed</option>
         </select>
-        {(filterType !== 'all' || filterStatus !== 'all') && (
+        {(filterType !== 'all' || filterStatus !== 'all' || searchKeyword.trim()) && (
           <button
-            onClick={() => { setFilterType('all'); setFilterStatus('all'); }}
+            onClick={() => { setFilterType('all'); setFilterStatus('all'); setSearchKeyword(''); }}
             className="text-sm text-blue-600 hover:underline"
           >
             Clear filters
@@ -264,7 +276,6 @@ const ReportsPage = () => {
       <DataTable
         columns={columns}
         data={isLoading ? [] : filteredReports}
-        searchPlaceholder="Search reports..."
         emptyMessage={isLoading ? "Loading..." : "No reports found"}
       />
 
