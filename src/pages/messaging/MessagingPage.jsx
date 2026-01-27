@@ -57,78 +57,47 @@ const MessagingPage = () => {
   useEffect(() => {
     if (!token) return;
 
-    let offReceive = null;
-    let cancelled = false;
+    let offReceive;
 
     (async () => {
-      try {
-        await startChatHub(BASE_URL, token);
-        if (cancelled) return;
+      await startChatHub(BASE_URL, token);
 
-        offReceive = on("ReceiveMessage", (msg) => {
-          setMessages((prev) => {
-            if (!Array.isArray(prev)) return [msg]; // ✅ bảo hiểm
-            return [...prev, msg];
-          });
-        });
+      offReceive = on("ReceiveMessage", (msg) => {
+        // ✅ chỉ add nếu đúng room đang mở
+        if ((msg.conversationId ?? msg.conversationID) !== activeConversationId) return;
 
-      } catch (e) {
-        console.error("Start hub failed", e);
-      }
+        setMessages(prev => Array.isArray(prev) ? [...prev, msg] : [msg]);
+      });
     })();
 
-    return () => {
-      cancelled = true;
-      if (offReceive) offReceive();
-      // ❌ đừng stopChatHub ở đây (dev strict mode dễ gây stop/start)
-    };
-  }, [token]);
+    return () => offReceive?.();
+  }, [token, activeConversationId]);
+
 
   // 3) switch conversation: leave old -> load history -> join room
   useEffect(() => {
     if (!activeConversationId) return;
 
-    (async () => {
-      const nextId = Number(activeConversationId);
-
-      const prevId = prevConversationIdRef.current;
-      if (prevId && prevId !== nextId) {
-        await leaveConversation(prevId).catch(() => { });
-      }
-
-      setMessages([]);
-
+    const loadMessages = async () => {
       try {
-        const res = await chatApi.getMessages(nextId, { pageNumber: 1, pageSize: 30 });
+        const res = await chatApi.getMessages(activeConversationId);
+        const data = res?.data?.data;
 
-        const data = res.data?.data;
-
-        // normalize về array
         let list = [];
-        if (Array.isArray(data)) {
-          list = data;
-        } else if (Array.isArray(data?.items)) {
-          list = data.items;
-        } else if (Array.isArray(data?.messages)) {
-          list = data.messages;
-        }
+        if (Array.isArray(data)) list = data;
+        else if (Array.isArray(data?.items)) list = data.items;
+        else if (Array.isArray(data?.messages)) list = data.messages;
 
         setMessages(list);
 
-      } catch (e) {
-        console.error("Load messages failed", e);
-        setMessages([]);
+      } catch (err) {
+        console.log("Load messages failed", err);
       }
+    };
 
-      try {
-        await joinConversation(nextId);
-      } catch (e) {
-        console.error("Join conversation failed", e);
-      }
-
-      prevConversationIdRef.current = nextId;
-    })();
+    loadMessages();
   }, [activeConversationId]);
+
 
   const activeConversation = conversations.find(
     (c) => (c.conversationId ?? c.id) === activeConversationId
@@ -137,16 +106,23 @@ const MessagingPage = () => {
   const handleSend = async (text) => {
     if (!activeConversationId) return;
 
-    try {
-      await hubSendMessage({
-        conversationId: activeConversationId,
-        content: text,
-        messageType: 0,
-      });
-      // ✅ không setMessages ở đây, vì ReceiveMessage sẽ append
-    } catch (e) {
-      console.error("Send message failed", e);
-    }
+    // ✅ hiện liền (optimistic)
+    const temp = {
+      id: `temp-${Date.now()}`,
+      conversationId: activeConversationId,
+      content: text,
+      isOwn: true,
+      senderName: "You",
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => Array.isArray(prev) ? [...prev, temp] : [temp]);
+
+    // gửi lên server
+    await hubSendMessage({
+      conversationId: activeConversationId,
+      content: text,
+      messageType: 0,
+    });
   };
 
   return (

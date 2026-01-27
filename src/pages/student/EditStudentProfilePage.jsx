@@ -2,11 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { HiArrowLeft, HiCamera, HiX, HiPlus } from "react-icons/hi";
 import { Save } from "lucide-react";
 import studentData from "../../mock/studentProfile.json";
-import React, { useState, useEffect } from "react";
 import userProfileApi from "../../api/userProfile";
-
+import React, { useState, useEffect, useRef } from "react";
+import axiosClient from "../../api/axios";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 const EditStudentProfilePage = () => {
   const navigate = useNavigate();
+  const [categories, setCategories] = useState([]); // [{id,name}]
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
 
   const [formData, setFormData] = useState({
     // UI fields
@@ -20,12 +23,16 @@ const EditStudentProfilePage = () => {
     languages: studentData.otherInfo.languages,
     interests: studentData.interests,
     learningGoals: studentData.learningGoals,
+    interestCategoryIds: [], // ✅ lưu id
   });
 
   const [newLanguage, setNewLanguage] = useState("");
   const [newInterest, setNewInterest] = useState("");
   const [newGoal, setNewGoal] = useState("");
-
+  const fileInputRef = useRef(null);
+  const [avatarPreview, setAvatarPreview] = useState("/avatar-default.jpg");
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [loadingBasic, setLoadingBasic] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
@@ -45,6 +52,24 @@ const EditStudentProfilePage = () => {
       setter("");
     }
   };
+  const addInterestCategory = () => {
+    const idNum = Number(selectedCategoryId);
+    if (!idNum) return;
+
+    setFormData((prev) => {
+      if (prev.interestCategoryIds.includes(idNum)) return prev;
+      return { ...prev, interestCategoryIds: [...prev.interestCategoryIds, idNum] };
+    });
+
+    setSelectedCategoryId("");
+  };
+
+  const removeInterestCategory = (idNum) => {
+    setFormData((prev) => ({
+      ...prev,
+      interestCategoryIds: prev.interestCategoryIds.filter((x) => x !== idNum),
+    }));
+  };
 
   const removeItem = (field, index) => {
     setFormData((prev) => ({
@@ -52,6 +77,76 @@ const EditStudentProfilePage = () => {
       [field]: prev[field].filter((_, i) => i !== index),
     }));
   };
+  const API_BASE = import.meta.env.VITE_API_BASE_URL; // ví dụ https://localhost:7082
+
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "/avatar-default.jpg";
+    if (url.startsWith("http")) return url;
+    return `${API_BASE}${url}`; // "/uploads/..." -> "https://localhost:7082/uploads/..."
+  };
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const onPickAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // validate
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      // backend avatar upload limit 5MB :contentReference[oaicite:1]{index=1}
+      setError("Image is too large. Max 5MB.");
+      return;
+    }
+
+    setError("");
+    setSuccessMsg("");
+
+    // preview ngay
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+    setSelectedAvatarFile?.(file); // nếu mày có state này thì giữ, không có thì xoá dòng này
+
+    try {
+      setIsUploadingAvatar(true);
+
+      // 1) upload file -> lấy url
+      const form = new FormData();
+      form.append("file", file);
+
+      const uploadRes = await axiosClient.post("/api/File/upload/avatar", form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const avatarUrl = uploadRes?.data?.data?.fileUrls?.[0];
+      if (!avatarUrl) throw new Error("Upload returned empty avatarUrl");
+
+      // 2) lưu url vào DB user_profile
+      const saveRes = await axiosClient.put("/api/User/avatar", { avatarUrl });
+      await axiosClient.put("/api/User/profile", {
+        fullName: formData.name,
+        phone: formData.phone,
+        // ...
+        categoryIds: formData.interestCategoryIds, // ✅ thêm field này
+      });
+
+      // update preview theo url thật (từ server)
+      setAvatarPreview(toAbsoluteUrl(avatarUrl));
+
+      setSuccessMsg(saveRes?.data?.message || "Avatar updated successfully.");
+    } catch (err) {
+      console.log("Upload avatar failed:", err);
+      setError(err?.response?.data?.message || "Upload avatar failed.");
+    } finally {
+      setIsUploadingAvatar(false);
+
+      // reset input để chọn lại cùng 1 file vẫn trigger onChange
+      e.target.value = "";
+    }
+  };
+
 
   // Load basic info from GET /api/User/profile
   useEffect(() => {
@@ -64,6 +159,15 @@ const EditStudentProfilePage = () => {
 
         const res = await userProfileApi.getAll(); // GET /api/User/profile
         const u = res?.data?.data ?? res?.data;
+
+        setAvatarPreview(
+          normalizeAvatarUrl(u.avatarUrl) ||
+          buildDefaultAvatarUrl({
+            id: u.id,
+            email: u.email,
+            fullName: u.fullName
+          })
+        );
 
         if (!u) throw new Error("No profile data");
 
@@ -93,6 +197,28 @@ const EditStudentProfilePage = () => {
     return () => {
       mounted = false;
     };
+  }, []);
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await axiosClient.get("/api/Admin/categories");
+        const raw = res?.data?.data ?? [];
+
+        // flatten tree (nếu categories có children)
+        const flat = [];
+        const walk = (arr) => {
+          (arr || []).forEach((c) => {
+            flat.push({ id: c.id, name: c.name });
+            if (c.children?.length) walk(c.children);
+          });
+        };
+        walk(raw);
+
+        setCategories(flat);
+      } catch (e) {
+        console.log("Fetch categories failed", e);
+      }
+    })();
   }, []);
 
   // Helper: split "City, Country"
@@ -187,25 +313,52 @@ const EditStudentProfilePage = () => {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <img
-                  src={studentData.avatarUrl}
+                  src={avatarPreview}
                   alt="avatar"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = buildDefaultAvatarUrl({
+                      id: user?.id,
+                      email: formData.email,
+                      fullName: formData.name
+                    });
+                  }}
+
                   className="w-24 h-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-800"
                 />
+
+
+                {/* input file ẩn */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onPickAvatar}
+                />
+
                 <button
                   type="button"
-                  className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg"
-                  title="Change avatar (TODO)"
+                  onClick={openFilePicker}
+                  disabled={isUploadingAvatar}
+                  className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
+                  title="Change avatar"
                 >
                   <HiCamera className="w-4 h-4" />
                 </button>
               </div>
+
               <div>
                 <h3 className="font-medium text-neutral-900 dark:text-white">
                   {formData.name}
                 </h3>
+                {isUploadingAvatar && (
+                  <div className="text-xs text-neutral-500 mt-1">Uploading...</div>
+                )}
               </div>
             </div>
           </div>
+
 
           {/* Basic Info */}
           <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
@@ -294,114 +447,61 @@ const EditStudentProfilePage = () => {
               className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-gray-600 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
             />
           </div>
-
-          {/* Education (local UI only - not sent to backend) */}
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
-              Education
-            </h2>
-            <input
-              type="text"
-              name="education"
-              value={formData.education}
-              onChange={handleChange}
-              placeholder="e.g., Bachelor of Computer Science - University Name"
-              className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-gray-600 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-            />
-            <p className="mt-2 text-xs text-neutral-500">
-              *Education/Languages/Interests/Goals hiện chỉ lưu UI (backend chưa có field).
-            </p>
-          </div>
-
-          {/* Languages */}
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
-              Languages
-            </h2>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {formData.languages.map((lang, index) => (
-                <span
-                  key={index}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-full text-sm"
-                >
-                  {lang}
-                  <button
-                    type="button"
-                    onClick={() => removeItem("languages", index)}
-                    className="hover:text-red-500"
-                  >
-                    <HiX className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newLanguage}
-                onChange={(e) => setNewLanguage(e.target.value)}
-                placeholder="Add language..."
-                className="flex-1 px-4 py-2 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-gray-600 rounded-xl text-neutral-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  (e.preventDefault(),
-                  addItem("languages", newLanguage, setNewLanguage))
-                }
-              />
-              <button
-                type="button"
-                onClick={() => addItem("languages", newLanguage, setNewLanguage)}
-                className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
-              >
-                <HiPlus className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
           {/* Interests */}
           <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
               Interests
             </h2>
+
+            {/* chips */}
             <div className="flex flex-wrap gap-2 mb-3">
-              {formData.interests.map((interest, index) => (
-                <span
-                  key={index}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-200 dark:border-blue-800"
-                >
-                  {interest}
-                  <button
-                    type="button"
-                    onClick={() => removeItem("interests", index)}
-                    className="hover:text-red-500"
+              {formData.interestCategoryIds.map((id) => {
+                const name = categories.find((c) => c.id === id)?.name || `#${id}`;
+                return (
+                  <span
+                    key={id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-200 dark:border-blue-800"
                   >
-                    <HiX className="w-3.5 h-3.5" />
-                  </button>
-                </span>
-              ))}
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() => removeInterestCategory(id)}
+                      className="hover:text-red-500"
+                    >
+                      <HiX className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
+
+            {/* dropdown + add */}
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={newInterest}
-                onChange={(e) => setNewInterest(e.target.value)}
-                placeholder="Add interest..."
+              <select
+                value={selectedCategoryId}
+                onChange={(e) => setSelectedCategoryId(e.target.value)}
                 className="flex-1 px-4 py-2 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-gray-600 rounded-xl text-neutral-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyDown={(e) =>
-                  e.key === "Enter" &&
-                  (e.preventDefault(),
-                  addItem("interests", newInterest, setNewInterest))
-                }
-              />
+              >
+                <option value="">Select category...</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+
               <button
                 type="button"
-                onClick={() => addItem("interests", newInterest, setNewInterest)}
-                className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                onClick={addInterestCategory}
+                disabled={!selectedCategoryId}
+                className="px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-60"
+                title="Add interest"
               >
                 <HiPlus className="w-5 h-5" />
               </button>
             </div>
           </div>
+
 
           {/* Learning Goals */}
           <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
@@ -437,7 +537,7 @@ const EditStudentProfilePage = () => {
                 onKeyDown={(e) =>
                   e.key === "Enter" &&
                   (e.preventDefault(),
-                  addItem("learningGoals", newGoal, setNewGoal))
+                    addItem("learningGoals", newGoal, setNewGoal))
                 }
               />
               <button

@@ -1,23 +1,35 @@
 // src/pages/mentor/EditMentorProfilePage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiArrowLeft } from "react-icons/hi";
 import { Save } from "lucide-react";
-
+import { HiCamera } from "react-icons/hi";
 import userProfileApi from "../../api/userProfile";
-
-const toNumberOrNull = (v) => {
-  if (v === "" || v === null || v === undefined) return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-};
-
-const toIntOrNull = (v) => {
-  const n = toNumberOrNull(v);
-  return n === null ? null : Math.trunc(n);
-};
-
+import axiosClient from "../../api/axios";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 const EditMentorProfilePage = () => {
+  const toNumberOrNull = (v) => {
+    if (v === "" || v === null || v === undefined) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  const fileInputRef = useRef(null);
+  const [avatarPreview, setAvatarPreview] = useState("/avatar-default.jpg");
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  const API_BASE = import.meta.env.VITE_API_BASE_URL; // https://localhost:7082
+  const toAbsoluteUrl = (url) => {
+    if (!url) return "/avatar-default.jpg";
+    if (url.startsWith("http")) return url;
+    return `${API_BASE}${url}`;
+  };
+
+  const openFilePicker = () => fileInputRef.current?.click();
+
+  const toIntOrNull = (v) => {
+    const n = toNumberOrNull(v);
+    return n === null ? null : Math.trunc(n);
+  };
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
@@ -48,7 +60,11 @@ const EditMentorProfilePage = () => {
     // tags
     newHashtagsText: "", // nhập dạng: "dotnet, backend"
   });
-
+  const [avatarSeed, setAvatarSeed] = useState({
+    id: null,
+    email: "",
+    fullName: ""
+  });
   useEffect(() => {
     let mounted = true;
 
@@ -83,6 +99,21 @@ const EditMentorProfilePage = () => {
           introduction: mp.introduction ?? "",
           availabilityNote: mp.availabilityNote ?? "",
         }));
+        setAvatarSeed({
+          id: u.id,
+          email: u.email,
+          fullName: u.fullName
+        });
+
+        setAvatarPreview(
+          normalizeAvatarUrl(u.avatarUrl) ||
+          buildDefaultAvatarUrl({
+            id: u.id,
+            email: u.email,
+            fullName: u.fullName
+          })
+        );
+
       } catch (e) {
         console.log("Load profile failed:", e);
         setError("Load profile failed. Check console/network.");
@@ -109,6 +140,63 @@ const EditMentorProfilePage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+  const onPickAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image is too large. Max 5MB.");
+      return;
+    }
+
+    setError("");
+
+    // preview ngay
+    const previewUrl = URL.createObjectURL(file);
+    setAvatarPreview(previewUrl);
+
+    try {
+      setIsUploadingAvatar(true);
+
+      // 1) upload file -> lấy url
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadRes = await axiosClient.post("/api/File/upload/avatar", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      const avatarUrl = uploadRes?.data?.data?.fileUrls?.[0];
+      if (!avatarUrl) throw new Error("Upload returned empty avatarUrl");
+
+      // 2) lưu url vào DB
+      await axiosClient.put("/api/User/avatar", { avatarUrl });
+
+      // 3) update local form + preview theo url thật
+      setForm((prev) => ({ ...prev, avatarUrl }));
+      setAvatarPreview(
+        normalizeAvatarUrl(avatarUrl) ||
+        buildDefaultAvatarUrl(avatarSeed)
+      );
+
+    } catch (err) {
+      console.log("Upload avatar failed:", err);
+      setError(err?.response?.data?.message || "Upload avatar failed.");
+      // fallback về avatar cũ trong form
+      setAvatarPreview(
+        normalizeAvatarUrl(form.avatarUrl) ||
+        buildDefaultAvatarUrl(avatarSeed)
+      );
+
+    } finally {
+      setIsUploadingAvatar(false);
+      e.target.value = "";
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -195,6 +283,51 @@ const EditMentorProfilePage = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar Section */}
+          <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                <img
+                  src={avatarPreview}
+                  alt="avatar"
+                  className="w-24 h-24 rounded-full object-cover border-2 border-neutral-200 dark:border-neutral-800"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = buildDefaultAvatarUrl(avatarSeed);
+                  }}
+                />
+
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onPickAvatar}
+                />
+
+                <button
+                  type="button"
+                  onClick={openFilePicker}
+                  disabled={isUploadingAvatar}
+                  className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
+                  title="Change avatar"
+                >
+                  <HiCamera className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div>
+                <h3 className="font-medium text-neutral-900 dark:text-white">
+                  {form.fullName}
+                </h3>
+                {isUploadingAvatar && (
+                  <div className="text-xs text-neutral-500 mt-1">Uploading...</div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* User info */}
           <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-6">
             <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
