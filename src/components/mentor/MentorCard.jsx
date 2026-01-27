@@ -26,7 +26,6 @@ const MentorCard = ({ mentor }) => {
             alt={name} 
             className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-neutral-800 shadow-sm"
           />
-          <span className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-900 ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></span>
         </div>
         
         <div className="flex flex-col items-end">

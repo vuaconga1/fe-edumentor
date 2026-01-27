@@ -1,10 +1,11 @@
 
 import { Outlet } from 'react-router-dom';
 import SidebarLayout from './SidebarLayout';
-import { Search, MessageCircle, UsersRound, Wallet, History, UserCircle } from 'lucide-react';
+import { Home, Search, MessageCircle, UsersRound, Wallet, History, UserCircle } from 'lucide-react';
 
 // Student menu with links and icons
 const STUDENT_MENU = [
+  { label: "Home", href: "/student", icon: Home },
   { label: "Find Mentor", href: "/student/find-mentor", icon: Search },
   { label: "My Profile", href: "/student/profile", icon: UserCircle },
   { label: "Community", href: "/student/community", icon: UsersRound },

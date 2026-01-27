@@ -265,10 +265,6 @@ const FindMentorPage = () => {
                     className="w-14 h-14 rounded-xl object-cover border-2 border-white dark:border-neutral-800 shadow-sm group-hover:scale-105 transition-transform"
                     onError={(e) => (e.currentTarget.src = DEFAULT_AVATAR)}
                   />
-                  <span
-                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-neutral-900 ${mentor.isOnline ? "bg-green-500" : "bg-neutral-400"
-                      }`}
-                  />
                 </div>
                 <div className="flex items-center gap-1 px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                   <HiStar className="w-4 h-4 text-yellow-500 fill-yellow-500" />

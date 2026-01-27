@@ -6,11 +6,14 @@ import {
   HiPlus,
   HiPencil,
   HiTrash,
-  HiSearch,
+  HiFilter,
   HiX,
   HiChevronDown,
+  HiEye,
+  HiRefresh,
 } from "react-icons/hi";
 import adminApi from "../../api/adminApi";
+import ActionButton from "../../components/admin/ActionButton";
 
 const EMPTY_FORM = { name: "", description: "", parentId: "" };
 
@@ -22,9 +25,11 @@ function flattenTree(nodes = [], level = 0, out = []) {
   return out;
 }
 
-// for edit: exclude itself (basic)
+// for edit: exclude itself and only allow root categories as parents (prevent 3+ levels)
 function buildParentOptions(flat, editingId) {
-  return flat.filter((c) => c.id !== editingId);
+  return flat.filter((c) => 
+    c.id !== editingId && c.parentId === null // only root categories can be parents
+  );
 }
 
 export default function CategoriesPage() {
@@ -33,6 +38,8 @@ export default function CategoriesPage() {
 
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [query, setQuery] = useState("");
+  const [filterParent, setFilterParent] = useState("all");
+  const [filterChild, setFilterChild] = useState("all");
 
   const [openModal, setOpenModal] = useState(false);
   const [mode, setMode] = useState("create"); // create | edit
@@ -73,18 +80,56 @@ export default function CategoriesPage() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return flatAll;
     return flatAll.filter((c) => {
-      const name = (c.name ?? "").toLowerCase();
-      const desc = (c.description ?? "").toLowerCase();
-      return name.includes(q) || desc.includes(q);
+      // Search filter
+      if (q) {
+        const name = (c.name ?? "").toLowerCase();
+        const desc = (c.description ?? "").toLowerCase();
+        if (!name.includes(q) && !desc.includes(q)) return false;
+      }
+      
+      // Cascading parent-child filter
+      if (filterParent !== "all") {
+        // If parent selected, show parent itself and its children
+        const parentId = Number(filterParent);
+        const isParent = c.id === parentId;
+        const isChildOfParent = c.parentId === parentId;
+        
+        if (!isParent && !isChildOfParent) return false;
+        
+        // If specific child is selected
+        if (filterChild !== "all") {
+          const childId = Number(filterChild);
+          if (c.id !== childId && c.id !== parentId) return false;
+        }
+      }
+      
+      return true;
     });
-  }, [flatAll, query]);
+  }, [flatAll, query, filterParent, filterChild]);
 
   const parentOptions = useMemo(
     () => buildParentOptions(flatAll, mode === "edit" ? editingId : null),
     [flatAll, mode, editingId]
   );
+
+  // Root categories for filter dropdown
+  const rootCategories = useMemo(
+    () => flatAll.filter((c) => c.parentId === null),
+    [flatAll]
+  );
+
+  // Children of selected parent for child filter dropdown
+  const childrenOfSelectedParent = useMemo(() => {
+    if (filterParent === "all") return [];
+    const parentId = Number(filterParent);
+    return flatAll.filter((c) => c.parentId === parentId);
+  }, [flatAll, filterParent]);
+
+  // Reset child filter when parent changes
+  useEffect(() => {
+    setFilterChild("all");
+  }, [filterParent]);
 
   const openCreate = () => {
     setMode("create");
@@ -99,9 +144,9 @@ export default function CategoriesPage() {
     setSaving(true);
     setApiError("");
     try {
-      const res = await adminApi.getCategoryDetail(id).getById(id);
+      const res = await adminApi.getCategoryDetail(id);
       const c = res?.data?.data;
-      // CategoryResponseDto has id,name,description,parentId,parentName,children :contentReference[oaicite:11]{index=11}
+      // CategoryResponseDto has id,name,description,parentId,parentName,children
       setForm({
         name: c?.name ?? "",
         description: c?.description ?? "",
@@ -129,22 +174,46 @@ export default function CategoriesPage() {
       return;
     }
 
+    // prepare payload
+    const payload = {
+      name,
+      description: form.description?.trim() || null,
+      parentId: form.parentId === "" ? null : Number(form.parentId),
+    };
+
+    // Validate: parent must be root category (cannot nest beyond 2 levels)
+    if (payload.parentId !== null) {
+      const selectedParent = flatAll.find((c) => c.id === payload.parentId);
+      if (selectedParent && selectedParent.parentId !== null) {
+        setApiError("Cannot nest beyond 2 levels. Selected parent is already a child category.");
+        return;
+      }
+    }
+
+    // Duplicate check (case-insensitive, same parent)
+    const normalized = name.toLowerCase();
+    const parentKey = payload.parentId === null ? "" : String(payload.parentId);
+    const exists = flatAll.some((c) => {
+      const cName = String(c.name || "").trim().toLowerCase();
+      const cParent = c.parentId === null || c.parentId === undefined ? "" : String(c.parentId);
+      // when editing, ignore the current item
+      if (mode === "edit" && c.id === editingId) return false;
+      return cName === normalized && cParent === parentKey;
+    });
+
+    if (exists) {
+      setApiError("A category with the same name already exists under the selected parent.");
+      return;
+    }
+
     setSaving(true);
     setApiError("");
     try {
-      const payload = {
-        // CreateCategoryRequest/UpdateCategoryRequest: name required, description, parentId :contentReference[oaicite:12]{index=12} :contentReference[oaicite:13]{index=13}
-        name,
-        description: form.description?.trim() || null,
-        parentId: form.parentId === "" ? null : Number(form.parentId),
-      };
-
       if (mode === "create") {
-        await adminApi.createCategory(payload).create(payload);
+        await adminApi.createCategory(payload);
       } else {
-        await adminApi.updateCategory(id, payload).update(editingId, payload);
+        await adminApi.updateCategory(editingId, payload);
       }
-
       await fetchCategories();
       closeModal();
     } catch (err) {
@@ -160,7 +229,7 @@ export default function CategoriesPage() {
 
     setApiError("");
     try {
-      await adminApi.deleteCategory(id); // DELETE /api/Admin/categories/{categoryId} :contentReference[oaicite:14]{index=14}
+      await adminApi.deleteCategory(id); // DELETE /api/admin/categories/{categoryId}
       await fetchCategories();
     } catch (err) {
       setApiError(err?.response?.data?.message || "Delete failed");
@@ -168,38 +237,76 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white">
-            Categories
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Manage mentor expertise categories (CRUD)
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Categories</h1>
+          <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+            Manage mentor expertise categories {flatAll.length > 0 && `(${flatAll.length} total)`}
           </p>
         </div>
 
         <button
           onClick={openCreate}
-          className="inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-semibold shadow-lg shadow-primary-600/20"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
         >
-          <HiPlus className="w-5 h-5" />
+          <HiPlus className="w-4 h-4" />
           New Category
         </button>
       </div>
 
-      {/* Search bar */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4">
-        <div className="relative">
-          <HiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by name or description..."
-            className="w-full pl-12 pr-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all outline-none"
-          />
-        </div>
+      {/* Filters */}
+      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        <HiFilter className="w-5 h-5 text-neutral-400" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search by name or description..."
+          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
+        />
+        <select
+          value={filterParent}
+          onChange={(e) => setFilterParent(e.target.value)}
+          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+        >
+          <option value="all">All Categories</option>
+          {rootCategories.map((cat) => (
+            <option key={cat.id} value={String(cat.id)}>
+              {cat.name}
+            </option>
+          ))}
+        </select>
+        {filterParent !== "all" && childrenOfSelectedParent.length > 0 && (
+          <select
+            value={filterChild}
+            onChange={(e) => setFilterChild(e.target.value)}
+            className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="all">All Children</option>
+            {childrenOfSelectedParent.map((child) => (
+              <option key={child.id} value={String(child.id)}>
+                {child.name}
+              </option>
+            ))}
+          </select>
+        )}
+        {(query || filterParent !== "all" || filterChild !== "all") && (
+          <button
+            onClick={() => { setQuery(""); setFilterParent("all"); setFilterChild("all"); }}
+            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+          >
+            Clear filters
+          </button>
+        )}
+        <button
+          onClick={fetchCategories}
+          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+          title="Refresh"
+        >
+          <HiRefresh className="w-5 h-5 text-neutral-500" />
+        </button>
       </div>
 
       {apiError && (
@@ -210,68 +317,60 @@ export default function CategoriesPage() {
 
       {/* Table */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-        <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">
-            Total: <span className="font-semibold">{flatAll.length}</span>
-          </div>
-          {loading && <div className="text-sm text-neutral-400">Loading...</div>}
-        </div>
-
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead className="bg-neutral-50 dark:bg-neutral-800/60">
-              <tr className="text-left text-xs font-semibold text-neutral-600 dark:text-neutral-300">
-                <th className="px-5 py-3">Name</th>
-                <th className="px-5 py-3">Description</th>
-                <th className="px-5 py-3">Parent</th>
-                <th className="px-5 py-3 text-right">Actions</th>
+              <tr className="text-left text-sm font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
+                <th className="px-6 py-4">ID</th>
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Description</th>
+                <th className="px-6 py-4">Parent</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {!loading && filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-10 text-center text-neutral-500 dark:text-neutral-400">
+                  <td colSpan={5} className="px-5 py-10 text-center text-neutral-500 dark:text-neutral-400">
                     No categories found.
                   </td>
                 </tr>
               ) : (
                 filtered.map((c) => (
                   <tr key={c.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-mono text-neutral-500">#{c.id}</span>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {/* indent for tree */}
                         <div style={{ width: c.__level * 14 }} />
-                        <span className="font-semibold text-neutral-900 dark:text-white">
+                        <span className="font-medium text-neutral-900 dark:text-white">
                           {c.name}
                         </span>
                       </div>
-                      <div className="text-xs text-neutral-400 mt-0.5">
-                        ID: {c.id}
-                      </div>
                     </td>
-                    <td className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-300">
+                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-300">
                       {c.description || <span className="text-neutral-400">—</span>}
                     </td>
-                    <td className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-300">
+                    <td className="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-300">
                       {c.parentName || <span className="text-neutral-400">—</span>}
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionButton
+                          icon={<HiPencil className="w-4 h-4" />}
+                          tooltip="Edit Category"
                           onClick={() => openEdit(c.id)}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
-                        >
-                          <HiPencil className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
+                          variant="info"
+                        />
+                        <ActionButton
+                          icon={<HiTrash className="w-4 h-4" />}
+                          tooltip="Delete Category"
                           onClick={() => onDelete(c.id)}
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                        >
-                          <HiTrash className="w-4 h-4" />
-                          Delete
-                        </button>
+                          variant="danger"
+                        />
                       </div>
                     </td>
                   </tr>
@@ -332,7 +431,7 @@ export default function CategoriesPage() {
                   <select
                     value={form.parentId}
                     onChange={(e) => setForm((p) => ({ ...p, parentId: e.target.value }))}
-                    className="w-full appearance-none px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-700 dark:text-neutral-200 outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">No parent (root)</option>
                     {parentOptions.map((c) => (
@@ -342,10 +441,9 @@ export default function CategoriesPage() {
                       </option>
                     ))}
                   </select>
-                  <HiChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 w-5 h-5" />
                 </div>
                 <div className="text-xs text-neutral-400 mt-2">
-                  (parentId nullable theo API) :contentReference[oaicite:15]{index=15}
+                  Leave empty for root category
                 </div>
               </div>
 

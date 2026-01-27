@@ -48,25 +48,6 @@ const DataTable = ({
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      {searchable && (
-        <div className="flex items-center justify-between gap-4">
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder={searchPlaceholder}
-            className="w-full max-w-xs px-4 py-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500"
-          />
-          <p className="text-sm text-neutral-500">
-            {filteredData.length} results
-          </p>
-        </div>
-      )}
-
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-800">
         <table className="w-full">
@@ -76,7 +57,7 @@ const DataTable = ({
                 <th
                   key={col.key}
                   onClick={() => col.sortable !== false && handleSort(col.key)}
-                  className={`px-4 py-3 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wide ${
+                  className={`px-6 py-4 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide ${
                     col.sortable !== false ? 'cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300' : ''
                   } ${col.className || ''}`}
                 >
@@ -101,7 +82,7 @@ const DataTable = ({
                   className={`bg-white dark:bg-neutral-900 ${onRowClick ? 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50' : ''} transition-colors`}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={`px-4 py-3 text-sm ${col.className || ''}`}>
+                    <td key={col.key} className={`px-6 py-4 text-sm ${col.className || ''}`}>
                       {col.render ? col.render(row[col.key], row) : row[col.key]}
                     </td>
                   ))}
@@ -109,7 +90,7 @@ const DataTable = ({
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-neutral-500">
+                <td colSpan={columns.length} className="px-6 py-12 text-center text-neutral-500">
                   {emptyMessage}
                 </td>
               </tr>

@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { HiEye, HiFilter, HiCheck, HiX } from "react-icons/hi";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { HiEye, HiFilter, HiCheck, HiX, HiRefresh } from "react-icons/hi";
 import DataTable from "../../components/admin/DataTable";
 import Modal from "../../components/admin/Modal";
+import ActionButton from "../../components/admin/ActionButton";
 import adminApi from "../../api/adminApi";
 const TransactionsPage = () => {
   // ===== DATA FROM API =====
@@ -15,6 +16,8 @@ const TransactionsPage = () => {
 
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
 
   // ===== VERIFY MODAL =====
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
@@ -72,6 +75,12 @@ const TransactionsPage = () => {
     };
   }, [pageNumber, pageSize, filterStatus, filterType]);
 
+  // Debounce searchKeyword
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedKeyword(searchKeyword), 400);
+    return () => clearTimeout(handler);
+  }, [searchKeyword]);
+
   // ===== FILTER (client fallback, in case BE doesn't filter) =====
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -82,9 +91,16 @@ const TransactionsPage = () => {
         String(tx.status).toLowerCase() !== filterStatus
       )
         return false;
+      // Search filter
+      if (debouncedKeyword) {
+        const keyword = debouncedKeyword.toLowerCase();
+        const userName = String(tx.userName || "").toLowerCase();
+        const txId = String(tx.id || "").toLowerCase();
+        if (!userName.includes(keyword) && !txId.includes(keyword)) return false;
+      }
       return true;
     });
-  }, [transactions, filterType, filterStatus]);
+  }, [transactions, filterType, filterStatus, debouncedKeyword]);
 
   const handleView = (tx) => {
     setSelectedTx(tx);
@@ -286,39 +302,36 @@ const TransactionsPage = () => {
 
         return (
           <div className="flex items-center justify-end gap-1">
-            <button
+            <ActionButton
+              icon={<HiEye className="w-4 h-4" />}
+              tooltip="View Details"
               onClick={(e) => {
-                e.stopPropagation();
+                e?.stopPropagation?.();
                 handleView(row);
               }}
-              className="p-2 rounded-lg text-neutral-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-              title="View details"
-            >
-              <HiEye className="w-4 h-4" />
-            </button>
+              variant="info"
+            />
 
             {isPending ? (
               <>
-                <button
+                <ActionButton
+                  icon={<HiCheck className="w-4 h-4" />}
+                  tooltip="Approve Transaction"
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e?.stopPropagation?.();
                     openVerify(row, true);
                   }}
-                  className="p-2 rounded-lg text-neutral-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
-                  title="Approve"
-                >
-                  <HiCheck className="w-4 h-4" />
-                </button>
-                <button
+                  variant="success"
+                />
+                <ActionButton
+                  icon={<HiX className="w-4 h-4" />}
+                  tooltip="Reject Transaction"
                   onClick={(e) => {
-                    e.stopPropagation();
+                    e?.stopPropagation?.();
                     openVerify(row, false);
                   }}
-                  className="p-2 rounded-lg text-neutral-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Reject"
-                >
-                  <HiX className="w-4 h-4" />
-                </button>
+                  variant="danger"
+                />
               </>
             ) : null}
           </div>
@@ -364,6 +377,13 @@ const TransactionsPage = () => {
       {/* Filters */}
       <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
         <HiFilter className="w-5 h-5 text-neutral-400" />
+        <input
+          type="text"
+          value={searchKeyword}
+          onChange={(e) => setSearchKeyword(e.target.value)}
+          placeholder="Search by user or transaction ID..."
+          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
+        />
 
         <select
           value={filterType}
@@ -389,21 +409,25 @@ const TransactionsPage = () => {
           <option value="failed">Failed</option>
         </select>
 
-        {(filterType !== "all" || filterStatus !== "all") && (
+        {(filterType !== "all" || filterStatus !== "all" || searchKeyword) && (
           <button
             onClick={() => {
               setFilterType("all");
               setFilterStatus("all");
+              setSearchKeyword("");
             }}
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
           >
             Clear filters
           </button>
         )}
-
-        <div className="ml-auto text-sm text-neutral-500">
-          {loading ? "Loading..." : `${filteredTransactions.length} results`}
-        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+          title="Refresh"
+        >
+          <HiRefresh className="w-5 h-5 text-neutral-500" />
+        </button>
       </div>
 
       {/* Error */}
