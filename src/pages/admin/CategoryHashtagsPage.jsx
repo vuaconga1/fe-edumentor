@@ -4,9 +4,9 @@ import React, { useEffect, useState, useMemo } from "react";
 import {
   HiPlus,
   HiTrash,
-  HiFilter,
   HiX,
   HiChevronDown,
+  HiChevronUp,
   HiRefresh,
   HiHashtag,
   HiEye,
@@ -38,6 +38,7 @@ export default function CategoryHashtagsPage() {
   const [editModal, setEditModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Fetch all data
   const fetchData = async () => {
@@ -237,7 +238,7 @@ export default function CategoryHashtagsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* API Error */}
       {apiError && (
         <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg bg-red-500 text-white">
@@ -246,16 +247,16 @@ export default function CategoryHashtagsPage() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Category-Hashtag Mapping</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Category-Hashtag Mapping</h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-            Map hashtags to categories for relevant post notifications {flatMappings.length > 0 && `(${flatMappings.length} mappings)`}
+            Map hashtags to categories {flatMappings.length > 0 && `(${flatMappings.length} mappings)`}
           </p>
         </div>
         <button
           onClick={() => setOpenModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full sm:w-auto"
         >
           <HiPlus className="w-4 h-4" />
           Add Mapping
@@ -263,56 +264,96 @@ export default function CategoryHashtagsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search category or hashtag..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Categories</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {"─".repeat(c.__level || 0)} {c.name}
-            </option>
-          ))}
-        </select>
-        {(query || filterCategory !== "all") && (
-          <button
-            onClick={clearFilters}
-            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+      <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search category or hashtag..."
+            className="flex-1 min-w-0 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          
+          {/* Desktop filters */}
+          <div className="hidden lg:flex items-center gap-3">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {"─".repeat(c.__level || 0)} {c.name}
+                </option>
+              ))}
+            </select>
+            {(query || filterCategory !== "all") && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:underline whitespace-nowrap"
+              >
+                <HiX className="w-4 h-4" />
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Mobile filter toggle */}
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
           >
-            Clear Filters
+            {showFilters ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
+            <span className="hidden sm:inline">Filters</span>
           </button>
+
+          <button onClick={fetchData} className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors" title="Refresh">
+            <HiRefresh className="w-5 h-5 text-neutral-500" />
+          </button>
+        </div>
+
+        {/* Mobile filters dropdown */}
+        {showFilters && (
+          <div className="lg:hidden mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700 space-y-3">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {"─".repeat(c.__level || 0)} {c.name}
+                </option>
+              ))}
+            </select>
+            {(query || filterCategory !== "all") && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+              >
+                <HiX className="w-4 h-4" />
+                Clear all filters
+              </button>
+            )}
+          </div>
         )}
-        <ActionButton
-          icon={HiRefresh}
-          color="gray"
-          title="Refresh"
-          onClick={fetchData}
-        />
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-800">
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">Total Categories</div>
-          <div className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{categories.length}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white dark:bg-neutral-900 rounded-xl p-3 sm:p-4 border border-neutral-200 dark:border-neutral-800">
+          <div className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Total Categories</div>
+          <div className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mt-1">{categories.length}</div>
         </div>
-        <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-800">
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">Total Hashtags</div>
-          <div className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{hashtags.length}</div>
+        <div className="bg-white dark:bg-neutral-900 rounded-xl p-3 sm:p-4 border border-neutral-200 dark:border-neutral-800">
+          <div className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Total Hashtags</div>
+          <div className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mt-1">{hashtags.length}</div>
         </div>
-        <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-800">
-          <div className="text-sm text-neutral-500 dark:text-neutral-400">Total Mappings</div>
-          <div className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">{flatMappings.length}</div>
+        <div className="bg-white dark:bg-neutral-900 rounded-xl p-3 sm:p-4 border border-neutral-200 dark:border-neutral-800">
+          <div className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">Total Mappings</div>
+          <div className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white mt-1">{flatMappings.length}</div>
         </div>
       </div>
 

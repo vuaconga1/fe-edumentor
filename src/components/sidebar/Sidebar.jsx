@@ -39,12 +39,12 @@ export default function Sidebar({ menu = [], collapsed, onToggle }) {
           alt="logo"
         />
         {!collapsed && (
-          <span className="font-bold text-neutral-900 dark:text-white truncate">EduMentor</span>
+          <span className="text-lg font-bold text-neutral-900 dark:text-white truncate">EduMentor</span>
         )}
       </a>
 
       {/* Menu items */}
-      <nav className="flex-1 mt-4 space-y-1 overflow-y-auto px-2">
+      <nav className="flex-1 mt-4 space-y-1 overflow-y-auto px-2 scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent hover:scrollbar-thumb-neutral-400 dark:hover:scrollbar-thumb-neutral-600">
         {menu.map((item, index) => (
           <SidebarItem
             key={index}

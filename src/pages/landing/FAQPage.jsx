@@ -139,41 +139,6 @@ const FAQPage = () => {
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative p-12 md:p-16 rounded-3xl overflow-hidden">
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 to-neutral-800 dark:from-neutral-800 dark:to-neutral-900"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600/20 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl"></div>
-
-            <div className="relative z-10 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-                Still have questions?
-              </h2>
-              <p className="text-neutral-300 mb-8 max-w-xl mx-auto">
-                Can't find the answer you're looking for? Our friendly support team is here to help.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a 
-                  href="mailto:support@edumentor.com"
-                  className="px-8 py-4 bg-white text-neutral-900 font-semibold rounded-xl hover:bg-neutral-100 transition-all duration-300 hover:scale-105"
-                >
-                  Contact Support
-                </a>
-                <Link 
-                  to="/#contact"
-                  className="px-8 py-4 text-white font-semibold rounded-xl border border-white/20 hover:bg-white/10 transition-all duration-300"
-                >
-                  Send a Message
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

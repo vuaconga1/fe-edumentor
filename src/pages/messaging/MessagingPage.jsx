@@ -110,298 +110,36 @@ const MessagingPage = () => {
     if (!token) return;
     if (hubStartedRef.current) return;
 
-    hubStartedRef.current = true;
-
     let offReceive;
-    let offOnlineUsers;
-    let offUserOnline;
-    let offUserOffline;
-
-    let offActionPopup;
-    let offActionSent;
-    let offActionState;
-    let offSessionStarted;
-    let offSessionPaused;
-    let offSessionEnded;
-    let offActionRejected;
 
     (async () => {
-      try {
-        await startChatHub(BASE_URL, token);
-        setHubReady(true);
+      await startChatHub(BASE_URL, token);
 
-        // ===== ReceiveMessage (keep your mapping + avoid duplicates) =====
-        offReceive = on("ReceiveMessage", (msg) => {
-          const cid = Number(
-            msg.conversationId ?? msg.conversationID ?? msg.conversation_id
-          );
-          if (!cid) return;
+      offReceive = on("ReceiveMessage", (msg) => {
+        // ✅ chỉ add nếu đúng room đang mở
+        if ((msg.conversationId ?? msg.conversationID) !== activeConversationId) return;
 
-          // only append if current opened conversation
-          if (cid !== Number(activeConversationIdRef.current)) return;
-
-          const senderId = Number(
-            msg.senderId ?? msg.senderID ?? msg.userId ?? msg.userID
-          );
-          const myId = Number(currentUserIdRef.current);
-          const type = Number(msg.messageType ?? msg.type ?? 0);
-
-          const mapped = {
-            ...msg,
-            conversationId: cid,
-            senderId,
-            messageType: type,
-            isOwn: myId && senderId === myId,
-            content: type === 1 || type === 2 ? toAbsolute(msg.content) : msg.content,
-          };
-
-          setMessages((prev) => {
-            const list = Array.isArray(prev) ? prev : [];
-
-            const newId = msg.id ?? msg.messageId;
-
-            // 1) nếu có id thật và đã tồn tại -> skip
-            if (newId && list.some((m) => String(m.id ?? m.messageId) === String(newId))) {
-              return list;
-            }
-
-            // 2) nếu là file/image -> replace temp tương ứng (tránh 2 tin)
-            const type = Number(mapped.messageType ?? 0);
-            const isFileOrImage = type === 1 || type === 2;
-
-            if (isFileOrImage) {
-              const idx = list.findIndex((m) => {
-                const mid = String(m.id ?? "");
-                if (!mid.startsWith("temp-")) return false;
-
-                const sameConv = Number(m.conversationId) === Number(mapped.conversationId);
-                const sameOwn = !!m.isOwn === !!mapped.isOwn;
-
-                // so sánh URL/content sau normalize
-                const sameContent = String(m.content ?? "") === String(mapped.content ?? "");
-
-                // nếu có attachments/files thì so thêm
-                const sameFiles =
-                  JSON.stringify(m.files ?? m.attachments ?? []) ===
-                  JSON.stringify(mapped.files ?? mapped.attachments ?? []);
-
-                return sameConv && sameOwn && (sameContent || sameFiles);
-              });
-
-              if (idx >= 0) {
-                const next = [...list];
-                next[idx] = {
-                  ...mapped,
-                  // giữ isOwn theo local nếu server không set
-                  isOwn: next[idx].isOwn ?? mapped.isOwn,
-                };
-                return next;
-              }
-            }
-
-            // 3) default append
-            return [...list, mapped];
-          });
-
-        });
-
-        // ===== online presence listeners (keep yours) =====
-        offOnlineUsers = on("OnlineUsers", (onlineIds) => {
-          setConversations((prev) =>
-            (Array.isArray(prev) ? prev : []).map((c) => ({
-              ...c,
-              isParticipantOnline: (onlineIds || []).includes(Number(c.participantId)),
-            }))
-          );
-        });
-
-        offUserOnline = on("UserOnline", (userId) => {
-          setConversations((prev) =>
-            (Array.isArray(prev) ? prev : []).map((c) =>
-              Number(c.participantId) === Number(userId)
-                ? { ...c, isParticipantOnline: true }
-                : c
-            )
-          );
-        });
-
-        offUserOffline = on("UserOffline", (userId) => {
-          setConversations((prev) =>
-            (Array.isArray(prev) ? prev : []).map((c) =>
-              Number(c.participantId) === Number(userId)
-                ? { ...c, isParticipantOnline: false }
-                : c
-            )
-          );
-        });
-
-        // ===== WORK: popup to confirm (Start/Pause/End) =====
-        offActionPopup = on("WorkActionPopup", (payload) => {
-          console.log("WorkActionPopup payload:", payload);
-
-          const conversationId = payload?.conversationId;
-          if (conversationId && conversationId !== activeConversationIdRef.current) return;
-
-          const rid = String(payload?.requestId ?? "").trim();
-          const actionType = String(payload?.actionType || "").toLowerCase();
-
-          if (!rid) {
-            console.error("WorkActionPopup missing requestId!", payload);
-            return;
-          }
-          if (!["start", "pause", "end"].includes(actionType)) return;
-
-          // ✅ store full payload (not only requestId)
-          setWorkActionPopup({
-            requestId: rid,
-            actionType,
-            raw: payload,
-          });
-        });
-
-
-        // ===== WORK: caller sent =====
-        offActionSent = on("WorkActionSent", (payload) => {
-          if (!payload?.actionType) return;
-          toast.info("Đã gửi yêu cầu, chờ xác nhận...");
-        });
-
-        // ===== WORK: group state pending (pause/end) =====
-        offActionState = on("WorkActionState", (payload) => {
-          const conversationId = Number(payload?.conversationId);
-          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
-
-          const status = String(payload?.status || payload?.state || "").toLowerCase();
-          const actionType = String(payload?.actionType || "").toLowerCase();
-
-          if (
-            (status.includes("pending") || status.includes("waiting")) &&
-            (actionType === "pause" || actionType === "end")
-          ) {
-            setWorkSession((prev) => {
-              if (!prev) return prev;
-              pendingSnapshotRef.current = prev;
-              return {
-                ...prev,
-                status: "pending",
-                pendingActionType: actionType,
-                pendingRequestId: payload?.requestId,
-              };
-            });
-          }
-        });
-
-        // ===== WORK: started -> show pinned running =====
-        offSessionStarted = on("WorkSessionStarted", (payload) => {
-          const conversationId = Number(payload?.conversationId);
-          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
-
-          setWorkSession({
-            status: "running",
-            sessionId: payload?.sessionId ?? payload?.id,
-            orderId: payload?.orderId,
-            startTime: payload?.startTime,
-            totalMinutes: 0,
-          });
-          pendingSnapshotRef.current = null;
-        });
-
-        // ===== WORK: paused -> show pinned paused =====
-        offSessionPaused = on("WorkSessionPaused", (payload) => {
-          const conversationId = Number(payload?.conversationId);
-          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
-
-          setWorkSession((prev) => ({
-            status: "paused",
-            sessionId: payload?.sessionId ?? payload?.id ?? prev?.sessionId,
-            orderId: payload?.orderId ?? prev?.orderId,
-            startTime: prev?.startTime,
-            totalMinutes: payload?.totalMinutes ?? prev?.totalMinutes ?? 0,
-          }));
-          pendingSnapshotRef.current = null;
-        });
-
-        // ===== WORK: ended -> hide pinned =====
-        offSessionEnded = on("WorkSessionEnded", (payload) => {
-          const conversationId = Number(payload?.conversationId);
-          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
-
-          setWorkSession(null);
-          pendingSnapshotRef.current = null;
-        });
-
-        // ===== WORK: rejected -> revert pinned snapshot =====
-        offActionRejected = on("WorkActionRejected", (payload) => {
-          const conversationId = Number(payload?.conversationId);
-          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
-
-          const snapshot = pendingSnapshotRef.current;
-          if (snapshot) setWorkSession({ ...snapshot });
-
-          pendingSnapshotRef.current = null;
-          toast.error("Yêu cầu đã bị từ chối.");
-        });
-      } catch (e) {
-        console.error("startChatHub failed", e);
-        hubStartedRef.current = false;
-        setHubReady(false);
-      }
+        setMessages(prev => Array.isArray(prev) ? [...prev, msg] : [msg]);
+      });
     })();
 
-    return () => {
-      offReceive?.();
-      offOnlineUsers?.();
-      offUserOnline?.();
-      offUserOffline?.();
+    return () => offReceive?.();
+  }, [token, activeConversationId]);
 
-      offActionPopup?.();
-      offActionSent?.();
-      offActionState?.();
-      offSessionStarted?.();
-      offSessionPaused?.();
-      offSessionEnded?.();
-      offActionRejected?.();
-
-      hubStartedRef.current = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
 
   // ===== switch conversation: leave old -> load history -> join room (keep your logic) =====
   useEffect(() => {
-    if (!activeConversationId) {
-      const prev = prevConversationIdRef.current;
-      if (prev) {
-        leaveConversation(prev).catch(() => { });
-        prevConversationIdRef.current = null;
-      }
-      setMessages([]);
-      setWorkSession(null); // ✅ reset pinned when exit conversation (will reload when enter)
-      setWorkActionPopup(null);
-      pendingSnapshotRef.current = null;
-      return;
-    }
+    if (!activeConversationId) return;
 
-    (async () => {
+    const loadMessages = async () => {
       try {
-        const prev = prevConversationIdRef.current;
-        if (prev && prev !== activeConversationId) {
-          await leaveConversation(prev);
-        }
-
-        // load history
         const res = await chatApi.getMessages(activeConversationId);
         const data = res?.data?.data;
 
-        // normalize về array
         let list = [];
-        if (Array.isArray(data)) {
-          list = data;
-        } else if (Array.isArray(data?.items)) {
-          list = data.items;
-        } else if (Array.isArray(data?.messages)) {
-          list = data.messages;
-        }
+        if (Array.isArray(data)) list = data;
+        else if (Array.isArray(data?.items)) list = data.items;
+        else if (Array.isArray(data?.messages)) list = data.messages;
 
         const normalized = (Array.isArray(list) ? list : []).map((m) => {
           const senderId = Number(m.senderId ?? m.senderID ?? m.userId ?? m.userID);
@@ -415,32 +153,15 @@ const MessagingPage = () => {
           };
         });
 
-        setMessages(normalized);
-
-        // join room
-        await joinConversation(activeConversationId);
-        prevConversationIdRef.current = activeConversationId;
       } catch (err) {
-        console.log("Switch conversation failed", err);
+        console.log("Load messages failed", err);
       }
-    })();
-  }, [activeConversationId, currentUserId]);
+    };
 
-  // ===== fetch online users once hub ready (keep your logic) =====
-  useEffect(() => {
-    if (!hubReady) return;
+    loadMessages();
+  }, [activeConversationId]);
 
-    const ids = (conversations || [])
-      .map((c) => c.participantId)
-      .filter(Boolean)
-      .map(Number);
 
-    const uniq = Array.from(new Set(ids));
-    if (uniq.length) getOnlineUsers(uniq);
-  }, [hubReady, conversations]);
-  useEffect(() => {
-    workActionPopupRef.current = workActionPopup;
-  }, [workActionPopup]);
   const activeConversation = conversations.find(
     (c) => (c.conversationId ?? c.id) === activeConversationId
   );
@@ -603,108 +324,23 @@ const MessagingPage = () => {
       },
     ]);
 
-    try {
-      const res = isImage
-        ? await fileApi.uploadChatImage(file)
-        : await fileApi.uploadChatFile(file);
+    // ✅ hiện liền (optimistic)
+    const temp = {
+      id: `temp-${Date.now()}`,
+      conversationId: activeConversationId,
+      content: text,
+      isOwn: true,
+      senderName: "You",
+      createdAt: new Date().toISOString(),
+    };
+    setMessages(prev => Array.isArray(prev) ? [...prev, temp] : [temp]);
 
-      const data = res?.data?.data;
-
-      const fileUrl =
-        data?.fileUrl ||
-        data?.url ||
-        (Array.isArray(data?.fileUrls) ? data.fileUrls[0] : null);
-
-      if (!fileUrl) throw new Error("Upload OK but missing fileUrl");
-
-      setMessages((prev) =>
-        (Array.isArray(prev) ? prev : []).map((m) =>
-          m.id === tempId ? { ...m, isUploading: false, content: toAbsolute(fileUrl) } : m
-        )
-      );
-
-      await hubSendMessage({
-        conversationId: activeConversationId,
-        messageType: isImage ? 1 : 2,
-        content: fileUrl, // relative
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      });
-
-      if (caption) {
-        await hubSendMessage({
-          conversationId: activeConversationId,
-          messageType: 0,
-          content: caption,
-        });
-      }
-    } catch (e) {
-      console.error("Send attachment failed", e);
-      setMessages((prev) =>
-        (Array.isArray(prev) ? prev : []).map((m) =>
-          m.id === tempId ? { ...m, isUploading: false, isError: true } : m
-        )
-      );
-    } finally {
-      if (localPreview) URL.revokeObjectURL(localPreview);
-    }
-  };
-
-  // ===== Work handlers (invoke hub wrapper) =====
-  // const handleStartWork = async () => {
-  //   console.log("activeConversation =", activeConversation);
-  //   console.log("workContext =", workContext);
-  //   const { orderId, mentorId, studentId } = workContext;
-  //   if (!orderId || !mentorId || !studentId) {
-  //     toast.error("Thiếu thông tin để bắt đầu phiên làm việc.");
-  //     return;
-  //   }
-
-  //   await requestStartWork(orderId, mentorId, studentId);
-  // };
-  const handleStartWork = async () => {
-    try {
-      console.log("FORCE start work", workContext);
-
-      await requestStartWork(
-        Number(workContext.conversationId || activeConversationId),
-        Number(workContext.orderId || 0),
-        Number(workContext.mentorId || 0),
-        Number(workContext.studentId || 0)
-      );
-    } catch (e) {
-      console.error("RequestStartWork failed", e);
-      toast.error("Start work failed (check server log)");
-    }
-  };
-
-  const handlePauseWork = async () => {
-    if (!workSession?.sessionId || !activeConversationId) return;
-    await requestPauseWork(activeConversationId, workSession.sessionId);
-  };
-
-  const handleEndWork = async () => {
-    if (!workSession?.sessionId || !activeConversationId) return;
-    await requestEndWork(activeConversationId, workSession.sessionId);
-  };
-  const handleRespondWorkAction = async (accept) => {
-    const rid = String(workActionPopup?.requestId ?? "").trim();
-    console.log("[ui] RespondWorkAction click:", { rid, accept, workActionPopup });
-
-    if (!rid) {
-      toast.error("Missing requestId (popup not ready).");
-      return;
-    }
-
-    try {
-      await respondWorkAction(rid, !!accept);
-    } catch (e) {
-      console.error("RespondWorkAction failed", e);
-      toast.error(e?.message || "RespondWorkAction failed");
-    } finally {
-      setWorkActionPopup(null);
-    }
+    // gửi lên server
+    await hubSendMessage({
+      conversationId: activeConversationId,
+      content: text,
+      messageType: 0,
+    });
   };
 
 
@@ -735,19 +371,8 @@ const MessagingPage = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-neutral-50 dark:bg-neutral-950">
-      {/* ✅ Modal confirm (for other user) */}
-      <WorkActionConfirmModal
-        isOpen={!!workActionPopup}
-        actionType={workActionPopup?.actionType}
-        onAccept={() => handleRespondWorkAction(true)}
-        onReject={() => handleRespondWorkAction(false)}
-      />
-
-      {/* LEFT: conversations */}
-      <div
-        className={`w-full md:w-80 lg:w-[340px] border-r border-neutral-200 dark:border-neutral-800 flex-shrink-0 ${activeConversationId ? "hidden md:block" : "block"
-          }`}
-      >
+      {/* LEFT: conversations - Ẩn trên mobile khi đang chat */}
+      <div className={`w-full md:w-80 lg:w-[340px] border-r border-neutral-200 dark:border-neutral-800 flex-shrink-0 ${activeConversationId ? 'hidden md:block' : 'block'}`}>
         <ConversationList
           conversations={conversations}
           activeConversationId={activeConversationId}
@@ -755,95 +380,16 @@ const MessagingPage = () => {
         />
       </div>
 
-      RIGHT: chat
-      <div className={`flex-1 min-w-0 ${!activeConversationId ? "hidden md:block" : "block"}`}>
-        {/* ✅ pinned top-middle (overlay). Only shows when session exists */}
-        <div className="relative h-full">
-          {workSession && (
-            <div
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-50 w-[360px] max-w-[90%]
-                         rounded-xl border border-neutral-200 dark:border-neutral-800
-                         bg-white/95 dark:bg-neutral-900/95 shadow-md backdrop-blur px-4 py-3"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    {workSession.status === "running" && "Đang làm việc"}
-                    {workSession.status === "paused" && "Đang tạm dừng"}
-                    {workSession.status === "pending" && "Chờ đối phương xác nhận..."}
-                  </div>
-                  <div className="text-lg font-mono text-neutral-900 dark:text-neutral-100">
-                    {formatHMS(elapsedSeconds)}
-                  </div>
-                  {workSession.status === "pending" && (
-                    <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                      ({workSession.pendingActionType === "pause" ? "Yêu cầu tạm dừng" : "Yêu cầu kết thúc"})
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {!workSession && (
-                    <button className="px-3 py-2 rounded-lg bg-neutral-900 text-white">
-                      Start
-                    </button>
-                  )}
-
-                  {workSession && (
-                    <>
-                      <button
-                        className="px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-800
-                                   text-sm text-neutral-900 dark:text-neutral-100
-                                   disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={handlePauseWork}
-                        disabled={workSession.status !== "running"}
-                        title="Pause (cần đối phương đồng ý)"
-                      >
-                        Pause
-                      </button>
-
-                      <button
-                        className="px-3 py-2 rounded-lg bg-neutral-900 text-white text-sm
-                                   disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={handleEndWork}
-                        disabled={workSession.status === "pending"}
-                        title="End (cần đối phương đồng ý)"
-                      >
-                        End
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <ChatWindow
-            conversation={activeConversation}
-            messages={messages}
-            onSend={handleSendText}       // ✅ text
-            onSendImage={handleSendImage} // ✅ image/file
-            onBack={() => setActiveConversationId(null)}
-            currentUserId={currentUserId}
-            // ✅ pass handlers down in case you want a Start button in ChatWindow header/menu
-            onStartWork={handleStartWork}
-            workSession={workSession}
-          />
-        </div>
+      {/* RIGHT: chat - Ẩn trên mobile khi chưa chọn conversation */}
+      <div className={`flex-1 min-w-0 ${!activeConversationId ? 'hidden md:block' : 'block'}`}>
+        <ChatWindow
+          conversation={activeConversation}
+          messages={messages}
+          onSend={handleSend}
+          currentUserId={currentUserId}
+          onBack={() => setActiveConversationId(null)}
+        />
       </div>
-
-      {/* Mobile overlay */}
-      {activeConversation && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-neutral-950 md:hidden flex flex-col animate-in slide-in-from-right-full duration-300">
-          <ChatWindow
-            conversation={activeConversation}
-            messages={messages}
-            currentUserId={currentUserId}
-            onSend={handleSend}
-            onBack={() => setActiveConversationId(null)}
-          />
-        </div>
-      )}
     </div>
   );
 };

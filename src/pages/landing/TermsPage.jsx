@@ -229,30 +229,6 @@ Our total liability won't exceed what you paid us in the 12 months before your c
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <section className="py-16 px-4 border-t border-neutral-200 dark:border-neutral-800">
-        <div className="max-w-3xl mx-auto">
-          <div className="p-6 bg-neutral-50 dark:bg-neutral-900 rounded-2xl text-center">
-            <p className="text-neutral-600 dark:text-neutral-400 mb-4">
-              By using EduMentor, you acknowledge that you've read and agree to these Terms of Service.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link to="/privacy" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-                Privacy Policy
-              </Link>
-              <span className="text-neutral-300 dark:text-neutral-700">•</span>
-              <Link to="/faq" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-                FAQ
-              </Link>
-              <span className="text-neutral-300 dark:text-neutral-700">•</span>
-              <a href="mailto:legal@edumentor.com" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-                Contact Legal
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 };

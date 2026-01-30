@@ -9,7 +9,6 @@ export default function FlowbiteLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [googleError, setGoogleError] = useState('');
   const [showResend, setShowResend] = useState(false);
@@ -19,10 +18,13 @@ export default function FlowbiteLogin() {
   // Check for Google OAuth error or token from URL
   React.useEffect(() => {
     const urlError = searchParams.get('error');
+    const cancelled = searchParams.get('cancelled');
     const token = searchParams.get('token');
     const refreshToken = searchParams.get('refreshToken');
 
-    if (urlError) {
+    if (cancelled === 'true') {
+      setGoogleError('Google login was cancelled. Please try again.');
+    } else if (urlError) {
       setGoogleError(decodeURIComponent(urlError));
     }
 
@@ -56,7 +58,7 @@ export default function FlowbiteLogin() {
   const handleGoogleLogin = () => {
     setGoogleError('');
     // Redirect to backend Google OAuth endpoint
-    window.location.href = 'https://localhost:7082/api/Auth/google-login';
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/Auth/google-login`;
   };
 
   const handleResendVerification = async () => {
@@ -89,7 +91,7 @@ export default function FlowbiteLogin() {
     }
 
     try {
-      const res = await authAPI.login({ email, password, rememberMe });
+      const res = await authAPI.login({ email, password });
 
       const token =
         res.data?.data?.token ||
@@ -164,14 +166,16 @@ export default function FlowbiteLogin() {
         <div className="w-full max-w-xs sm:max-w-md">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <img src="/edumentor-logo.png" alt="EduMentor Logo" className="w-10 h-10 object-contain mr-3" />
-            <span className="text-2xl font-bold text-white drop-shadow-lg">EduMentor</span>
+            <a className="flex items-center gap-2 group" href="/" data-discover="true">
+              <img className="h-8 sm:h-10 transition-transform group-hover:scale-105" alt="EduMentor Logo" src="/edumentor-logo.png" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-sky-500 bg-clip-text text-transparent">EduMentor</span>
+            </a>
           </div>
 
           {/* Login Form Card */}
           <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8">
             <h1 className="text-2xl font-bold text-gray-900 text-center mb-8">
-              Sign in to your account
+              Sign in
             </h1>
 
             {/* Success Message */}
@@ -279,17 +283,8 @@ export default function FlowbiteLogin() {
                 </div>
               )}
 
-              {/* Remember Me & Forgot Password */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Remember me</span>
-                </label>
+              {/* Forgot Password */}
+              <div className="flex items-center justify-end">
                 <Link to="/forgot-password" className="text-blue-600 hover:underline text-sm">
                   Forgot password?
                 </Link>
@@ -300,7 +295,7 @@ export default function FlowbiteLogin() {
                 type="submit"
                 className="w-full bg-blue-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
               >
-                Log in to your account
+                Sign In
               </button>
 
               {/* Sign Up Link */}

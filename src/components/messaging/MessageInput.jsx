@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, Send } from "lucide-react";
 import ActionPopup from "./ActionPopup";
 import ActionModals from "./ActionModals";
@@ -6,9 +6,8 @@ import ActionModals from "./ActionModals";
 /**
  * Props:
  * - onSend: (text: string) => void | Promise<void>
- *  * - onStartWork: () => void | Promise<void>
  */
-export default function MessageInput({ onSend, onStartWork }) {
+export default function MessageInput({ onSend }) {
   const [message, setMessage] = useState("");
   const [showActionPopup, setShowActionPopup] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
@@ -18,14 +17,20 @@ export default function MessageInput({ onSend, onStartWork }) {
     inputRef.current?.focus();
   }, []);
 
-  const handleSendText = () => {
-    if (!message.trim()) return;
-    if (typeof onSend === "function") onSend(message.trim());
-    setMessage("");
-    inputRef.current?.focus();
+  const handleSendText = async () => {
+    const text = message.trim();
+    if (!text) return;
+
+    try {
+      await onSend?.(text); // ✅ gọi đúng prop
+      setMessage("");
+      inputRef.current?.focus();
+    } catch (e) {
+      console.error("Send failed", e);
+    }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendText();
@@ -38,15 +43,12 @@ export default function MessageInput({ onSend, onStartWork }) {
   };
 
   const handleSubmitAction = async (type, data) => {
-    if (type === "start-work") {
-      await onStartWork?.(data);
-    }
     // nếu mày muốn gửi system message thì làm ở đây
     setActiveModal(null);
   };
 
   return (
-    <div className="relative px-4 py-3 bg-transparent dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 transition-colors">
+    <div className="relative px-4 py-3 bg-white dark:bg-neutral-900 transition-colors">
       <ActionPopup
         isOpen={showActionPopup}
         onClose={() => setShowActionPopup(false)}
@@ -62,13 +64,13 @@ export default function MessageInput({ onSend, onStartWork }) {
 
       <div className="flex items-end gap-2 max-w-4xl mx-auto">
         <button
+          type="button"
           onClick={() => setShowActionPopup(!showActionPopup)}
           className={`
             flex-shrink-0 p-2.5 rounded-full transition-all duration-200
             ${showActionPopup
               ? "bg-blue-100 text-blue-600 rotate-45 dark:bg-blue-900/40 dark:text-blue-400"
-              : "hover:bg-neutral-100 text-neutral-500 dark:hover:bg-neutral-800 dark:text-neutral-400"
-            }
+              : "hover:bg-neutral-100 text-neutral-500 dark:hover:bg-neutral-800 dark:text-neutral-400"}
           `}
           title="Add action"
         >
@@ -81,21 +83,21 @@ export default function MessageInput({ onSend, onStartWork }) {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown} // ✅ dùng onKeyDown
             placeholder="Type a message..."
             className="w-full px-5 py-3 bg-neutral-100 dark:bg-neutral-950 border border-transparent focus:border-blue-500/50 rounded-2xl text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
           />
         </div>
 
         <button
+          type="button"
           onClick={handleSendText}
           disabled={!message.trim()}
           className={`
             flex-shrink-0 p-3 rounded-full transition-all duration-200 shadow-sm
             ${message.trim()
               ? "bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105 active:scale-95"
-              : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"
-            }
+              : "bg-neutral-200 dark:bg-neutral-800 text-neutral-400 cursor-not-allowed"}
           `}
         >
           <Send size={20} className={message.trim() ? "ml-0.5" : ""} />
@@ -103,6 +105,4 @@ export default function MessageInput({ onSend, onStartWork }) {
       </div>
     </div>
   );
-};
-
-export default MessageInput;
+}

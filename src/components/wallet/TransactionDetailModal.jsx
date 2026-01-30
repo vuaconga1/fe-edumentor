@@ -1,5 +1,7 @@
 import React from 'react';
 import { X, ArrowUpRight, ArrowDownLeft, Clock, User } from 'lucide-react';
+import { getRoleName } from '../../utils/userRole';
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
 
 const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
   if (!isOpen || !transaction) return null;
@@ -119,17 +121,21 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
                   </div>
                 ) : (
                   <img
-                    src={details.counterparty.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'}
+                    src={normalizeAvatarUrl(details.counterparty.avatarUrl || details.counterparty.avatar) || buildDefaultAvatarUrl({ id: details.counterparty.id, fullName: details.counterparty.name })}
                     alt={details.counterparty.name}
                     className="w-10 h-10 rounded-lg object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildDefaultAvatarUrl({ id: details.counterparty.id, fullName: details.counterparty.name });
+                    }}
                   />
                 )}
                 <div>
                   <p className="font-medium text-neutral-900 dark:text-white text-sm">
                     {details.counterparty.isAnonymous ? 'Anonymous User' : details.counterparty.name}
                   </p>
-                  {!details.counterparty.isAnonymous && details.counterparty.role && (
-                    <p className="text-xs text-neutral-500">{details.counterparty.role}</p>
+                  {!details.counterparty.isAnonymous && details.counterparty.role != null && (
+                    <p className="text-xs text-neutral-500">{getRoleName(details.counterparty.role)}</p>
                   )}
                 </div>
               </div>

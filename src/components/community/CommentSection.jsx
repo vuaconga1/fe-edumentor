@@ -1,51 +1,100 @@
-import React, { useState } from 'react';
-import { Send, MoreHorizontal, Smile } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, MoreHorizontal, Smile, Loader2 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
+import communityApi from '../../api/communityApi';
 
 const CommentSection = ({ postId }) => {
-  // Mock Data cho comment (Sau này lấy từ API dựa vào postId)
-  const [comments, setComments] = useState([
-    {
-      id: 1,
-      user: {
-        name: "Alex Johnson",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80",
-        role: "Developer"
-      },
-      content: "Great post! I've been struggling with this for a while. Thanks for sharing.",
-      time: "1 hour ago"
-    },
-    {
-      id: 2,
-      user: {
-        name: "Maria Garcia",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80",
-        role: "Designer"
-      },
-      content: "Could you share more about the tool you mentioned in the second paragraph?",
-      time: "30 mins ago"
-    }
-  ]);
+  const { user: currentUser } = useAuth();
 
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [inputValue, setInputValue] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-
-    // Giả lập thêm comment mới
-    const newComment = {
-      id: Date.now(),
-      user: {
-        name: "You", // Tên user hiện tại
-        avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=150&q=80",
-        role: "Student"
-      },
-      content: inputValue,
-      time: "Just now"
+  // Fetch comments from API
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (!postId) return;
+      setLoading(true);
+      try {
+        const res = await communityApi.getComments(postId);
+        if (res?.data?.data) {
+          // Map API response to component format
+          const mappedComments = res.data.data.map(c => ({
+            id: c.id,
+            user: {
+              id: c.authorId,
+              name: c.authorName || 'Unknown',
+              avatar: c.authorAvatar,
+              isMentor: c.isAuthorMentor
+            },
+            content: c.content,
+            time: formatTime(c.createdAt)
+          }));
+          setComments(mappedComments);
+        }
+      } catch (err) {
+        console.error('Failed to fetch comments:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+    fetchComments();
+  }, [postId]);
 
-    setComments([newComment, ...comments]); // Đưa comment mới lên đầu
-    setInputValue("");
+  // Format time
+  const formatTime = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  // Get current user's avatar
+  const currentUserAvatar = currentUser?.avatar || buildDefaultAvatarUrl({
+    id: currentUser?.id,
+    email: currentUser?.email,
+    fullName: currentUser?.name || 'User'
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputValue.trim() || submitting) return;
+
+    setSubmitting(true);
+    try {
+      const res = await communityApi.createComment(postId, { content: inputValue.trim() });
+      if (res?.data?.data) {
+        const c = res.data.data;
+        const newComment = {
+          id: c.id,
+          user: {
+            id: c.authorId,
+            name: c.authorName || currentUser?.name || 'You',
+            avatar: c.authorAvatar || currentUser?.avatar,
+            isMentor: c.isAuthorMentor
+          },
+          content: c.content,
+          time: 'Just now'
+        };
+        setComments([newComment, ...comments]);
+        setInputValue("");
+      }
+    } catch (err) {
+      console.error('Failed to create comment:', err);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -54,9 +103,13 @@ const CommentSection = ({ postId }) => {
       {/* --- INPUT FORM --- */}
       <div className="flex gap-3 mb-6">
         <img 
-          src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=150&q=80" 
+          src={currentUserAvatar}
           alt="My Avatar" 
           className="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 mt-1"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = buildDefaultAvatarUrl({ id: currentUser?.id, fullName: currentUser?.name });
+          }}
         />
         <div className="flex-1">
           <form onSubmit={handleSubmit} className="relative group">
@@ -75,10 +128,10 @@ const CommentSection = ({ postId }) => {
                </button>
                <button 
                  type="submit"
-                 disabled={!inputValue.trim()}
-                 className={`p-1.5 rounded-full transition-colors ${inputValue.trim() ? 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer' : 'text-neutral-300 cursor-not-allowed'}`}
+                 disabled={!inputValue.trim() || submitting}
+                 className={`p-1.5 rounded-full transition-colors ${inputValue.trim() && !submitting ? 'text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 cursor-pointer' : 'text-neutral-300 cursor-not-allowed'}`}
                >
-                  <Send size={18} />
+                  {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                </button>
             </div>
           </form>
@@ -86,13 +139,24 @@ const CommentSection = ({ postId }) => {
       </div>
 
       {/* --- COMMENT LIST --- */}
-      <div className="space-y-4">
+      {loading ? (
+        <div className="flex items-center justify-center py-4">
+          <Loader2 size={24} className="animate-spin text-neutral-400" />
+        </div>
+      ) : comments.length === 0 ? (
+        <p className="text-center text-sm text-neutral-500 py-4">No comments yet. Be the first to comment!</p>
+      ) : (
+        <div className="space-y-4">
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-3 group">
             <img 
-              src={comment.user.avatar} 
+              src={normalizeAvatarUrl(comment.user.avatarUrl || comment.user.avatar) || buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name })} 
               alt={comment.user.name} 
               className="w-8 h-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-800 mt-1"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name });
+              }}
             />
             <div className="flex-1">
               {/* Bubble Content */}
@@ -123,7 +187,8 @@ const CommentSection = ({ postId }) => {
             </button>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
