@@ -14,6 +14,13 @@ const handlers = {
   OnlineUsers: new Set(),
   NewMessageNotification: new Set(),
   Error: new Set(),
+  WorkActionPopup: new Set(),
+  WorkActionSent: new Set(),
+  WorkActionState: new Set(),
+  WorkSessionStarted: new Set(),
+  WorkSessionPaused: new Set(),
+  WorkSessionEnded: new Set(),
+  WorkActionRejected: new Set(),
 };
 
 // ===== Start Hub (safe, no race) =====
@@ -33,7 +40,7 @@ export async function startChatHub(baseUrl, token) {
   if (stoppingPromise) {
     try {
       await stoppingPromise;
-    } catch {}
+    } catch { }
   }
 
   connection = new signalR.HubConnectionBuilder()
@@ -72,7 +79,7 @@ export async function stopChatHub() {
   if (startingPromise) {
     try {
       await startingPromise;
-    } catch {}
+    } catch { }
   }
 
   if (stoppingPromise) return stoppingPromise;
@@ -101,8 +108,15 @@ function ensureConnected() {
   if (!connection) {
     throw new Error("ChatHub not started. Call startChatHub() first.");
   }
+
+  if (connection.state !== signalR.HubConnectionState.Connected) {
+
+    return null;
+  }
+
   return connection;
 }
+
 
 // ===== Hub invokes =====
 export function joinConversation(id) {
@@ -135,10 +149,46 @@ export function markAsRead(conversationId) {
     Number(conversationId)
   );
 }
-
 export function getOnlineUsers(userIds) {
+  const conn = ensureConnected();
+  if (!conn) return Promise.resolve(); // hub chưa ready → bỏ qua
+  return conn.invoke("GetOnlineUsers", userIds.map(Number));
+}
+export const requestStartWork = (conversationId, orderId, mentorId, studentId) => {
+  return connection.invoke(
+    "RequestStartWork",
+    Number(conversationId),
+    Number(orderId),
+    Number(mentorId),
+    Number(studentId)
+  );
+};
+
+export function requestPauseWork(conversationId, sessionId) {
   return ensureConnected().invoke(
-    "GetOnlineUsers",
-    userIds.map(Number)
+    "RequestPauseWork",
+    Number(conversationId),
+    Number(sessionId)
   );
 }
+
+export function requestEndWork(conversationId, sessionId) {
+  return ensureConnected().invoke(
+    "RequestEndWork",
+    Number(conversationId),
+    Number(sessionId)
+  );
+}
+
+export const respondWorkAction = (requestId, accept) => {
+  const rid = String(requestId ?? "").trim();
+  console.log("[hub] RespondWorkAction invoke args:", { rid, accept });
+
+  // ❗ nếu rid rỗng thì stop ngay (tránh gọi server)
+  if (!rid) throw new Error("Missing requestId");
+
+  // ✅ đúng signature BE: (string requestId, bool accept)
+  return connection.invoke("RespondWorkAction", rid, Boolean(accept));
+};
+
+

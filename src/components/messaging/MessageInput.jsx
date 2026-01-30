@@ -3,7 +3,12 @@ import { Plus, Send } from "lucide-react";
 import ActionPopup from "./ActionPopup";
 import ActionModals from "./ActionModals";
 
-const MessageInput = ({ onSend }) => {
+/**
+ * Props:
+ * - onSend: (text: string) => void | Promise<void>
+ *  * - onStartWork: () => void | Promise<void>
+ */
+export default function MessageInput({ onSend, onStartWork }) {
   const [message, setMessage] = useState("");
   const [showActionPopup, setShowActionPopup] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
@@ -32,9 +37,11 @@ const MessageInput = ({ onSend }) => {
     setActiveModal(actionType);
   };
 
-  const handleSubmitAction = (type, data) => {
-    // hiện tại cứ đóng modal, phần action mày muốn gửi kiểu gì thì handle sau
-    console.log("Action:", type, data);
+  const handleSubmitAction = async (type, data) => {
+    if (type === "start-work") {
+      await onStartWork?.(data);
+    }
+    // nếu mày muốn gửi system message thì làm ở đây
     setActiveModal(null);
   };
 

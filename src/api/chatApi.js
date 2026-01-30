@@ -1,6 +1,7 @@
 import axiosClient from "./axios";
 
 const chatApi = {
+  
   getConversations() {
     return axiosClient.get("/api/Chat/conversations");
   },
@@ -13,6 +14,7 @@ const chatApi = {
       orderId,
     });
   },
+  
 
   getMessages(conversationId, { pageNumber = 1, pageSize = 30 } = {}) {
     return axiosClient.get(`/api/Chat/conversations/${conversationId}/messages`, {
