@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { HiX, HiUpload, HiTrash, HiCheck } from "react-icons/hi";
+import React, { useState, useEffect, useRef } from "react";
+import { HiX, HiUpload, HiTrash, HiCheck, HiChevronDown } from "react-icons/hi";
 import axios from "axios";
 import mentorApi from "../../api/mentorApi";
+import axiosClient from "../../api/axios";
 import { toast } from "react-toastify";
 
 // Helper to upload files directly since we don't have a dedicated fileApi yet
@@ -12,7 +13,7 @@ const uploadCertifications = async (files) => {
     });
 
     const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || "https://localhost:7082"}/api/File/upload/certifications`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/File/upload/certifications`,
         formData,
         {
             headers: {
@@ -32,16 +33,150 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
         introduction: "",
         portfolioUrl: "",
         applicationNote: "",
+        categoryIds: [],
+        hashtagIds: [],
     });
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Dropdown states
+    const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+    const [hashtagDropdownOpen, setHashtagDropdownOpen] = useState(false);
+    const categoryDropdownRef = useRef(null);
+    const hashtagDropdownRef = useRef(null);
+
+    // Categories and hashtags from API
+    const [categories, setCategories] = useState([]);
+    const [hashtags, setHashtags] = useState([]);
+    const [categoryHashtagMap, setCategoryHashtagMap] = useState({}); // Map category ID to hashtag IDs
+    const [loadingData, setLoadingData] = useState(false);
+
+    // Fetch categories, hashtags and their mappings when modal opens
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const fetchData = async () => {
+            setLoadingData(true);
+            try {
+                const [catRes, hashRes, mapRes] = await Promise.all([
+                    axiosClient.get("/api/Admin/categories"),
+                    axiosClient.get("/api/Admin/hashtags"),
+                    axiosClient.get("/api/Admin/category-hashtags"),
+                ]);
+                
+                const categoriesData = catRes?.data?.data || [];
+                const hashtagsData = hashRes?.data?.data?.items || [];
+                const mappingsData = mapRes?.data?.data || [];
+                
+                setCategories(categoriesData);
+                setHashtags(hashtagsData);
+                
+                // Build map: categoryId -> [hashtagIds]
+                const map = {};
+                mappingsData.forEach(mapping => {
+                    if (!map[mapping.categoryId]) {
+                        map[mapping.categoryId] = [];
+                    }
+                    // mapping.hashtags is an array of hashtag objects
+                    if (mapping.hashtags && Array.isArray(mapping.hashtags)) {
+                        mapping.hashtags.forEach(hashtag => {
+                            map[mapping.categoryId].push(hashtag.id);
+                        });
+                    }
+                });
+                setCategoryHashtagMap(map);
+            } catch (err) {
+                console.error("Failed to fetch categories/hashtags:", err);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+        fetchData();
+    }, [isOpen]);
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+                setCategoryDropdownOpen(false);
+            }
+            if (hashtagDropdownRef.current && !hashtagDropdownRef.current.contains(event.target)) {
+                setHashtagDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     if (!isOpen) return null;
+
+    // Filter hashtags based on selected categories
+    const availableHashtags = formData.categoryIds.length > 0
+        ? hashtags.filter(tag => {
+            // Check if this hashtag belongs to any selected category
+            const belongs = formData.categoryIds.some(catId => {
+                const hashtagIds = categoryHashtagMap[catId] || [];
+                return hashtagIds.includes(tag.id);
+            });
+            return belongs;
+        })
+        : [];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const toggleCategory = (catId) => {
+        setFormData((prev) => {
+            const isSelected = prev.categoryIds.includes(catId);
+            
+            // Check max limit when adding
+            if (!isSelected && prev.categoryIds.length >= 5) {
+                setError("You can select maximum 5 categories");
+                setTimeout(() => setError(""), 3000);
+                return prev;
+            }
+            
+            const newCategoryIds = isSelected
+                ? prev.categoryIds.filter(id => id !== catId)
+                : [...prev.categoryIds, catId];
+            
+            // Filter out hashtags that don't belong to newly selected categories
+            const validHashtagIds = newCategoryIds.length > 0
+                ? prev.hashtagIds.filter(hashId => 
+                    newCategoryIds.some(id => categoryHashtagMap[id]?.includes(hashId))
+                )
+                : [];
+            
+            return {
+                ...prev,
+                categoryIds: newCategoryIds,
+                hashtagIds: validHashtagIds,
+            };
+        });
+    };
+
+    const toggleHashtag = (hashId) => {
+        setFormData((prev) => {
+            const isSelected = prev.hashtagIds.includes(hashId);
+            
+            // Check max limit
+            if (!isSelected && prev.hashtagIds.length >= 5) {
+                setError("You can select maximum 5 hashtags");
+                setTimeout(() => setError(""), 3000);
+                return prev;
+            }
+            
+            return {
+                ...prev,
+                hashtagIds: isSelected
+                    ? prev.hashtagIds.filter(id => id !== hashId)
+                    : [...prev.hashtagIds, hashId],
+            };
+        });
     };
 
     const handleFileChange = (e) => {
@@ -90,6 +225,10 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
             setError("Introduction must be at least 50 characters.");
             return;
         }
+        if (formData.categoryIds.length === 0) {
+            setError("Please select at least one category.");
+            return;
+        }
 
         setLoading(true);
         setError("");
@@ -97,19 +236,31 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
         try {
             // 1. Upload files
             const uploadRes = await uploadCertifications(files);
-            const uploadedUrls = uploadRes.data.fileUrls; // Adjust based on API response structure
+            console.log("Upload response:", uploadRes);
+            // uploadCertifications returns response.data, so uploadRes is the API response body
+            // API response structure: { success, message, data: { fileUrls: [...] } }
+            const uploadedUrls = uploadRes?.data?.fileUrls || uploadRes?.fileUrls;
+            console.log("Extracted fileUrls:", uploadedUrls);
 
             if (!uploadedUrls || uploadedUrls.length === 0) {
-                throw new Error("File upload failed");
+                throw new Error("File upload failed - no URLs returned");
             }
 
             // 2. Submit application
             const payload = {
-                ...formData,
-                experienceYears: parseInt(formData.experienceYears),
+                specialization: formData.specialization,
+                experienceYears: parseInt(formData.experienceYears, 10),
+                introduction: formData.introduction,
+                portfolioUrl: formData.portfolioUrl,
                 certificationUrls: uploadedUrls.join(","),
+                applicationNote: formData.applicationNote || "",
+                categoryIds: formData.categoryIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id),
+                hashtagIds: formData.hashtagIds.length > 0 
+                    ? formData.hashtagIds.map(id => typeof id === 'string' ? parseInt(id, 10) : id) 
+                    : [],
             };
 
+            console.log("Submitting payload:", payload);
             await mentorApi.apply(payload);
 
             toast.success("Application submitted successfully!", {
@@ -206,6 +357,170 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                             placeholder="https://..."
                             className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
                         />
+                    </div>
+
+                    {/* Categories */}
+                    <div className="space-y-2" ref={categoryDropdownRef}>
+                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            Categories / Expertise Areas <span className="text-red-500">*</span>
+                        </label>
+                        <p className="text-xs text-neutral-500 mb-2">
+                            Select the categories you can mentor in. Students will be matched based on these.
+                        </p>
+                        {loadingData ? (
+                            <div className="text-sm text-neutral-500">Loading categories...</div>
+                        ) : (
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                                    className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between"
+                                >
+                                    <span className="text-sm">
+                                        {formData.categoryIds.length === 0 
+                                            ? "Select categories..." 
+                                            : `${formData.categoryIds.length}/5 selected`}
+                                    </span>
+                                    <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                
+                                {categoryDropdownOpen && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        {categories.map((cat) => (
+                                            <label
+                                                key={cat.id}
+                                                className="flex items-center px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.categoryIds.includes(cat.id)}
+                                                    onChange={() => toggleCategory(cat.id)}
+                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="ml-3 text-sm text-neutral-700 dark:text-neutral-300">
+                                                    {cat.name}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {formData.categoryIds.length > 0 && (
+                            <div className="space-y-2">
+                                <p className="text-xs text-blue-600 dark:text-blue-400">
+                                    {formData.categoryIds.length}/5 categories selected
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.categoryIds.map(catId => {
+                                        const cat = categories.find(c => c.id === catId);
+                                        return cat ? (
+                                            <span
+                                                key={catId}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full"
+                                            >
+                                                {cat.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleCategory(catId)}
+                                                    className="hover:text-blue-900 dark:hover:text-blue-200"
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Hashtags */}
+                    <div className="space-y-2" ref={hashtagDropdownRef}>
+                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            Hashtags / Specific Skills (Optional)
+                        </label>
+                        <p className="text-xs text-neutral-500 mb-2">
+                            {formData.categoryIds.length > 0 
+                                ? "Select specific skills related to your chosen categories (max 5)."
+                                : "Please select categories first to see available hashtags."}
+                        </p>
+                        {loadingData ? (
+                            <div className="text-sm text-neutral-500">Loading hashtags...</div>
+                        ) : formData.categoryIds.length === 0 ? (
+                            <div className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-center">
+                                <p className="text-sm text-neutral-500">Select categories first</p>
+                            </div>
+                        ) : (
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setHashtagDropdownOpen(!hashtagDropdownOpen)}
+                                    disabled={availableHashtags.length === 0}
+                                    className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span className="text-sm">
+                                        {formData.hashtagIds.length === 0 
+                                            ? "Select hashtags..." 
+                                            : `${formData.hashtagIds.length}/5 selected`}
+                                    </span>
+                                    <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${hashtagDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+                                
+                                {hashtagDropdownOpen && availableHashtags.length > 0 && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                        {availableHashtags.map((tag) => (
+                                            <label
+                                                key={tag.id}
+                                                className={`flex items-center px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer ${
+                                                    formData.hashtagIds.length >= 5 && !formData.hashtagIds.includes(tag.id) 
+                                                        ? 'opacity-50 cursor-not-allowed' 
+                                                        : ''
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.hashtagIds.includes(tag.id)}
+                                                    onChange={() => toggleHashtag(tag.id)}
+                                                    disabled={formData.hashtagIds.length >= 5 && !formData.hashtagIds.includes(tag.id)}
+                                                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                                />
+                                                <span className="ml-3 text-sm text-neutral-700 dark:text-neutral-300">
+                                                    #{tag.name}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {formData.hashtagIds.length > 0 && (
+                            <div className="space-y-2">
+                                <p className={`text-xs ${formData.hashtagIds.length >= 5 ? 'text-orange-600 font-medium' : 'text-blue-600 dark:text-blue-400'}`}>
+                                    {formData.hashtagIds.length}/5 hashtags selected {formData.hashtagIds.length >= 5 && "(Maximum reached)"}
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.hashtagIds.map(hashId => {
+                                        const tag = hashtags.find(h => h.id === hashId);
+                                        return tag ? (
+                                            <span
+                                                key={hashId}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full"
+                                            >
+                                                #{tag.name}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleHashtag(hashId)}
+                                                    className="hover:text-blue-900 dark:hover:text-blue-200"
+                                                >
+                                                    ×
+                                                </button>
+                                            </span>
+                                        ) : null;
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Introduction */}

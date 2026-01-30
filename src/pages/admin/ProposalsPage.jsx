@@ -115,7 +115,7 @@ export default function ProposalsPage() {
                         onClick={() => setShowFilters(!showFilters)}
                         className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm text-neutral-700 dark:text-neutral-300"
                     >
-                        {showFilters ? <HiChevronUp className="w-4 h-4" /> : <HiChevronDown className="w-4 h-4" />}
+                        {showFilters ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
                         <span className="hidden sm:inline">Filters</span>
                     </button>
 

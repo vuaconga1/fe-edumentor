@@ -5,6 +5,8 @@ import { HiCog, HiLogout, HiUser } from "react-icons/hi";
 import userProfileApi from "../../api/userProfile";
 import { useUIContext } from "../../context/UIContext";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import { UserRole, getRoleName } from "../../utils/userRole";
+
 export default function ProfileDropdown() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,16 +40,26 @@ export default function ProfileDropdown() {
       fullName: user?.fullName
     });
 
-
+  // ✅ Xác định profile path dựa trên ROLE thực từ API, không dựa vào URL
   const getProfilePath = () => {
-    if (location.pathname.startsWith("/mentor")) return "/mentor/profile";
-    if (location.pathname.startsWith("/student")) return "/student/profile";
-    return "/student/profile";
+    if (!user) return "/student/profile"; // fallback
+    
+    const role = user.role;
+    if (role === UserRole.Admin || role === 2) return "/admin/profile";
+    if (role === UserRole.Mentor || role === 1) return "/mentor/profile";
+    if (role === UserRole.Student || role === 0) return "/student/profile";
+    
+    return "/student/profile"; // fallback
   };
 
   const getChangePasswordPath = () => {
-    if (location.pathname.startsWith("/mentor")) return "/mentor/change-password";
-    if (location.pathname.startsWith("/student")) return "/student/change-password";
+    if (!user) return "/change-password";
+    
+    const role = user.role;
+    if (role === UserRole.Admin || role === 2) return "/admin/change-password";
+    if (role === UserRole.Mentor || role === 1) return "/mentor/change-password";
+    if (role === UserRole.Student || role === 0) return "/student/change-password";
+    
     return "/change-password";
   };
 
@@ -59,6 +71,20 @@ export default function ProfileDropdown() {
   return (
     <Dropdown
       inline
+      arrowIcon={() => (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className="ml-2 h-5 w-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.293 7.293a1 1 0 0 1 1.414 0L10 10.586l3.293-3.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 0 1 0-1.414z"
+            clipRule="evenodd"
+          />
+        </svg>
+      )}
       label={
         <img
           src={avatar}
@@ -91,7 +117,7 @@ export default function ProfileDropdown() {
 
       <DropdownDivider className="border-neutral-200 dark:border-neutral-800" />
 
-      <DropdownItem icon={HiLogout} className="text-red-600" onClick={handleLogout}>
+      <DropdownItem icon={HiLogout} className="text-red-600 dark:text-red-600" onClick={handleLogout}>
         Logout
       </DropdownItem>
     </Dropdown>

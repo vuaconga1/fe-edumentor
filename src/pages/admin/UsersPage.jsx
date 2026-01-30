@@ -7,6 +7,7 @@ import ActionButton from '../../components/admin/ActionButton';
 import AdminFilterBar from '../../components/admin/AdminFilterBar';
 import adminApi from '../../api/adminApi';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import { getRoleName } from '../../utils/userRole';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,14 +40,6 @@ const UsersPage = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL; // https://localhost:7082
-
-  const normalizeAvatarUrl = (url) => {
-    if (!url) return null;
-    if (url.startsWith("http")) return url;
-    const cleaned = url.startsWith("/") ? url : `/${url}`;
-    return API_BASE ? `${API_BASE}${cleaned}` : cleaned;
-  };
   // Form data for Create/Update
   const [formData, setFormData] = useState({
     fullName: '',
@@ -785,7 +778,7 @@ function mapUser(apiUser) {
               <div>
                 <label className="block text-sm font-medium text-neutral-500 mb-1">Role</label>
                 <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getRoleColor(viewingUser.role)}`}>
-                  {viewingUser.role}
+                  {getRoleName(viewingUser.role)}
                 </span>
               </div>
               <div>

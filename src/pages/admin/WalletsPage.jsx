@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { HiEye, HiRefresh, HiChevronDown, HiChevronUp, HiX } from "react-icons/hi";
 import adminApi from "../../api/adminApi";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 export default function WalletsPage() {
     const [loading, setLoading] = useState(true);
@@ -83,7 +84,7 @@ export default function WalletsPage() {
                         onClick={() => setShowFilters(!showFilters)}
                         className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300"
                     >
-                        {showFilters ? <HiChevronUp className="w-4 h-4" /> : <HiChevronDown className="w-4 h-4" />}
+                        {showFilters ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
                         <span className="hidden sm:inline">Filters</span>
                         {hasActiveFilters && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
                     </button>
@@ -140,7 +141,15 @@ export default function WalletsPage() {
                                             <td className="px-6 py-4 text-sm font-mono">#{w.id}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={w.userAvatarUrl || "/avatar-default.jpg"} alt="" className="w-8 h-8 rounded-full object-cover" />
+                                                    <img 
+                                                        src={normalizeAvatarUrl(w.userAvatarUrl) || buildDefaultAvatarUrl({ id: w.userId, fullName: w.userName, email: w.userEmail })} 
+                                                        alt="" 
+                                                        className="w-8 h-8 rounded-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.onerror = null;
+                                                            e.currentTarget.src = buildDefaultAvatarUrl({ id: w.userId, fullName: w.userName, email: w.userEmail });
+                                                        }}
+                                                    />
                                                     <div>
                                                         <p className="text-sm font-medium text-neutral-900 dark:text-white">{w.userName || "—"}</p>
                                                         <p className="text-xs text-neutral-500">{w.userEmail}</p>

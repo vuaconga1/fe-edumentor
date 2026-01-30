@@ -260,7 +260,7 @@ const OrderHistoryPage = () => {
             >
               <span>{statusConfig[filterStatus]?.label}</span>
               <HiChevronDown
-                className={`w-4 h-4 text-neutral-400 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${isDropdownOpen ? "rotate-180" : ""
                   }`}
               />
             </button>

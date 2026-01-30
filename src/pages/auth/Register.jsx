@@ -33,7 +33,7 @@ const Register = () => {
   const handleGoogleSignup = () => {
     setGoogleError('');
     // Redirect to backend Google OAuth endpoint for registration
-    window.location.href = 'https://localhost:7082/api/Auth/google-login?mode=register';
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/api/Auth/google-login?mode=register`;
   };
 
   const getPasswordStrength = (password) => {
@@ -167,14 +167,10 @@ const Register = () => {
         <div className="w-full max-w-xs sm:max-w-md">
           {/* Logo */}
           <div className="flex items-center justify-center mb-8">
-            <img
-              src="/edumentor-logo.png"
-              alt="EduMentor Logo"
-              className="w-10 h-10 object-contain mr-3"
-            />
-            <span className="text-2xl font-bold text-white drop-shadow-lg">
-              EduMentor
-            </span>
+            <a className="flex items-center gap-2 group" href="/" data-discover="true">
+              <img className="h-8 sm:h-10 transition-transform group-hover:scale-105" alt="EduMentor Logo" src="/edumentor-logo.png" />
+              <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-sky-500 bg-clip-text text-transparent">EduMentor</span>
+            </a>
           </div>
 
           {/* Register Form Card */}
@@ -399,7 +395,7 @@ const Register = () => {
                     </svg>
                     Processing...
                   </span>
-                ) : 'Create Account'}
+                ) : 'Sign Up'}
               </button>
 
               {/* Login Link */}

@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import studentApi from "../../api/studentApi";
 import BecomeMentorBanner from "../../components/mentor/BecomeMentorBanner";
 import ApplyMentorModal from "../../components/mentor/ApplyMentorModal";
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const StudentHome = () => {
   const [loading, setLoading] = useState(true);
@@ -188,9 +189,13 @@ const StudentHome = () => {
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 <img
-                  src={session.avatar || session.mentorAvatar || "/avatar-default.jpg"}
+                  src={normalizeAvatarUrl(session.avatar || session.mentorAvatar) || buildDefaultAvatarUrl({ id: session.mentorId, fullName: session.mentor || session.mentorName })}
                   alt={session.mentor || session.mentorName || "Mentor"}
                   className="w-12 h-12 rounded-xl object-cover border-2 border-white dark:border-neutral-700 shadow-sm group-hover:scale-105 transition-transform"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = buildDefaultAvatarUrl({ id: session.mentorId, fullName: session.mentor || session.mentorName });
+                  }}
                 />
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-neutral-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -234,9 +239,13 @@ const StudentHome = () => {
               >
                 <div className="flex items-start gap-3 mb-3">
                   <img
-                    src={mentor.avatar || mentor.avatarUrl || "/avatar-default.jpg"}
+                    src={normalizeAvatarUrl(mentor.avatar || mentor.avatarUrl) || buildDefaultAvatarUrl({ id: mentor.id, fullName: mentor.name || mentor.fullName })}
                     alt={mentor.name || mentor.fullName || "Mentor"}
                     className="w-10 h-10 rounded-xl object-cover group-hover:scale-105 transition-transform"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildDefaultAvatarUrl({ id: mentor.id, fullName: mentor.name || mentor.fullName });
+                    }}
                   />
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-neutral-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -282,24 +291,6 @@ const StudentHome = () => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl p-6 md:p-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="text-white">
-            <h2 className="text-xl md:text-2xl font-bold mb-2">Need help?</h2>
-            <p className="text-primary-100">Our support team is always ready to help you 24/7</p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              to="/student/messaging"
-              className="inline-flex items-center gap-2 px-5 py-3 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-all duration-200 hover:scale-105"
-            >
-              <HiChat />
-              Message
-            </Link>
-          </div>
-        </div>
-      </div>
 
       <ApplyMentorModal
         isOpen={isApplyModalOpen}
