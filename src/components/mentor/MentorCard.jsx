@@ -1,12 +1,14 @@
 import React from 'react';
 import { Star, Clock, Users, ChevronRight, MessageCircle } from 'lucide-react';
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
 
 const MentorCard = ({ mentor }) => {
   // Mock data if no prop is provided for demo
   const {
+    id,
     name = "John Doe",
     title = "Senior Frontend Engineer @ Google",
-    avatar = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
+    avatarUrl,
     skills = ["React", "Node.js", "System Design"],
     rating = 4.9,
     reviews = 120,
@@ -15,6 +17,9 @@ const MentorCard = ({ mentor }) => {
     experience = "8 years",
     totalSessions = 245
   } = mentor || {};
+
+  // Normalize avatar URL or build default
+  const avatar = normalizeAvatarUrl(avatarUrl) || buildDefaultAvatarUrl({ id, fullName: name });
 
   return (
     <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -25,6 +30,10 @@ const MentorCard = ({ mentor }) => {
             src={avatar} 
             alt={name} 
             className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-neutral-800 shadow-sm"
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = buildDefaultAvatarUrl({ id, fullName: name });
+            }}
           />
         </div>
         

@@ -1,35 +1,37 @@
 import React, { useEffect, useState } from 'react';
-import { HiFilter, HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
+import { HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
 import Modal from '../../components/admin/Modal';
 import ActionButton from '../../components/admin/ActionButton';
+import AdminFilterBar from '../../components/admin/AdminFilterBar';
 import adminApi from '../../api/adminApi';
-
+import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import { getRoleName } from '../../utils/userRole';
 const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-  
+
   // Pagination
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  
+
   // Filters
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
-  
+
   // Modals
   const [isActionOpen, setIsActionOpen] = useState(false);
   const [actionType, setActionType] = useState(''); // 'activate', 'deactivate', 'ban', 'verify'
   const [actionReason, setActionReason] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   // CRUD Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -37,7 +39,7 @@ const UsersPage = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [viewingUser, setViewingUser] = useState(null);
-  
+
   // Form data for Create/Update
   const [formData, setFormData] = useState({
     fullName: '',
@@ -53,7 +55,7 @@ const UsersPage = () => {
     try {
       const roleParam = filterRole === 'all' ? null : mapRoleToAPI(filterRole);
       const statusParam = filterStatus === 'all' ? null : (filterStatus === 'active');
-      
+
       const res = await adminApi.getUsers({
         pageNumber,
         pageSize,
@@ -88,20 +90,26 @@ const UsersPage = () => {
   }, [pageNumber, pageSize, filterRole, filterStatus, debouncedKeyword]);
 
   // Map API data to display format
-  function mapUser(apiUser) {
-    return {
+function mapUser(apiUser) {
+  const normalized = normalizeAvatarUrl(apiUser.avatarUrl);
+
+  return {
+    id: apiUser.id,
+    name: apiUser.fullName,
+    email: apiUser.email,
+    avatar: normalized || buildDefaultAvatarUrl({
       id: apiUser.id,
-      name: apiUser.fullName,
       email: apiUser.email,
-      avatar: apiUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(apiUser.fullName)}&background=random`,
-      role: mapRoleFromAPI(apiUser.role),
-      status: apiUser.isActive ? "active" : "inactive",
-      isVerified: apiUser.isVerified,
-      sessionsCount: 0,
-      balance: 0,
-      createdAt: apiUser.createdAt || new Date().toISOString()
-    };
-  }
+      fullName: apiUser.fullName
+    }),
+    role: mapRoleFromAPI(apiUser.role),
+    status: apiUser.isActive ? "active" : "inactive",
+    isVerified: apiUser.isVerified,
+    sessionsCount: 0,
+    balance: 0,
+    createdAt: apiUser.createdAt || new Date().toISOString(),
+  };
+}
 
   function mapRoleFromAPI(role) {
     // Handle both enum number (0=Student, 1=Mentor, 2=Admin) and string
@@ -167,10 +175,10 @@ const UsersPage = () => {
     } catch (err) {
       console.error('Failed to create user', err);
       // Show detailed error message from backend
-      const errorMsg = err.response?.data?.message || 
-                       err.response?.data?.errors?.[0] || 
-                       'Failed to create user';
-      
+      const errorMsg = err.response?.data?.message ||
+        err.response?.data?.errors?.[0] ||
+        'Failed to create user';
+
       // Check if API endpoint doesn't exist (405 Method Not Allowed)
       if (err.response?.status === 405) {
         showToast('Create user API is not implemented in backend yet. Please use registration flow.', 'error');
@@ -191,7 +199,7 @@ const UsersPage = () => {
       if (formData.password) {
         updateData.password = formData.password;
       }
-      
+
       await adminApi.updateUser(editingUser.id, updateData);
       showToast(`User "${formData.fullName}" has been updated successfully`, 'success');
       fetchUsers();
@@ -263,7 +271,7 @@ const UsersPage = () => {
         default:
           break;
       }
-      
+
       // Refresh the list
       fetchUsers();
       setIsActionOpen(false);
@@ -282,6 +290,7 @@ const UsersPage = () => {
     };
     return labels[actionType] || 'Confirm Action';
   };
+
 
   const getActionMessage = () => {
     const messages = {
@@ -327,7 +336,17 @@ const UsersPage = () => {
       label: 'User',
       render: (_, row) => (
         <div className="flex items-center gap-3">
-          <img src={row.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+          <img
+            src={row.avatar}
+            alt=""
+            className="w-8 h-8 rounded-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                row.name || "User"
+              )}&background=random`;
+            }}
+          />
+
           <div>
             <div className="flex items-center gap-2">
               <p className="font-medium text-neutral-900 dark:text-white">{row.name}</p>
@@ -436,27 +455,26 @@ const UsersPage = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Toast Notification */}
       {toast.show && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
-          toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
           {toast.message}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Users</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Users</h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             Manage platform users {totalCount > 0 && `(${totalCount} total)`}
           </p>
         </div>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full sm:w-auto"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -466,50 +484,37 @@ const UsersPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          placeholder="Search by name or email..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-        <select
-          value={filterRole}
-          onChange={(e) => { setFilterRole(e.target.value); setPageNumber(1); }}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Roles</option>
-          <option value="admin">Admin</option>
-          <option value="mentor">Mentor</option>
-          <option value="student">Student</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => { setFilterStatus(e.target.value); setPageNumber(1); }}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        {(filterRole !== 'all' || filterStatus !== 'all' || searchKeyword) && (
-          <button
-            onClick={() => { setFilterRole('all'); setFilterStatus('all'); setSearchKeyword(''); setPageNumber(1); }}
-            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
-          >
-            Clear filters
-          </button>
-        )}
-        <button
-          onClick={fetchUsers}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <HiRefresh className="w-5 h-5 text-neutral-500" />
-        </button>
-      </div>
+      <AdminFilterBar
+        searchValue={searchKeyword}
+        onSearchChange={setSearchKeyword}
+        searchPlaceholder="Search by name or email..."
+        filters={[
+          {
+            label: "Role",
+            value: filterRole,
+            onChange: (v) => { setFilterRole(v); setPageNumber(1); },
+            options: [
+              { value: "all", label: "All Roles" },
+              { value: "admin", label: "Admin" },
+              { value: "mentor", label: "Mentor" },
+              { value: "student", label: "Student" },
+            ]
+          },
+          {
+            label: "Status",
+            value: filterStatus,
+            onChange: (v) => { setFilterStatus(v); setPageNumber(1); },
+            options: [
+              { value: "all", label: "All Status" },
+              { value: "active", label: "Active" },
+              { value: "inactive", label: "Inactive" },
+            ]
+          }
+        ]}
+        showClear={filterRole !== 'all' || filterStatus !== 'all' || searchKeyword}
+        onClearFilters={() => { setFilterRole('all'); setFilterStatus('all'); setSearchKeyword(''); setPageNumber(1); }}
+        onRefresh={fetchUsers}
+      />
 
       {/* Table */}
       {loading ? (
@@ -522,34 +527,34 @@ const UsersPage = () => {
         </div>
       ) : (
         <>
-          <DataTable 
-            columns={columns} 
+          <DataTable
+            columns={columns}
             data={users}
             searchable={false}
             emptyMessage="No users found"
           />
-          
+
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-              <div className="text-sm text-neutral-500">
-                Showing {((pageNumber - 1) * pageSize) + 1} to {Math.min(pageNumber * pageSize, totalCount)} of {totalCount} users
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+              <div className="text-sm text-neutral-500 text-center sm:text-left">
+                Showing {((pageNumber - 1) * pageSize) + 1} to {Math.min(pageNumber * pageSize, totalCount)} of {totalCount}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPageNumber(p => Math.max(1, p - 1))}
                   disabled={pageNumber === 1}
-                  className="px-3 py-1 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
-                  Previous
+                  Prev
                 </button>
-                <span className="text-sm text-neutral-900 dark:text-white">
-                  Page {pageNumber} of {totalPages}
+                <span className="text-sm text-neutral-900 dark:text-white px-2">
+                  {pageNumber}/{totalPages}
                 </span>
                 <button
                   onClick={() => setPageNumber(p => Math.min(totalPages, p + 1))}
                   disabled={pageNumber === totalPages}
-                  className="px-3 py-1 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                  className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   Next
                 </button>
@@ -586,8 +591,8 @@ const UsersPage = () => {
       </ConfirmDialog>
 
       {/* Create User Modal */}
-      <Modal 
-        isOpen={isCreateModalOpen} 
+      <Modal
+        isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="Create New User"
       >
@@ -664,8 +669,8 @@ const UsersPage = () => {
       </Modal>
 
       {/* Update User Modal */}
-      <Modal 
-        isOpen={isUpdateModalOpen} 
+      <Modal
+        isOpen={isUpdateModalOpen}
         onClose={() => setIsUpdateModalOpen(false)}
         title="Update User"
       >
@@ -741,17 +746,17 @@ const UsersPage = () => {
       </Modal>
 
       {/* Detail Modal */}
-      <Modal 
-        isOpen={isDetailModalOpen} 
+      <Modal
+        isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         title="User Details"
       >
         {viewingUser && (
           <div className="space-y-4">
             <div className="flex items-center gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-              <img 
-                src={viewingUser.avatar} 
-                alt={viewingUser.name} 
+              <img
+                src={viewingUser.avatar}
+                alt={viewingUser.name}
                 className="w-20 h-20 rounded-full object-cover"
               />
               <div>
@@ -764,7 +769,7 @@ const UsersPage = () => {
                 <p className="text-neutral-500">{viewingUser.email}</p>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-500 mb-1">User ID</label>
@@ -773,7 +778,7 @@ const UsersPage = () => {
               <div>
                 <label className="block text-sm font-medium text-neutral-500 mb-1">Role</label>
                 <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getRoleColor(viewingUser.role)}`}>
-                  {viewingUser.role}
+                  {getRoleName(viewingUser.role)}
                 </span>
               </div>
               <div>
@@ -797,10 +802,10 @@ const UsersPage = () => {
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-neutral-500 mb-1">Joined Date</label>
                 <p className="text-neutral-900 dark:text-white">
-                  {new Date(viewingUser.createdAt).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
+                  {new Date(viewingUser.createdAt).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
@@ -808,7 +813,7 @@ const UsersPage = () => {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
               <button
                 onClick={() => setIsDetailModalOpen(false)}

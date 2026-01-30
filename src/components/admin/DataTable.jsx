@@ -65,8 +65,8 @@ const DataTable = ({
                     {col.label}
                     {col.sortable !== false && sortConfig.key === col.key && (
                       sortConfig.direction === 'asc' 
-                        ? <HiChevronUp className="w-4 h-4" />
-                        : <HiChevronDown className="w-4 h-4" />
+                        ? <HiChevronUp className="w-5 h-5" />
+                        : <HiChevronDown className="w-5 h-5" />
                     )}
                   </div>
                 </th>

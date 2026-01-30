@@ -128,9 +128,15 @@ Session recordings are kept for 90 days unless you request earlier deletion.`
       title: 'Contact Us',
       content: `Questions about privacy? Reach out:
 
-**Email:** privacy@edumentor.com
-**Address:** 123 Tech Street, San Francisco, CA
-**Data Protection Officer:** dpo@edumentor.com`
+    **Email:** privacy@edumentor.com
+
+
+
+    **Address:** 123 Tech Street, San Francisco, CA
+
+
+
+    **Data Protection Officer:** dpo@edumentor.com`
     }
   ];
 
@@ -179,28 +185,6 @@ Session recordings are kept for 90 days unless you request earlier deletion.`
             {sections.map((section, index) => (
               <SectionBlock key={index} title={section.title} content={section.content} index={index} />
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer CTA */}
-      <section className="py-16 px-4 border-t border-neutral-200 dark:border-neutral-800">
-        <div className="max-w-3xl mx-auto text-center">
-          <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-            By using EduMentor, you agree to this Privacy Policy.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link to="/terms" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              Terms of Service
-            </Link>
-            <span className="text-neutral-300 dark:text-neutral-700">•</span>
-            <Link to="/faq" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              FAQ
-            </Link>
-            <span className="text-neutral-300 dark:text-neutral-700">•</span>
-            <a href="mailto:privacy@edumentor.com" className="text-primary-600 dark:text-primary-400 font-medium hover:underline">
-              Contact Us
-            </a>
           </div>
         </div>
       </section>

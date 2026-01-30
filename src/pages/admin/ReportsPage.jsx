@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { HiEye, HiCheck, HiX, HiFilter } from 'react-icons/hi';
+import { HiEye, HiCheck, HiX, HiChevronDown, HiChevronUp, HiRefresh } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import Modal from '../../components/admin/Modal';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
@@ -101,6 +101,120 @@ const ReportsPage = () => {
     }
   };
 
+  // Report Filters Component (inline)
+  const ReportFilters = ({ searchKeyword, setSearchKeyword, filterType, setFilterType, filterStatus, setFilterStatus }) => {
+    const [showFilters, setShowFilters] = useState(false);
+    const hasActiveFilters = filterType !== "all" || filterStatus !== "all" || searchKeyword.trim();
+
+    return (
+      <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        {/* Search + Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            placeholder="Search reports..."
+            className="flex-1 min-w-0 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          
+          {/* Desktop Filters */}
+          <div className="hidden lg:flex items-center gap-3">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Types</option>
+              <option value="user">User</option>
+              <option value="content">Content</option>
+              <option value="review">Review</option>
+              <option value="payment">Payment</option>
+            </select>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="investigating">Investigating</option>
+              <option value="resolved">Resolved</option>
+              <option value="dismissed">Dismissed</option>
+            </select>
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setFilterType("all"); setFilterStatus("all"); setSearchKeyword(""); }}
+                className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          
+          {/* Mobile Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300"
+          >
+            {showFilters ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
+            <span className="hidden sm:inline">Filters</span>
+            {hasActiveFilters && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+          </button>
+          
+          <button
+            onClick={() => window.location.reload()}
+            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <HiRefresh className="w-5 h-5 text-neutral-500" />
+          </button>
+        </div>
+        
+        {/* Mobile Filters Dropdown */}
+        {showFilters && (
+          <div className="lg:hidden mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Types</option>
+                <option value="user">User</option>
+                <option value="content">Content</option>
+                <option value="review">Review</option>
+                <option value="payment">Payment</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Status</label>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="investigating">Investigating</option>
+                <option value="resolved">Resolved</option>
+                <option value="dismissed">Dismissed</option>
+              </select>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setFilterType("all"); setFilterStatus("all"); setSearchKeyword(""); setShowFilters(false); }}
+                className="sm:col-span-2 flex items-center justify-center gap-1 text-sm text-blue-600"
+              >
+                <HiX className="w-4 h-4" /> Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -210,67 +324,35 @@ const ReportsPage = () => {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Reports</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Reports</h1>
         <p className="text-neutral-500 dark:text-neutral-400 text-sm">Review and manage user reports</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {['pending', 'investigating', 'resolved', 'dismissed'].map(status => {
           const count = reports.filter(r => r.status === status).length;
           return (
-            <div key={status} className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
-              <p className="text-2xl font-bold text-neutral-900 dark:text-white">{count}</p>
-              <p className="text-sm text-neutral-500 capitalize">{status}</p>
+            <div key={status} className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
+              <p className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{count}</p>
+              <p className="text-xs sm:text-sm text-neutral-500 capitalize">{status}</p>
             </div>
           );
         })}
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          placeholder="Search by reason, reported user or reporter..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Types</option>
-          <option value="user">User</option>
-          <option value="content">Content</option>
-          <option value="review">Review</option>
-          <option value="payment">Payment</option>
-        </select>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="investigating">Investigating</option>
-          <option value="resolved">Resolved</option>
-          <option value="dismissed">Dismissed</option>
-        </select>
-        {(filterType !== 'all' || filterStatus !== 'all' || searchKeyword.trim()) && (
-          <button
-            onClick={() => { setFilterType('all'); setFilterStatus('all'); setSearchKeyword(''); }}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Clear filters
-          </button>
-        )}
-      </div>
+      {/* Filters - Mobile Responsive */}
+      <ReportFilters
+        searchKeyword={searchKeyword}
+        setSearchKeyword={setSearchKeyword}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+      />
 
       {/* Table */}
       <DataTable

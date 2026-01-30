@@ -320,6 +320,32 @@ const adminApi = {
 
   rejectMentorApplication(userId, reason) {
     return axiosClient.post(`/api/admin/mentor-applications/${userId}/reject`, { reason });
+  },
+
+  // ============ MENTOR APPLICATION HISTORY ============
+
+  // Get all application history with filters
+  getApplicationHistory({ pageNumber = 1, pageSize = 20, userId = null, action = null, fromDate = null, toDate = null } = {}) {
+    const params = { pageNumber, pageSize };
+    if (userId) params.userId = userId;
+    if (action !== null && action !== "all") params.action = action;
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
+    return axiosClient.get("/api/admin/mentor-applications/history", { params });
+  },
+
+  // Get application history for a specific user
+  getUserApplicationHistory(userId) {
+    return axiosClient.get(`/api/admin/mentor-applications/${userId}/history`);
+  },
+
+  // Export history for ML training
+  exportApplicationHistoryForML({ fromDate = null, toDate = null, action = null } = {}) {
+    const params = {};
+    if (fromDate) params.fromDate = fromDate;
+    if (toDate) params.toDate = toDate;
+    if (action !== null && action !== "all") params.action = action;
+    return axiosClient.get("/api/admin/mentor-applications/history/export", { params });
   }
 };
 

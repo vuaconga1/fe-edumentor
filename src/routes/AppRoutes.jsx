@@ -14,6 +14,8 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import VerifyEmail from '../pages/auth/VerifyEmail';
 import AdminDashboard from '../pages/admin/Dashboard';
+import AdminProfilePage from '../pages/admin/AdminProfilePage';
+import EditAdminProfilePage from '../pages/admin/EditAdminProfilePage';
 import UsersPage from '../pages/admin/UsersPage';
 import ReportsPage from '../pages/admin/ReportsPage';
 import CategoriesPage from '../pages/admin/CategoriesPage';
@@ -33,17 +35,19 @@ import ResetPassword from '../pages/auth/ResetPassword';
 import ChangePassword from '../pages/auth/ChangePassword';
 
 import StudentHome from '../pages/student/StudentHome';
-import Profile from '../pages/common/Profile';
 import FindMentorPage from '../pages/student/FindMentorPage';
 import Community from '../pages/common/Community';
 import MessagingPage from '../pages/messaging/MessagingPage';
 import WalletPage from '../pages/common/WalletPage';
 import OrderHistoryPage from '../pages/student/OrderHistoryPage';
 import MentorReviewsPage from '../pages/mentor/MentorReviewsPage';
-import ProfilePage from '../pages/common/ProfilePage';
+import MentorProfilePage from '../pages/mentor/MentorProfilePage';
 import StudentProfilePage from '../pages/student/StudentProfilePage';
 import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
 import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
+import MentorDetailPage from '../pages/student/MentorDetailPage';
+import MyRequestsPage from '../pages/student/MyRequestsPage';
+import MentorRequestsPage from '../pages/mentor/MentorRequestsPage';
 
 const AppRoutes = () => {
   return (
@@ -59,6 +63,9 @@ const AppRoutes = () => {
       {/* Admin */}
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="profile" element={<AdminProfilePage />} />
+        <Route path="profile/edit" element={<EditAdminProfilePage />} />
+        <Route path="change-password" element={<ChangePassword />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="mentor-applications" element={<MentorApplicationsPage />} />
         <Route path="categories" element={<CategoriesPage />} />
@@ -81,7 +88,8 @@ const AppRoutes = () => {
         <Route path="messaging" element={<MessagingPage />} />
         <Route path="wallet" element={<WalletPage />} />
         <Route path="reviews" element={<MentorReviewsPage />} />
-        <Route path="profile" element={<ProfilePage />} />
+        <Route path="requests" element={<MentorRequestsPage />} />
+        <Route path="profile" element={<MentorProfilePage />} />
         <Route path="profile/edit" element={<EditMentorProfilePage />} />
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
@@ -92,11 +100,12 @@ const AppRoutes = () => {
         <Route path="profile" element={<StudentProfilePage />} />
         <Route path="profile/edit" element={<EditStudentProfilePage />} />
         <Route path="find-mentor" element={<FindMentorPage />} />
+        <Route path="mentor/:id" element={<MentorDetailPage />} />
+        <Route path="my-requests" element={<MyRequestsPage />} />
         <Route path="community" element={<Community />} />
         <Route path="messaging" element={<MessagingPage />} />
         <Route path="wallet" element={<WalletPage />} />
         <Route path="orders" element={<OrderHistoryPage />} />
-        <Route path="mentor/:mentorId" element={<ProfilePage />} />
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
 

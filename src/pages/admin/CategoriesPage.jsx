@@ -6,9 +6,9 @@ import {
   HiPlus,
   HiPencil,
   HiTrash,
-  HiFilter,
   HiX,
   HiChevronDown,
+  HiChevronUp,
   HiEye,
   HiRefresh,
 } from "react-icons/hi";
@@ -131,6 +131,121 @@ export default function CategoriesPage() {
     setFilterChild("all");
   }, [filterParent]);
 
+  // Category Filters Component (inline)
+  const CategoryFilters = ({ query, setQuery, filterParent, setFilterParent, filterChild, setFilterChild, rootCategories, childrenOfSelectedParent, fetchCategories }) => {
+    const [showFilters, setShowFilters] = useState(false);
+    const hasActiveFilters = query || filterParent !== "all" || filterChild !== "all";
+
+    return (
+      <div className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        {/* Search + Toggle */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search categories..."
+            className="flex-1 min-w-0 px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+          />
+          
+          {/* Desktop Filters */}
+          <div className="hidden lg:flex items-center gap-3">
+            <select
+              value={filterParent}
+              onChange={(e) => setFilterParent(e.target.value)}
+              className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Categories</option>
+              {rootCategories.map((cat) => (
+                <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
+              ))}
+            </select>
+            {filterParent !== "all" && childrenOfSelectedParent.length > 0 && (
+              <select
+                value={filterChild}
+                onChange={(e) => setFilterChild(e.target.value)}
+                className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Children</option>
+                {childrenOfSelectedParent.map((child) => (
+                  <option key={child.id} value={String(child.id)}>{child.name}</option>
+                ))}
+              </select>
+            )}
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setQuery(""); setFilterParent("all"); setFilterChild("all"); }}
+                className="text-sm text-blue-600 hover:underline whitespace-nowrap"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          
+          {/* Mobile Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="lg:hidden flex items-center gap-1 px-3 py-2 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm font-medium text-neutral-700 dark:text-neutral-300"
+          >
+            {showFilters ? <HiChevronUp className="w-5 h-5" /> : <HiChevronDown className="w-5 h-5" />}
+            <span className="hidden sm:inline">Filters</span>
+            {hasActiveFilters && <span className="w-2 h-2 bg-blue-500 rounded-full" />}
+          </button>
+          
+          <button
+            onClick={fetchCategories}
+            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <HiRefresh className="w-5 h-5 text-neutral-500" />
+          </button>
+        </div>
+        
+        {/* Mobile Filters Dropdown */}
+        {showFilters && (
+          <div className="lg:hidden mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-700 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-neutral-500 mb-1">Parent Category</label>
+              <select
+                value={filterParent}
+                onChange={(e) => setFilterParent(e.target.value)}
+                className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="all">All Categories</option>
+                {rootCategories.map((cat) => (
+                  <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            {filterParent !== "all" && childrenOfSelectedParent.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">Child Category</label>
+                <select
+                  value={filterChild}
+                  onChange={(e) => setFilterChild(e.target.value)}
+                  className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="all">All Children</option>
+                  {childrenOfSelectedParent.map((child) => (
+                    <option key={child.id} value={String(child.id)}>{child.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {hasActiveFilters && (
+              <button
+                onClick={() => { setQuery(""); setFilterParent("all"); setFilterChild("all"); setShowFilters(false); }}
+                className="sm:col-span-2 flex items-center justify-center gap-1 text-sm text-blue-600"
+              >
+                <HiX className="w-4 h-4" /> Clear all filters
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const openCreate = () => {
     setMode("create");
     setEditingId(null);
@@ -237,11 +352,11 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Categories</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Categories</h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
             Manage mentor expertise categories {flatAll.length > 0 && `(${flatAll.length} total)`}
           </p>
@@ -249,65 +364,25 @@ export default function CategoriesPage() {
 
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
         >
           <HiPlus className="w-4 h-4" />
           New Category
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <HiFilter className="w-5 h-5 text-neutral-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by name or description..."
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500 flex-1"
-        />
-        <select
-          value={filterParent}
-          onChange={(e) => setFilterParent(e.target.value)}
-          className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-        >
-          <option value="all">All Categories</option>
-          {rootCategories.map((cat) => (
-            <option key={cat.id} value={String(cat.id)}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-        {filterParent !== "all" && childrenOfSelectedParent.length > 0 && (
-          <select
-            value={filterChild}
-            onChange={(e) => setFilterChild(e.target.value)}
-            className="px-3 py-1.5 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="all">All Children</option>
-            {childrenOfSelectedParent.map((child) => (
-              <option key={child.id} value={String(child.id)}>
-                {child.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {(query || filterParent !== "all" || filterChild !== "all") && (
-          <button
-            onClick={() => { setQuery(""); setFilterParent("all"); setFilterChild("all"); }}
-            className="text-sm text-blue-600 hover:underline whitespace-nowrap"
-          >
-            Clear filters
-          </button>
-        )}
-        <button
-          onClick={fetchCategories}
-          className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <HiRefresh className="w-5 h-5 text-neutral-500" />
-        </button>
-      </div>
+      {/* Filters - Mobile Responsive */}
+      <CategoryFilters
+        query={query}
+        setQuery={setQuery}
+        filterParent={filterParent}
+        setFilterParent={setFilterParent}
+        filterChild={filterChild}
+        setFilterChild={setFilterChild}
+        rootCategories={rootCategories}
+        childrenOfSelectedParent={childrenOfSelectedParent}
+        fetchCategories={fetchCategories}
+      />
 
       {apiError && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-xl p-4">
