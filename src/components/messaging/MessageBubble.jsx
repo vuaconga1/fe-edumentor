@@ -2,69 +2,71 @@ import React from "react";
 import { FileIcon, ExternalLink } from "lucide-react";
 
 export default function MessageBubble({ message, isMine }) {
-  const senderName = message.senderName || "Unknown";
-  // 0: Text, 1: Image, 2: File
-  const type = message.messageType ?? 0;
+  const senderName = message?.senderName || "Unknown";
 
-  const renderContent = () => {
-    switch (type) {
-      case 1: // Image
-        return (
-          <div className="group relative">
-            <img
-              src={message.content}
-              alt="Sent image"
-              className="rounded-lg max-w-full sm:max-w-[280px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
-              onClick={() => window.open(message.content, "_blank")}
-            />
-          </div>
-        );
-      case 2: // File
-        return (
-          <a
-            href={message.content}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center gap-3 p-1 ${isMine ? "text-white" : "text-gray-900"}`}
-          >
-            <div className={`p-2 rounded-lg ${isMine ? "bg-white/20" : "bg-white"}`}>
-              <FileIcon size={20} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="trancate font-medium text-sm hover:underline underline-offset-2">
-                {message.fileName || "Attached File"}
-              </p>
-              {message.fileSize > 0 && (
-                <p className={`text-xs ${isMine ? "text-blue-100" : "text-gray-500"}`}>
-                  {(message.fileSize / 1024).toFixed(1)} KB
-                </p>
-              )}
-            </div>
-          </a>
-        );
-      default: // Text
-        return <div className="whitespace-pre-wrap break-words">{message.content}</div>;
-    }
-  };
+
+  const type = Number(message?.messageType ?? 0);
+  const content = String(message?.content ?? "");
+  // ✅ Chỉ coi là ảnh khi:
+  // - messageType === 1
+  // - content là URL hoặc /uploads...
+  // - và có đuôi ảnh (tránh case "Mình đã upload file....")
+  const isImage =
+    type === 1 &&
+    (/^https?:\/\//i.test(content) || content.startsWith("/uploads/")) &&
+    /\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i.test(content);
+
+  const isFile =
+    type === 2 && (/^https?:\/\//i.test(content) || content.startsWith("/uploads/"));
 
   return (
     <div className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
       {!isMine && (
         <span className="text-xs text-gray-500 mb-1 ml-1">{senderName}</span>
       )}
+      {isImage ? (
+        <img
+          src={content}
+          alt="chat"
+          className={`max-w-[280px] rounded-2xl border border-neutral-200 dark:border-neutral-700 ${isMine ? "rounded-br-sm" : "rounded-bl-sm"
+            }`}
+        />
+      ) : isFile ? (
+        <a
+          href={content}
+          target="_blank"
+          rel="noreferrer"
+          className={`max-w-[65%] px-4 py-3 rounded-2xl text-sm shadow-sm border bg-white dark:bg-neutral-900
+      hover:bg-neutral-50 dark:hover:bg-neutral-800 ${isMine ? "rounded-br-sm" : "rounded-bl-sm"
+            }`}
+        >
+          📎 {message.fileName || "Download file"}
+          {message.fileSize ? (
+            <div className="text-xs text-neutral-500 mt-1">
+              {(message.fileSize / 1024).toFixed(1)} KB
+            </div>
+          ) : null}
+        </a>
+      ) : (
+        <div
+          className={`max-w-[65%] px-4 py-2 rounded-2xl text-sm shadow-sm whitespace-pre-wrap break-words
+      ${isMine
+              ? "bg-blue-600 text-white rounded-br-sm"
+              : "bg-gray-100 text-gray-900 rounded-bl-sm"
+            }
+    `}
+        >
+          {content}
+        </div>
+      )}
 
-      <div
-        className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm transition-all
-          ${isMine ? "bg-blue-600 text-white rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}
-          ${type === 1 ? "!p-1 bg-transparent shadow-none" : ""}
-        `}
-      >
-        {renderContent()}
-      </div>
 
-      <span className="text-[10px] text-gray-400 mt-1 select-none">
-        {message.createdAt
-          ? new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      <span className="text-[10px] text-gray-400 mt-1">
+        {message?.createdAt
+          ? new Date(message.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : ""}
       </span>
     </div>
