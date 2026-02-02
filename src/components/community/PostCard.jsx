@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, Share2, MoreVertical, UserPlus, UserCheck, Flag, Bookmark, EyeOff, Send, FileText, Download } from 'lucide-react';
+import { MessageCircle, MoreVertical, UserPlus, UserCheck, Flag, Send, FileText, Download } from 'lucide-react';
 import CommentSection from './CommentSection';
 import SendProposalModal from './SendProposalModal';
 import { getRoleName } from '../../utils/userRole';
@@ -21,6 +21,8 @@ const PostCard = ({ post, onRefresh }) => {
     stats = { likes: 0, comments: 0 },
     createdAt = "",
     tags = [],
+    categoryId = null,
+    categoryName = null,
     proposalCount = 0,
     userInteraction = { isFollowing: false, isLiked: false }
   } = post || {};
@@ -82,20 +84,32 @@ const PostCard = ({ post, onRefresh }) => {
     }
   };
 
-  // Format date
+  // Format date with local timezone (server returns UTC)
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    // Ensure the date is parsed as UTC - append 'Z' if not present
+    let utcString = dateString;
+    if (!dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcString = dateString + 'Z';
+    }
+    const date = new Date(utcString);
     const now = new Date();
     const diffMs = now - date;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
+    if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    
+    // Show local date/time for older posts
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+    });
   };
 
   // Check if current user is the author
@@ -162,13 +176,6 @@ const PostCard = ({ post, onRefresh }) => {
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-neutral-900 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-20 animate-in fade-in zoom-in duration-100 origin-top-right overflow-hidden">
               <div className="py-1">
-                <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2">
-                  <Bookmark size={16} /> Save Post
-                </button>
-                <button className="w-full text-left px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800 flex items-center gap-2">
-                  <EyeOff size={16} /> Hide Post
-                </button>
-                <div className="h-px bg-neutral-100 dark:bg-neutral-800 my-1"></div>
                 <button className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2">
                   <Flag size={16} /> Report
                 </button>
@@ -193,10 +200,17 @@ const PostCard = ({ post, onRefresh }) => {
         />
       </div>
 
-      {/* --- TAGS --- */}
-      {tags && tags.length > 0 && (
+      {/* --- CATEGORY & TAGS --- */}
+      {(categoryName || (tags && tags.length > 0)) && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {tags.map((tag, idx) => (
+          {/* Category badge - same style as hashtags */}
+          {categoryName && (
+            <span className="text-xs px-2 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full">
+              {categoryName}
+            </span>
+          )}
+          {/* Hashtags */}
+          {tags && tags.map((tag, idx) => (
             <span
               key={idx}
               className="text-xs px-2 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-full"
@@ -291,19 +305,13 @@ const PostCard = ({ post, onRefresh }) => {
             <span className="font-medium">{stats.comments}</span>
           </button>
 
-          <button
-            className="flex items-center gap-2 px-3 py-2 text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg text-sm transition-colors"
-            title="Share Post"
-          >
-            <Share2 size={18} />
-            <span className="hidden sm:inline">Share</span>
-          </button>
+
         </div>
 
         {/* NHÓM PHẢI: Proposal (Mentor only) */}
         <div className="flex items-center gap-1">
-          {/* Send Proposal Button - Only for Mentors and not own post */}
-          {isMentor && !isOwnPost && (
+          {/* Send Proposal Button - Only for Mentors, not own post, and post author must be Student (role 0) */}
+          {isMentor && !isOwnPost && (author.role === 'Student' || author.role === 0) && (
             <button
               onClick={handleSendProposal}
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"

@@ -217,6 +217,7 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
         if (files.length === 0) {
             setError("Please upload at least one certification file.");
             return;

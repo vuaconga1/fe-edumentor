@@ -1,15 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiMail, HiLocationMarker, HiPhone, HiStar, HiTag } from "react-icons/hi";
-import { Edit2, Award, Briefcase, DollarSign, FolderOpen, Clock, Globe } from "lucide-react";
+import { Edit2, Award, Briefcase, DollarSign, FolderOpen, Clock, Globe, Users } from "lucide-react";
 import userProfileApi from "../../api/userProfile";
+import communityApi from "../../api/communityApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import FollowersModal from "../../components/profile/FollowersModal";
 
 const MentorProfilePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(null);
+
+  // Followers/Following State
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -28,6 +38,37 @@ const MentorProfilePage = () => {
     }).format(amount);
   };
 
+  const fetchFollowData = async (userId) => {
+    try {
+      const [followersRes, followingRes] = await Promise.all([
+        communityApi.getFollowers(userId),
+        communityApi.getFollowing(userId),
+      ]);
+      
+      if (followersRes.data?.success) {
+        setFollowersCount(followersRes.data.data.count);
+        setFollowers(followersRes.data.data.users.map(u => ({
+          id: u.id,
+          name: u.fullName,
+          avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+          role: u.isMentor ? 'mentor' : 'student'
+        })));
+      }
+      
+      if (followingRes.data?.success) {
+        setFollowingCount(followingRes.data.data.count);
+        setFollowing(followingRes.data.data.users.map(u => ({
+          id: u.id,
+          name: u.fullName,
+          avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+          role: u.isMentor ? 'mentor' : 'student'
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch follow data", err);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -39,6 +80,11 @@ const MentorProfilePage = () => {
         const res = await userProfileApi.getAll();
         const u = res?.data?.data;
         if (!u) throw new Error("No user profile data");
+
+        // Fetch followers/following data
+        if (u.id) {
+          fetchFollowData(u.id);
+        }
 
         const mp = u.mentorProfile || {};
 
@@ -154,6 +200,24 @@ const MentorProfilePage = () => {
                     </span>
                   </div>
                 )}
+
+                {/* Followers/Following Stats */}
+                <div className="flex justify-center gap-6 mt-4">
+                  <button
+                    onClick={() => setShowFollowersModal(true)}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followersCount}</span>
+                    <span className="text-xs text-neutral-500">Followers</span>
+                  </button>
+                  <button
+                    onClick={() => setShowFollowingModal(true)}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followingCount}</span>
+                    <span className="text-xs text-neutral-500">Following</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={() => navigate("/mentor/profile/edit")}
@@ -338,6 +402,22 @@ const MentorProfilePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Followers Modal */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        followers={followers}
+        title="Followers"
+      />
+
+      {/* Following Modal */}
+      <FollowersModal
+        isOpen={showFollowingModal}
+        onClose={() => setShowFollowingModal(false)}
+        followers={following}
+        title="Following"
+      />
     </div>
   );
 };

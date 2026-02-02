@@ -34,6 +34,7 @@ const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {
   useEffect(() => {
     if (isOpen) {
       loadCategories();
+      loadAllHashtags(); // Also refresh hashtags when modal opens
       setContent('');
       setSelectedCategories([]);
       setSelectedHashtags([]);
@@ -218,7 +219,16 @@ const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {
   };
 
   const getCategoryName = (catId) => {
-    return categories.find(c => c.id === catId)?.name || '';
+    // Check parent categories first
+    const parent = categories.find(c => c.id === catId);
+    if (parent) return parent.name;
+    
+    // Check child categories
+    for (const cat of categories) {
+      const child = cat.children?.find(c => c.id === catId);
+      if (child) return child.name;
+    }
+    return '';
   };
 
   if (!isOpen) return null;
@@ -275,20 +285,44 @@ const CreatePostModal = ({ isOpen, onClose, onSubmit }) => {
             </button>
 
             {showCategoryDropdown && (
-              <div className="absolute z-20 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              <div className="absolute z-20 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                 {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => toggleCategory(cat.id)}
-                    disabled={!selectedCategories.includes(cat.id) && selectedCategories.length >= 5}
-                    className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span>{cat.name}</span>
-                    {selectedCategories.includes(cat.id) && (
-                      <Check size={16} className="text-primary-600" />
+                  <div key={cat.id}>
+                    {/* Parent Category - Only as group header if has children */}
+                    {cat.children?.length > 0 ? (
+                      <div className="px-4 py-2 text-neutral-500 dark:text-neutral-400 text-xs font-semibold uppercase tracking-wider bg-neutral-50 dark:bg-neutral-700/50">
+                        {cat.name}
+                      </div>
+                    ) : (
+                      /* Parent without children - can be selected */
+                      <button
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        disabled={!selectedCategories.includes(cat.id) && selectedCategories.length >= 5}
+                        className="w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span>{cat.name}</span>
+                        {selectedCategories.includes(cat.id) && (
+                          <Check size={16} className="text-primary-600" />
+                        )}
+                      </button>
                     )}
-                  </button>
+                    {/* Child Categories - Selectable */}
+                    {cat.children?.length > 0 && cat.children.map(child => (
+                      <button
+                        key={child.id}
+                        type="button"
+                        onClick={() => toggleCategory(child.id)}
+                        disabled={!selectedCategories.includes(child.id) && selectedCategories.length >= 5}
+                        className="w-full pl-6 pr-4 py-2.5 text-left flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <span>{child.name}</span>
+                        {selectedCategories.includes(child.id) && (
+                          <Check size={16} className="text-primary-600" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             )}

@@ -90,26 +90,26 @@ const UsersPage = () => {
   }, [pageNumber, pageSize, filterRole, filterStatus, debouncedKeyword]);
 
   // Map API data to display format
-function mapUser(apiUser) {
-  const normalized = normalizeAvatarUrl(apiUser.avatarUrl);
+  function mapUser(apiUser) {
+    const normalized = normalizeAvatarUrl(apiUser.avatarUrl);
 
-  return {
-    id: apiUser.id,
-    name: apiUser.fullName,
-    email: apiUser.email,
-    avatar: normalized || buildDefaultAvatarUrl({
+    return {
       id: apiUser.id,
+      name: apiUser.fullName,
       email: apiUser.email,
-      fullName: apiUser.fullName
-    }),
-    role: mapRoleFromAPI(apiUser.role),
-    status: apiUser.isActive ? "active" : "inactive",
-    isVerified: apiUser.isVerified,
-    sessionsCount: 0,
-    balance: 0,
-    createdAt: apiUser.createdAt || new Date().toISOString(),
-  };
-}
+      avatar: normalized || buildDefaultAvatarUrl({
+        id: apiUser.id,
+        email: apiUser.email,
+        fullName: apiUser.fullName
+      }),
+      role: mapRoleFromAPI(apiUser.role),
+      status: apiUser.isActive ? "active" : "inactive",
+      isVerified: apiUser.isVerified,
+      sessionsCount: 0,
+      balance: 0,
+      createdAt: apiUser.createdAt || new Date().toISOString(),
+    };
+  }
 
   function mapRoleFromAPI(role) {
     // Handle both enum number (0=Student, 1=Mentor, 2=Admin) and string
@@ -417,9 +417,9 @@ function mapUser(apiUser) {
             />
           ) : (
             <ActionButton
-              icon={<HiXCircle className="w-4 h-4" />}
-              tooltip="Deactivate User"
-              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'deactivate'); }}
+              icon={<HiBan className="w-4 h-4" />}
+              tooltip="Ban User"
+              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'ban'); }}
               variant="warning"
             />
           )}
@@ -436,12 +436,6 @@ function mapUser(apiUser) {
             tooltip="Edit User"
             onClick={(e) => { e?.stopPropagation?.(); handleEdit(row); }}
             variant="info"
-          />
-          <ActionButton
-            icon={<HiBan className="w-4 h-4" />}
-            tooltip="Ban User"
-            onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'ban'); }}
-            variant="warning"
           />
           <ActionButton
             icon={<HiTrash className="w-4 h-4" />}

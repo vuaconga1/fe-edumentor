@@ -7,16 +7,15 @@ import axiosClient from "../../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import WorkActionConfirmModal from "../../components/messaging/WorkActionConfirmModal";
+import { Play, Pause, Square, Clock } from "lucide-react";
 
 import {
   startChatHub,
   joinConversation,
   leaveConversation,
-  getOnlineUsers, // ✅ existing
+  getOnlineUsers,
   on,
   sendMessage as hubSendMessage,
-
-  // ✅ start work features
   requestStartWork,
   requestPauseWork,
   requestEndWork,
@@ -43,7 +42,6 @@ const formatHMS = (totalSeconds) => {
 };
 
 const MessagingPage = () => {
-  const workActionPopupRef = useRef(null);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -58,13 +56,7 @@ const MessagingPage = () => {
   const [workActionPopup, setWorkActionPopup] = useState(null);
 
   const activeConversationIdRef = useRef(null);
-  const currentUserIdRef = useRef(null);
-  const prevConversationIdRef = useRef(null);
-
   const hubStartedRef = useRef(false);
-
-  // for reverting pinned when action rejected
-  const pendingSnapshotRef = useRef(null);
 
   const token = localStorage.getItem("token");
 
@@ -100,10 +92,6 @@ const MessagingPage = () => {
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
-
-  useEffect(() => {
-    currentUserIdRef.current = currentUserId;
-  }, [currentUserId]);
 
   // ===== Start hub only once + register listeners (messages + online + work events) =====
   useEffect(() => {
@@ -367,7 +355,7 @@ const MessagingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // ===== switch conversation: leave old -> load history -> join room (keep your logic) =====
+  // ===== switch conversation: leave old -> load history -> join room =====
   useEffect(() => {
     if (!activeConversationId) {
       const prev = prevConversationIdRef.current;
@@ -398,7 +386,7 @@ const MessagingPage = () => {
         else if (Array.isArray(data?.items)) list = data.items;
         else if (Array.isArray(data?.messages)) list = data.messages;
 
-        const normalized = (Array.isArray(list) ? list : []).map((m) => {
+        const normalized = list.map((m) => {
           const senderId = Number(m.senderId ?? m.senderID ?? m.userId ?? m.userID);
           const type = Number(m.messageType ?? m.type ?? 0);
           return {
@@ -409,6 +397,15 @@ const MessagingPage = () => {
             content: type === 1 || type === 2 ? toAbsolute(m.content) : m.content,
           };
         });
+        
+        // Sort chronological
+        normalized.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        setMessages(normalized);
+        
+        // Join signalR group
+        if (hubStartedRef.current) {
+          joinConversation(activeConversationId);
+        }
 
         setMessages(normalized);
 
@@ -442,6 +439,8 @@ const MessagingPage = () => {
 
   // ===== work context from conversation =====
   const workContext = useMemo(() => {
+    if (!activeConversation) return null;
+
     const orderId =
       activeConversation?.orderId ||
       activeConversation?.order?.orderId ||
@@ -449,50 +448,9 @@ const MessagingPage = () => {
       activeConversation?.request?.orderId ||
       activeConversation?.request?.order?.id;
 
-    // ưu tiên lấy trực tiếp
-    let mentorId = null;
-    let studentId = null;
-
-    // 1) Nếu backend trả thẳng
-    mentorId =
-      activeConversation?.mentorId ||
-      activeConversation?.mentor?.id ||
-      null;
-
-    studentId =
-      activeConversation?.studentId ||
-      activeConversation?.student?.id ||
-      null;
-
-    // 2) Fallback: suy ra từ messages
-    if ((!mentorId || !studentId) && Array.isArray(messages) && currentUserId) {
-      const otherMsg = messages.find(m => Number(m.senderId) !== Number(currentUserId));
-      const otherUserId = otherMsg?.senderId;
-
-      if (otherUserId) {
-        // Giả định: currentUser là mentor nếu trong màn hình mentor, hoặc student nếu không
-        // TẠM: gán currentUser là mentor
-        mentorId = Number(currentUserId);
-        studentId = Number(otherUserId);
-      }
-    }
-
-    // fallback theo participantRole/participantId nếu thiếu
-    const participantId =
-      activeConversation?.participantId ||
-      activeConversation?.participantUserId;
-
-    const role = String(activeConversation?.participantRole || "").toLowerCase();
-
-    if ((!mentorId || !studentId) && participantId && currentUserId) {
-      if (role.includes("mentor")) {
-        mentorId = Number(participantId);
-        studentId = Number(currentUserId);
-      } else if (role.includes("student")) {
-        studentId = Number(participantId);
-        mentorId = Number(currentUserId);
-      }
-    }
+    // Direct assignment if available, else derive (simplified for now)
+    const mentorId = activeConversation?.mentorId || activeConversation?.mentor?.id;
+    const studentId = activeConversation?.studentId || activeConversation?.student?.id;
 
     return {
       orderId: orderId ? Number(orderId) : null,
@@ -500,10 +458,10 @@ const MessagingPage = () => {
       studentId,
       conversationId: activeConversationId ? Number(activeConversationId) : null,
     };
-  }, [activeConversation, activeConversationId, currentUserId]);
+  }, [activeConversation, activeConversationId]);
 
 
-  // ===== reload active session when entering a conversation (important) =====
+  // ===== reload active session when entering a conversation =====
   useEffect(() => {
     if (!workContext?.orderId || !activeConversationId) {
       setWorkSession(null);
@@ -514,28 +472,31 @@ const MessagingPage = () => {
 
     const loadActiveSession = async () => {
       try {
-        // keep your endpoint assumption; adjust if backend differs
         const res = await axiosClient.get(
           `/api/order/${workContext.orderId}/sessions/summary`
         );
 
         const payload = res?.data?.data ?? res?.data;
-        const active =
-          payload?.activeSession || payload?.currentSession || payload?.session;
+        const active = payload?.activeSession || payload?.currentSession || payload?.session;
 
-        if (!active || !isMounted) return;
+        if (!isMounted) return;
+
+        if (!active) {
+            setWorkSession(null);
+            return;
+        }
 
         const status = String(active?.status || active?.state || "").toLowerCase();
         const normalizedStatus =
           status.includes("pause") || status.includes("paused")
             ? "paused"
             : status.includes("finish") || status.includes("end")
-              ? null
+              ? "ended"
               : "running";
-
-        if (!normalizedStatus) {
-          setWorkSession(null);
-          return;
+        
+        if (normalizedStatus === "ended") {
+            setWorkSession(null);
+            return;
         }
 
         setWorkSession({
@@ -546,7 +507,6 @@ const MessagingPage = () => {
           totalMinutes: active?.totalMinutes || active?.elapsedMinutes || 0,
         });
       } catch (err) {
-        // ignore if endpoint not ready
         setWorkSession(null);
       }
     };
@@ -558,7 +518,7 @@ const MessagingPage = () => {
     };
   }, [activeConversationId, workContext?.orderId]);
 
-  // ===== Send text (keep your current behavior) =====
+  // ===== Send text =====
   const handleSendText = async (text) => {
     if (!activeConversationId) return;
     const t = (text ?? "").trim();
@@ -571,7 +531,7 @@ const MessagingPage = () => {
     });
   };
 
-  // ===== Send image/file (keep your current behavior) =====
+  // ===== Send image/file =====
   const handleSendImage = async ({ file, desc }) => {
     if (!activeConversationId || !file) return;
 
@@ -719,14 +679,65 @@ const MessagingPage = () => {
       return Number(workSession.totalMinutes || 0) * 60;
     }
 
-    // running: (now - startTime) + already accumulated minutes (if any)
+    // running: (now - startTime) + already accumulated minutes
     const start = workSession.startTime ? new Date(workSession.startTime).getTime() : null;
     if (!start) return Number(workSession.totalMinutes || 0) * 60;
 
     const base = Number(workSession.totalMinutes || 0) * 60;
+    // Difference in seconds
     const diff = Math.floor((Date.now() - start) / 1000);
     return base + Math.max(0, diff);
   }, [workSession?.status, workSession?.startTime, workSession?.totalMinutes, tick]);
+
+
+  // ===== Handle Work Action Confirm =====
+  const handleAcceptAction = async () => {
+    if (!workActionPopup) return;
+    try {
+        await respondWorkAction(workActionPopup.requestId, true);
+        setWorkActionPopup(null);
+    } catch (e) {
+        toast.error("Failed to accept");
+    }
+  };
+
+  const handleRejectAction = async () => {
+    if (!workActionPopup) return;
+    try {
+        await respondWorkAction(workActionPopup.requestId, false);
+        setWorkActionPopup(null);
+    } catch (e) {
+        toast.error("Failed to reject");
+    }
+  };
+
+  // ===== Handle Trigger Actions (from UI) =====
+  const handleTriggerStart = async () => {
+     if (!workContext) return;
+     try {
+         await requestStartWork(workContext.conversationId, workContext.orderId, workContext.mentorId, workContext.studentId);
+         toast.info("Request sent to partner...");
+     } catch (e) {
+         toast.error("Failed to send request");
+     }
+  };
+
+  const handleTriggerPause = async () => {
+    if (!workSession?.sessionId) return;
+    try {
+        await requestPauseWork(workContext.conversationId, workSession.sessionId);
+        toast.info("Request sent...");
+    } catch(e) { toast.error("Failed"); }
+  };
+
+  const handleTriggerEnd = async () => {
+    if (!workSession?.sessionId) return;
+    try {
+        await requestEndWork(workContext.conversationId, workSession.sessionId);
+        toast.info("Request sent...");
+    } catch(e) { toast.error("Failed"); }
+  };
+
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-neutral-50 dark:bg-neutral-950">

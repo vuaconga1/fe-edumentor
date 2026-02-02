@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
+import { HiEye, HiEyeOff } from "react-icons/hi";
 import authApi from "../../api/authAPI";
 
 export default function ResetPassword() {
@@ -12,6 +13,10 @@ export default function ResetPassword() {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
     const [tokenValid, setTokenValid] = useState(true);
+    const [showPasswords, setShowPasswords] = useState({
+        password: false,
+        confirm: false
+    });
 
     const token = searchParams.get("token");
     const email = searchParams.get("email");
@@ -23,12 +28,44 @@ export default function ResetPassword() {
         }
     }, [token, email]);
 
+    const toggleShowPassword = (field) => {
+        setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+    };
+
+    const getPasswordStrength = (pwd) => {
+        if (!pwd) return { strength: 0, label: '', color: 'bg-gray-200' };
+
+        let strength = 0;
+        if (pwd.length >= 8) strength++;
+        if (/[a-z]/.test(pwd)) strength++;
+        if (/[A-Z]/.test(pwd)) strength++;
+        if (/\d/.test(pwd)) strength++;
+        if (/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) strength++;
+
+        if (strength <= 2) return { strength, label: 'Weak', color: 'bg-red-500' };
+        if (strength <= 3) return { strength, label: 'Fair', color: 'bg-yellow-500' };
+        if (strength <= 4) return { strength, label: 'Good', color: 'bg-blue-500' };
+        return { strength, label: 'Strong', color: 'bg-green-500' };
+    };
+
+    const passwordStrength = getPasswordStrength(password);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
 
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
+        if (password.length < 8) {
+            setError("Password must be at least 8 characters.");
+            return;
+        }
+
+        // Password complexity validation
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasLowerCase = /[a-z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+
+        if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+            setError("Password must contain at least one uppercase letter, one lowercase letter, and one number.");
             return;
         }
 
@@ -134,34 +171,76 @@ export default function ResetPassword() {
                                     <label className="block text-gray-700 text-sm mb-2">
                                         New Password
                                     </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={password}
-                                        onChange={(e) => {
-                                            setPassword(e.target.value);
-                                            if (error) setError("");
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Enter new password"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords.password ? "text" : "password"}
+                                            required
+                                            value={password}
+                                            onChange={(e) => {
+                                                setPassword(e.target.value);
+                                                if (error) setError("");
+                                            }}
+                                            className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Enter new password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleShowPassword('password')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPasswords.password ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
+                                    {/* Password Strength Indicator */}
+                                    {password && (
+                                        <div className="mt-2">
+                                            <div className="flex gap-1 mb-1">
+                                                {[1, 2, 3, 4, 5].map((level) => (
+                                                    <div
+                                                        key={level}
+                                                        className={`h-1.5 flex-1 rounded-full transition-colors ${
+                                                            level <= passwordStrength.strength
+                                                                ? passwordStrength.color
+                                                                : 'bg-gray-200'
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                            <p className={`text-xs ${
+                                                passwordStrength.strength <= 2 ? 'text-red-500' :
+                                                passwordStrength.strength <= 3 ? 'text-yellow-500' :
+                                                passwordStrength.strength <= 4 ? 'text-blue-500' : 'text-green-500'
+                                            }`}>
+                                                {passwordStrength.label}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-gray-700 text-sm mb-2">
                                         Confirm Password
                                     </label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={confirmPassword}
-                                        onChange={(e) => {
-                                            setConfirmPassword(e.target.value);
-                                            if (error) setError("");
-                                        }}
-                                        className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Confirm new password"
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type={showPasswords.confirm ? "text" : "password"}
+                                            required
+                                            value={confirmPassword}
+                                            onChange={(e) => {
+                                                setConfirmPassword(e.target.value);
+                                                if (error) setError("");
+                                            }}
+                                            className="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Confirm new password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleShowPassword('confirm')}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            {showPasswords.confirm ? <HiEyeOff className="w-5 h-5" /> : <HiEye className="w-5 h-5" />}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <button

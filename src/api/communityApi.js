@@ -70,11 +70,11 @@ const communityApi = {
   },
 
   acceptProposal(proposalId) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/accept`);
+    return axiosClient.post(`/api/Community/proposals/${proposalId}/accept`);
   },
 
   rejectProposal(proposalId) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/reject`);
+    return axiosClient.post(`/api/Community/proposals/${proposalId}/reject`);
   },
 
   getMyProposals() {
@@ -96,6 +96,24 @@ const communityApi = {
 
   isFollowing(userId) {
     return axiosClient.get(`/api/Community/follow/${userId}/status`);
+  },
+
+  // Get followers list for a user
+  getFollowers(userId) {
+    return axiosClient.get(`/api/Community/follow/${userId}/followers`);
+  },
+
+  // Get following list for a user
+  getFollowing(userId) {
+    return axiosClient.get(`/api/Community/follow/${userId}/following`);
+  },
+
+  getFollowers(userId) {
+    return axiosClient.get(`/api/Community/follow/${userId}/followers`);
+  },
+
+  getFollowing(userId) {
+    return axiosClient.get(`/api/Community/follow/${userId}/following`);
   },
 
   // ========== Categories & Hashtags ==========
