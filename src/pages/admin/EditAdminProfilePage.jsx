@@ -5,6 +5,7 @@ import { Save } from "lucide-react";
 import userProfileApi from "../../api/userProfile";
 import axiosClient from "../../api/axios";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import locationApi from "../../api/locationApi";
 
 const EditAdminProfilePage = () => {
   const navigate = useNavigate();
@@ -28,6 +29,11 @@ const EditAdminProfilePage = () => {
   const [successMsg, setSuccessMsg] = useState("");
   const [userId, setUserId] = useState(null);
 
+  // Location dropdowns
+  const [countries, setCountries] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(true);
+
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
   const toAbsoluteUrl = (url) => {
@@ -39,6 +45,17 @@ const EditAdminProfilePage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // When country changes, reset city and load new cities
+    if (name === "country") {
+      setFormData((prev) => ({ ...prev, city: "" }));
+      loadCities(value);
+    }
+  };
+
+  const loadCities = async (countryName) => {
+    const citiesData = await locationApi.getCitiesByCountry(countryName);
+    setCities(citiesData);
   };
 
   const openFilePicker = () => fileInputRef.current?.click();
@@ -88,6 +105,17 @@ const EditAdminProfilePage = () => {
     }
   };
 
+  // Load countries on mount
+  useEffect(() => {
+    const loadLocations = async () => {
+      setLoadingLocations(true);
+      const countriesData = await locationApi.getCountries();
+      setCountries(countriesData);
+      setLoadingLocations(false);
+    };
+    loadLocations();
+  }, []);
+
   // Load profile
   useEffect(() => {
     let mounted = true;
@@ -122,6 +150,11 @@ const EditAdminProfilePage = () => {
             city: u.city ?? "",
             country: u.country ?? "",
           });
+
+          // Load cities if country is already set
+          if (u.country) {
+            loadCities(u.country);
+          }
         }
       } catch (e) {
         console.log("Load profile failed:", e);
@@ -299,7 +332,7 @@ const EditAdminProfilePage = () => {
                   value={formData.phone}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                  placeholder="+1234567890"
+                  placeholder="Your phone"
                 />
               </div>
 
@@ -322,30 +355,52 @@ const EditAdminProfilePage = () => {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  City
+                  Country
                 </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
+                <select
+                  name="country"
+                  value={formData.country}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                  placeholder="Your city"
-                />
+                  disabled={loadingLocations}
+                  className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all cursor-pointer"
+                >
+                  <option value="">Select Country</option>
+                  {countries.map((c) => (
+                    <option key={c.code} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Country
+                  City / Province
                 </label>
-                <input
-                  type="text"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
-                  placeholder="Your country"
-                />
+                {cities.length > 0 ? (
+                  <select
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all cursor-pointer"
+                  >
+                    <option value="">Select City</option>
+                    {cities.map((c) => (
+                      <option key={c.code} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    placeholder="Enter city name"
+                    className="w-full px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                  />
+                )}
               </div>
             </div>
           </div>

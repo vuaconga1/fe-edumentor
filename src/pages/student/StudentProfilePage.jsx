@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HiMail, HiLocationMarker, HiPhone } from "react-icons/hi";
-import { Edit2, Clock, GraduationCap, User } from "lucide-react";
+import { Edit2, Clock, GraduationCap, User, Users } from "lucide-react";
 import userProfileApi from "../../api/userProfile";
+import communityApi from "../../api/communityApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import mentorApi from "../../api/mentorApi";
 import MentorApplicationBanner from "../../components/mentor/MentorApplicationBanner";
 import ApplyMentorModal from "../../components/mentor/ApplyMentorModal";
 import ConfirmSwitchModal from "../../components/mentor/ConfirmSwitchModal";
+import FollowersModal from "../../components/profile/FollowersModal";
 
 const StudentProfilePage = () => {
   const navigate = useNavigate();
@@ -19,6 +21,16 @@ const StudentProfilePage = () => {
   const [mentorStatus, setMentorStatus] = useState(null);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+
+  // Followers/Following State
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+  const [followModalData, setFollowModalData] = useState([]);
+  const [followModalTitle, setFollowModalTitle] = useState("Followers");
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -40,6 +52,49 @@ const StudentProfilePage = () => {
     }
   };
 
+  const fetchFollowData = async (userId) => {
+    try {
+      const [followersRes, followingRes] = await Promise.all([
+        communityApi.getFollowers(userId),
+        communityApi.getFollowing(userId),
+      ]);
+      
+      if (followersRes.data?.success) {
+        setFollowersCount(followersRes.data.data.count);
+        setFollowers(followersRes.data.data.users.map(u => ({
+          id: u.id,
+          name: u.fullName,
+          avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+          role: u.isMentor ? 'mentor' : 'student'
+        })));
+      }
+      
+      if (followingRes.data?.success) {
+        setFollowingCount(followingRes.data.data.count);
+        setFollowing(followingRes.data.data.users.map(u => ({
+          id: u.id,
+          name: u.fullName,
+          avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+          role: u.isMentor ? 'mentor' : 'student'
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch follow data", err);
+    }
+  };
+
+  const handleShowFollowers = () => {
+    setFollowModalData(followers);
+    setFollowModalTitle("Followers");
+    setShowFollowersModal(true);
+  };
+
+  const handleShowFollowing = () => {
+    setFollowModalData(following);
+    setFollowModalTitle("Following");
+    setShowFollowingModal(true);
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -54,6 +109,11 @@ const StudentProfilePage = () => {
 
         // Fetch mentor application status
         fetchMentorStatus();
+
+        // Fetch followers/following data
+        if (u.id) {
+          fetchFollowData(u.id);
+        }
 
         const mapped = {
           name: u.fullName || "Student",
@@ -138,6 +198,24 @@ const StudentProfilePage = () => {
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
                   Student
                 </p>
+
+                {/* Followers/Following Stats */}
+                <div className="flex justify-center gap-6 mt-4">
+                  <button
+                    onClick={handleShowFollowers}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followersCount}</span>
+                    <span className="text-xs text-neutral-500">Followers</span>
+                  </button>
+                  <button
+                    onClick={handleShowFollowing}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followingCount}</span>
+                    <span className="text-xs text-neutral-500">Following</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={() => navigate("/student/profile/edit")}
@@ -305,6 +383,22 @@ const StudentProfilePage = () => {
         isOpen={isConfirmModalOpen}
         onClose={() => setIsConfirmModalOpen(false)}
         onSuccess={fetchMentorStatus}
+      />
+
+      {/* Followers Modal */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        followers={followers}
+        title="Followers"
+      />
+
+      {/* Following Modal */}
+      <FollowersModal
+        isOpen={showFollowingModal}
+        onClose={() => setShowFollowingModal(false)}
+        followers={following}
+        title="Following"
       />
     </div>
   );

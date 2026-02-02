@@ -1,37 +1,13 @@
 // src/components/notification/NotificationDropdown.jsx
 import React, { useEffect, useState, useRef } from 'react';
-import { HiBell, HiCheck, HiTrash, HiExternalLink } from 'react-icons/hi';
+import { HiBell } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import notificationApi from '../../api/notificationApi';
-
-const NOTIFICATION_ICONS = {
-  System: "🔔",
-  RequestCreated: "📝",
-  RequestAssigned: "✅",
-  ProposalCreated: "📨",
-  ProposalAccepted: "🎉",
-  OrderStarted: "🚀",
-  OrderCompleted: "✅",
-  OrderDisputed: "⚠️",
-  WalletTransaction: "💰",
-  RelevantPost: "📢",
-};
-
-const NOTIFICATION_COLORS = {
-  System: "gray",
-  RequestCreated: "blue",
-  RequestAssigned: "blue",
-  ProposalCreated: "purple",
-  ProposalAccepted: "green",
-  OrderStarted: "blue",
-  OrderCompleted: "green",
-  OrderDisputed: "red",
-  WalletTransaction: "orange",
-  RelevantPost: "indigo",
-};
+import { useAuth } from '../../context/AuthContext';
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -90,41 +66,85 @@ const NotificationDropdown = () => {
     }
   };
 
+  // Get base route based on user role
+  const getBaseRoute = () => {
+    const role = user?.role;
+    if (role === 'Mentor' || role === 1 || role === '1') return '/mentor';
+    if (role === 'Student' || role === 2 || role === '2') return '/student';
+    if (window.location.pathname.startsWith('/mentor')) return '/mentor';
+    return '/student';
+  };
+
   const handleNotificationClick = (notification) => {
     if (!notification.isRead) {
       handleMarkAsRead(notification.id);
     }
 
-    // Navigate based on notification type
     const data = notification.data ? JSON.parse(notification.data) : {};
-    switch (notification.type) {
-      case "RequestCreated":
-      case "RequestAccepted":
-      case "RequestRejected":
-        navigate("/mentor/requests");
-        break;
-      case "ProposalCreated":
-      case "ProposalAccepted":
-      case "ProposalRejected":
-        navigate("/student/my-requests");
-        break;
-      case "OrderStarted":
-      case "OrderCompleted":
-        navigate("/student/orders");
-        break;
-      case "WalletTransaction":
-        navigate("/student/wallet");
-        break;
-      default:
-        break;
+    const baseRoute = getBaseRoute();
+    const isMentor = baseRoute === '/mentor';
+    
+    // NotificationType enum: 0=System, 1=RequestCreated, 2=RequestAssigned, 3=ProposalCreated, 
+    // 4=NewProposal, 5=ProposalAccepted, 6=ProposalRejected, 7=OrderStarted, 8=OrderCompleted,
+    // 9=OrderDisputed, 10=WalletTransaction, 11=RelevantPost, 12=NewComment, 13=NewFollower
+    const type = notification.type;
+    
+    // Request related (1, 2)
+    if (type === 1 || type === 2 || type === "RequestCreated" || type === "RequestAssigned") {
+      navigate(isMentor ? "/mentor/requests" : "/student/my-requests");
     }
+    // Proposal related (3, 4, 5, 6)
+    else if (type === 3 || type === 4 || type === 5 || type === 6 || 
+             type === "ProposalCreated" || type === "NewProposal" || 
+             type === "ProposalAccepted" || type === "ProposalRejected") {
+      navigate(isMentor ? "/mentor/requests" : "/student/my-requests");
+    }
+    // Order related (7, 8, 9)
+    else if (type === 7 || type === 8 || type === 9 || 
+             type === "OrderStarted" || type === "OrderCompleted" || type === "OrderDisputed") {
+      navigate(`${baseRoute}/orders`);
+    }
+    // Wallet (10)
+    else if (type === 10 || type === "WalletTransaction") {
+      navigate(`${baseRoute}/wallet`);
+    }
+    // Community Post (11)
+    else if (type === 11 || type === "RelevantPost") {
+      if (data.postId) {
+        navigate(`${baseRoute}/community?postId=${data.postId}`);
+      } else {
+        navigate(`${baseRoute}/community`);
+      }
+    }
+    // New Comment (12)
+    else if (type === 12 || type === "NewComment") {
+      if (data.postId) {
+        navigate(`${baseRoute}/community?postId=${data.postId}`);
+      } else {
+        navigate(`${baseRoute}/community`);
+      }
+    }
+    // New Follower (13)
+    else if (type === 13 || type === "NewFollower") {
+      navigate(`${baseRoute}/profile`);
+    }
+    // System or unknown - go to profile
+    else {
+      navigate(`${baseRoute}/profile`);
+    }
+    
     setIsOpen(false);
   };
 
   const formatTimeAgo = (dateString) => {
     if (!dateString) return "";
+    // Ensure the date is parsed as UTC - append 'Z' if not present
+    let utcString = dateString;
+    if (!dateString.endsWith('Z') && !dateString.includes('+')) {
+      utcString = dateString + 'Z';
+    }
     const now = new Date();
-    const date = new Date(dateString);
+    const date = new Date(utcString);
     const diff = Math.floor((now - date) / 1000);
 
     if (diff < 60) return "Just now";
@@ -151,7 +171,7 @@ const NotificationDropdown = () => {
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-50">
+        <div className="absolute right-1/2 translate-x-1/2 sm:right-0 sm:translate-x-0 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-w-96 bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-50">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 dark:border-neutral-800">
             <h3 className="font-semibold text-neutral-900 dark:text-white">
@@ -181,38 +201,32 @@ const NotificationDropdown = () => {
                 </p>
               </div>
             ) : (
-              notifications.map((notification) => {
-                const icon = NOTIFICATION_ICONS[notification.type] || "🔔";
-                const color = NOTIFICATION_COLORS[notification.type] || "gray";
-
-                return (
-                  <div
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className={`flex items-start gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
-                      !notification.isRead ? "bg-primary-50/50 dark:bg-primary-900/10" : ""
-                    }`}
-                  >
-                    <span className="text-xl flex-shrink-0">{icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm ${!notification.isRead ? "font-medium" : ""} text-neutral-900 dark:text-white`}>
-                        {notification.title}
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`flex items-start gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer transition-colors ${
+                    !notification.isRead ? "bg-primary-50/50 dark:bg-primary-900/10" : ""
+                  }`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm ${!notification.isRead ? "font-medium" : ""} text-neutral-900 dark:text-white`}>
+                      {notification.title}
+                    </p>
+                    {notification.body && (
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
+                        {notification.body}
                       </p>
-                      {notification.body && (
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
-                          {notification.body}
-                        </p>
-                      )}
-                      <p className="text-xs text-neutral-400 mt-1">
-                        {formatTimeAgo(notification.createdAt)}
-                      </p>
-                    </div>
-                    {!notification.isRead && (
-                      <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-2"></span>
                     )}
+                    <p className="text-xs text-neutral-400 mt-1">
+                      {formatTimeAgo(notification.createdAt)}
+                    </p>
                   </div>
-                );
-              })
+                  {!notification.isRead && (
+                    <span className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-2"></span>
+                  )}
+                </div>
+              ))
             )}
           </div>
 

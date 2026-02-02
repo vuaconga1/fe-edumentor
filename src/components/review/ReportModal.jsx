@@ -1,26 +1,27 @@
 import React, { useState } from 'react';
 import { X, Flag, AlertTriangle, Check } from 'lucide-react';
 
-const ReportModal = ({ isOpen, onClose, reviewId, onSubmit }) => {
+const ReportModal = ({ isOpen, onClose, reviewId, onSubmit, loading: externalLoading }) => {
   const [reason, setReason] = useState('');
   const [details, setDetails] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Giả lập API call
-    setTimeout(() => {
-      onSubmit({ reviewId, reason, details });
-      setIsSubmitting(false);
+    try {
+      await onSubmit({ reviewId, reason, details });
       setReason('');
       setDetails('');
-      onClose();
-    }, 1000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const isLoading = isSubmitting || externalLoading;
 
   const reportReasons = [
     { value: 'spam', label: 'Spam or advertisement' },
@@ -102,20 +103,21 @@ const ReportModal = ({ isOpen, onClose, reviewId, onSubmit }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 text-sm font-semibold text-neutral-500 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-xl transition-colors"
+              disabled={isLoading}
+              className="flex-1 py-3 text-sm font-semibold text-neutral-500 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-xl transition-colors disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!reason || isSubmitting}
+              disabled={!reason || isLoading}
               className={`flex-1 py-3 text-sm font-semibold text-white rounded-xl shadow-lg shadow-red-500/20 flex items-center justify-center gap-2 transition-all
-                ${!reason || isSubmitting 
+                ${!reason || isLoading 
                   ? 'bg-neutral-300 dark:bg-neutral-800 cursor-not-allowed' 
                   : 'bg-red-600 hover:bg-red-700 active:scale-95'
                 }`}
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Report'}
+              {isLoading ? 'Submitting...' : 'Submit Report'}
             </button>
           </div>
 

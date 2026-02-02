@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, Play, DollarSign, Calendar } from 'lucide-react';
 
 /**
- * ActionPopup - Menu chức năng (Unified Blue Theme)
+ * ActionPopup - Action Menu (Unified Blue Theme)
  * Props:
  * - isOpen: boolean
  * - onClose: function
@@ -11,39 +11,38 @@ import { Image, Play, DollarSign, Calendar } from 'lucide-react';
 const ActionPopup = ({ isOpen, onClose, onAction }) => {
   if (!isOpen) return null;
 
-    const actions = [
-      {
-        id: 'image',
-        label: 'Send Image',
-        desc: 'JPG, PNG up to 5MB',
-        icon: Image,
-      },
-      {
-        id: 'deal-price',
-        label: 'Deal Price',
-        desc: 'Create a cost proposal',
-        icon: DollarSign,
-      },
-      {
-        id: 'start-work',
-        label: 'Start Work',
-        desc: 'Activate time tracking',
-        icon: Play,
-      },
-      {
-        id: 'schedule',
-        label: 'Schedule Meeting',
-        desc: 'Set up a meeting time',
-        icon: Calendar,
-      }
-    ];
+  const actions = [
+    {
+      id: 'image',
+      label: 'Send Image',
+      desc: 'JPG, PNG up to 5MB',
+      icon: Image,
+    },
+    {
+      id: 'deal-price',
+      label: 'Proposal',
+      desc: 'Create a cost proposal',
+      icon: DollarSign,
+    },
+    {
+      id: 'start-work',
+      label: 'Start Work',
+      desc: 'Activate time tracking',
+      icon: Play,
+    },
+    {
+      id: 'schedule',
+      label: 'Schedule Meeting',
+      desc: 'Set up a meeting time',
+      icon: Calendar,
+    }
+  ];
 
   return (
     <>
-      {/* Overlay tàng hình */}
-        {/* Invisible overlay */}
-      <div 
-        className="fixed inset-0 z-10" 
+      {/* Invisible overlay */}
+      <div
+        className="fixed inset-0 z-10"
         onClick={onClose}
       />
 

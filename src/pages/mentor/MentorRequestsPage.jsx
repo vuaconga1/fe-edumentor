@@ -1,38 +1,38 @@
 // src/pages/mentor/MentorRequestsPage.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  HiDocumentText, HiClock, HiCurrencyDollar, HiUser, HiTrash, 
+import {
+  HiDocumentText, HiClock, HiCurrencyDollar, HiUser, HiTrash,
   HiCheckCircle, HiXCircle, HiRefresh, HiChat, HiPaperAirplane
 } from "react-icons/hi";
 import requestApi from "../../api/requestApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const REQUEST_STATUS = {
-  Open: { label: "Pending", color: "yellow", icon: HiClock },
-  Accepted: { label: "Accepted", color: "green", icon: HiCheckCircle },
-  Rejected: { label: "Rejected", color: "red", icon: HiXCircle },
-  Closed: { label: "Closed", color: "gray", icon: HiXCircle },
+  Open: { label: "Pending", bgClass: "bg-yellow-100 dark:bg-yellow-900/30", textClass: "text-yellow-700 dark:text-yellow-400", icon: HiClock },
+  Accepted: { label: "Accepted", bgClass: "bg-green-100 dark:bg-green-900/30", textClass: "text-green-700 dark:text-green-400", icon: HiCheckCircle },
+  Rejected: { label: "Rejected", bgClass: "bg-red-100 dark:bg-red-900/30", textClass: "text-red-700 dark:text-red-400", icon: HiXCircle },
+  Closed: { label: "Closed", bgClass: "bg-gray-100 dark:bg-gray-900/30", textClass: "text-gray-700 dark:text-gray-400", icon: HiXCircle },
 };
 
 const PROPOSAL_STATUS = {
-  Pending: { label: "Pending", color: "yellow" },
-  Accepted: { label: "Accepted", color: "green" },
-  Rejected: { label: "Rejected", color: "red" },
-  Cancelled: { label: "Cancelled", color: "gray" },
+  Pending: { label: "Pending", bgClass: "bg-yellow-100 dark:bg-yellow-900/30", textClass: "text-yellow-700 dark:text-yellow-400" },
+  Accepted: { label: "Accepted", bgClass: "bg-green-100 dark:bg-green-900/30", textClass: "text-green-700 dark:text-green-400" },
+  Rejected: { label: "Rejected", bgClass: "bg-red-100 dark:bg-red-900/30", textClass: "text-red-700 dark:text-red-400" },
+  Cancelled: { label: "Cancelled", bgClass: "bg-gray-100 dark:bg-gray-900/30", textClass: "text-gray-700 dark:text-gray-400" },
 };
 
 const MentorRequestsPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("requests"); // "requests" | "proposals"
-  
+
   // Requests state (requests received from students)
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
   const [requestsError, setRequestsError] = useState("");
   const [requestsPage, setRequestsPage] = useState(1);
   const [requestsTotalPages, setRequestsTotalPages] = useState(1);
-  
+
   // Proposals state (proposals sent to community posts)
   const [proposals, setProposals] = useState([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
@@ -51,8 +51,6 @@ const MentorRequestsPage = () => {
       year: "numeric",
       month: "short",
       day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
@@ -69,13 +67,8 @@ const MentorRequestsPage = () => {
     setRequestsLoading(true);
     setRequestsError("");
     try {
-      // Try getting all requests - backend should filter to show requests sent TO this mentor
-      const res = await requestApi.getRequests({
-        pageNumber: requestsPage,
-        pageSize: 10,
-        sortBy: 'CreatedAt',
-        sortDescending: true
-      });
+      // Get requests specifically sent TO this mentor
+      const res = await requestApi.getReceivedRequests(requestsPage, 10);
       const data = res?.data?.data;
       setRequests(data?.items || []);
       setRequestsTotalPages(data?.totalPages || 1);
@@ -92,10 +85,11 @@ const MentorRequestsPage = () => {
     setProposalsLoading(true);
     setProposalsError("");
     try {
-      const res = await requestApi.getMyProposals(proposalsPage, 10);
+      const res = await requestApi.getMyProposals();
       const data = res?.data?.data;
-      setProposals(data?.items || []);
-      setProposalsTotalPages(data?.totalPages || 1);
+      // Backend returns array, not paged
+      setProposals(Array.isArray(data) ? data : data?.items || []);
+      setProposalsTotalPages(1);
     } catch (err) {
 
       setProposalsError(err?.response?.data?.message || "Failed to load proposals");
@@ -202,22 +196,20 @@ const MentorRequestsPage = () => {
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => { setActiveTab("requests"); setRequestsPage(1); }}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "requests"
-                ? "bg-primary-600 text-white"
-                : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            }`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === "requests"
+              ? "bg-primary-600 text-white"
+              : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              }`}
           >
             <HiDocumentText className="inline w-4 h-4 mr-1" />
             Received Requests
           </button>
           <button
             onClick={() => { setActiveTab("proposals"); setProposalsPage(1); }}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-              activeTab === "proposals"
-                ? "bg-primary-600 text-white"
-                : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            }`}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === "proposals"
+              ? "bg-primary-600 text-white"
+              : "bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              }`}
           >
             <HiPaperAirplane className="inline w-4 h-4 mr-1" />
             My Proposals
@@ -252,7 +244,7 @@ const MentorRequestsPage = () => {
                 {requests.map((req) => {
                   const statusConfig = REQUEST_STATUS[req.status] || REQUEST_STATUS.Open;
                   const StatusIcon = statusConfig.icon;
-                  
+
                   return (
                     <div
                       key={req.id}
@@ -265,20 +257,20 @@ const MentorRequestsPage = () => {
                           <div className="flex items-center gap-3 mb-3">
                             <img
                               src={
-                                normalizeAvatarUrl(req.studentAvatar) || 
-                                buildDefaultAvatarUrl({ 
-                                  id: req.studentId, 
-                                  email: req.studentEmail, 
-                                  fullName: req.studentName 
+                                normalizeAvatarUrl(req.studentAvatar) ||
+                                buildDefaultAvatarUrl({
+                                  id: req.studentId,
+                                  email: req.studentEmail,
+                                  fullName: req.studentName
                                 })
                               }
                               alt={req.studentName}
                               onError={(e) => {
                                 e.currentTarget.onerror = null;
-                                e.currentTarget.src = buildDefaultAvatarUrl({ 
-                                  id: req.studentId, 
-                                  email: req.studentEmail, 
-                                  fullName: req.studentName 
+                                e.currentTarget.src = buildDefaultAvatarUrl({
+                                  id: req.studentId,
+                                  email: req.studentEmail,
+                                  fullName: req.studentName
                                 });
                               }}
                               className="w-10 h-10 rounded-full object-cover"
@@ -320,10 +312,10 @@ const MentorRequestsPage = () => {
 
                         {/* Status & Actions */}
                         <div className="flex flex-col items-end gap-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${statusConfig.color}-100 text-${statusConfig.color}-700 dark:bg-${statusConfig.color}-900/30 dark:text-${statusConfig.color}-400`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                             {statusConfig.label}
                           </span>
-                          
+
                           {req.status === "Open" && (
                             <div className="flex items-center gap-2">
                               <button
@@ -418,7 +410,7 @@ const MentorRequestsPage = () => {
               <div className="space-y-4">
                 {proposals.map((proposal) => {
                   const statusConfig = PROPOSAL_STATUS[proposal.status] || PROPOSAL_STATUS.Pending;
-                  
+
                   return (
                     <div
                       key={proposal.id}
@@ -460,10 +452,10 @@ const MentorRequestsPage = () => {
 
                         {/* Status & Actions */}
                         <div className="flex flex-col items-end gap-3">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium bg-${statusConfig.color}-100 text-${statusConfig.color}-700 dark:bg-${statusConfig.color}-900/30 dark:text-${statusConfig.color}-400`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusConfig.bgClass} ${statusConfig.textClass}`}>
                             {statusConfig.label}
                           </span>
-                          
+
                           {proposal.status === "Pending" && (
                             <button
                               onClick={() => handleCancelProposal(proposal.id)}

@@ -16,7 +16,7 @@ import DepositModal from "../../components/wallet/DepositModal";
 import WithdrawModal from "../../components/wallet/WithdrawModal";
 import TransactionDetailModal from "../../components/wallet/TransactionDetailModal";
 
-import walletApi from "../../api/WalletApi";
+import walletApi from "../../api/walletApi";
 
 const WalletPage = () => {
   const [wallet, setWallet] = useState(null);
@@ -114,7 +114,7 @@ const WalletPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-neutral-500">
+      <div className="min-h-screen flex items-center justify-center text-neutral-500 dark:text-neutral-400 dark:bg-neutral-950">
         Loading wallet...
       </div>
     );
@@ -122,7 +122,7 @@ const WalletPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
+      <div className="min-h-screen flex items-center justify-center text-red-600 dark:text-red-400 dark:bg-neutral-950">
         {error}
       </div>
     );
@@ -219,10 +219,10 @@ const WalletPage = () => {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 pb-6">
             <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <p className="text-xs text-neutral-500 mb-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 Escrow
               </p>
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">
                 {showBalance
                   ? formatCurrency(escrowBalance)
                   : "••••••"}
@@ -230,10 +230,10 @@ const WalletPage = () => {
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <p className="text-xs text-neutral-500 mb-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 Pending Withdraw
               </p>
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">
                 {showBalance
                   ? formatCurrency(pendingWithdraw)
                   : "••••••"}
@@ -241,10 +241,10 @@ const WalletPage = () => {
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <p className="text-xs text-neutral-500 mb-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 Total Deposited
               </p>
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">
                 {showBalance
                   ? formatCurrency(totalEarnings)
                   : "••••••"}
@@ -252,10 +252,10 @@ const WalletPage = () => {
             </div>
 
             <div className="bg-white dark:bg-neutral-900 rounded-xl p-4 border border-neutral-200 dark:border-neutral-700">
-              <p className="text-xs text-neutral-500 mb-1">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">
                 This Month Spent
               </p>
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">
                 {showBalance
                   ? formatCurrency(thisMonthSpent)
                   : "••••••"}
@@ -270,18 +270,18 @@ const WalletPage = () => {
         <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
           <div className="p-4 border-b border-neutral-200 dark:border-neutral-700">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <h3 className="text-lg font-bold">
+              <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
                 Transaction History
               </h3>
 
-              <div className="flex gap-2 overflow-x-auto">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 {filters.map((filter) => (
                   <button
                     key={filter.id}
                     onClick={() => setActiveFilter(filter.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium ${activeFilter === filter.id
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === filter.id
                       ? "bg-blue-600 text-white"
-                      : "bg-neutral-100 text-neutral-600"
+                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700"
                       }`}
                   >
                     {filter.label}
@@ -293,7 +293,7 @@ const WalletPage = () => {
 
           <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
             {filteredTransactions.length === 0 ? (
-              <div className="p-12 text-center text-neutral-500">
+              <div className="p-12 text-center text-neutral-500 dark:text-neutral-400">
                 No transactions found
               </div>
             ) : (
@@ -305,17 +305,17 @@ const WalletPage = () => {
                   <button
                     key={tx.id}
                     onClick={() => setSelectedTransaction(tx)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-neutral-50 text-left"
+                    className="w-full flex items-center justify-between p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                         <Icon size={18} />
                       </div>
                       <div>
-                        <p className="font-medium text-sm">
+                        <p className="font-medium text-sm text-neutral-900 dark:text-white">
                           {tx.title || tx.type}
                         </p>
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
                           {formatTime(tx.createdAt || tx.time)}
                         </span>
                       </div>
@@ -324,14 +324,14 @@ const WalletPage = () => {
                     <div className="flex items-center gap-2">
                       <p
                         className={`font-semibold text-sm ${amount > 0
-                          ? "text-blue-600"
-                          : "text-neutral-900"
+                          ? "text-blue-600 dark:text-blue-400"
+                          : "text-neutral-900 dark:text-white"
                           }`}
                       >
                         {amount > 0 ? "+" : "-"}
                         {formatCurrency(Math.abs(amount))}
                       </p>
-                      <ChevronRight size={16} />
+                      <ChevronRight size={16} className="text-neutral-400 dark:text-neutral-500" />
                     </div>
                   </button>
                 );

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, UploadCloud, Calendar, DollarSign, Clock } from "lucide-react";
 
 /**
- * ActionModals - Quản lý hiển thị các popup chức năng chat
+ * ActionModals - Managing chat action popups
  * Props:
  * - isOpen: boolean
  * - onClose: function
@@ -11,7 +11,7 @@ import { X, UploadCloud, Calendar, DollarSign, Clock } from "lucide-react";
  */
 const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
   const fileInputRef = useRef(null);
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     price: "",
     desc: "",
     date: "",
@@ -23,7 +23,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
   const [filePreviewUrl, setFilePreviewUrl] = useState(null);
 
-  // Tạo preview cho ảnh
+  // Create image preview
   useEffect(() => {
     if (!formData.file) {
       setFilePreviewUrl(null);
@@ -35,7 +35,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     return () => URL.revokeObjectURL(url);
   }, [formData.file]);
 
-  // Reset form khi mở mới
+  // Reset form when opening
   useEffect(() => {
     if (isOpen) {
       setFormData({ price: "", desc: "", date: "", time: "", file: null });
@@ -49,10 +49,6 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
   const setPickedFile = (file) => {
     if (!file) return;
-
-
-    // Only allow images
-
 
     setFormData((prev) => ({ ...prev, file }));
   };
@@ -86,7 +82,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     onClose();
   };
 
-  // --- RENDER CONTENT THEO TYPE ---
+  // --- RENDER CONTENT BY TYPE ---
   const renderContent = () => {
     switch (type) {
       case "deal-price":
@@ -97,16 +93,16 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 <DollarSign size={24} />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Đề xuất chi phí
+                Proposal Price
               </h3>
               <p className="text-sm text-neutral-500">
-                Nhập mức giá bạn muốn đề xuất cho mentor
+                Enter the price you want to propose to the mentor
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Mức giá (VND)
+                Amount (VND)
               </label>
               <input
                 type="number"
@@ -114,7 +110,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, price: e.target.value })
                 }
-                placeholder="Ví dụ: 500,000"
+                placeholder="Example: 500,000"
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-lg font-semibold"
                 autoFocus
               />
@@ -122,14 +118,14 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Ghi chú
+                Note
               </label>
               <textarea
                 value={formData.desc}
                 onChange={(e) =>
                   setFormData({ ...formData, desc: e.target.value })
                 }
-                placeholder="Mô tả công việc..."
+                placeholder="Describe the work..."
                 rows={3}
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
               />
@@ -145,17 +141,17 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 <Calendar size={24} />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Đặt lịch hẹn
+                Schedule Meeting
               </h3>
               <p className="text-sm text-neutral-500">
-                Chọn thời gian phù hợp để trao đổi
+                Choose a suitable time to discuss
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  Ngày
+                  Date
                 </label>
                 <input
                   type="date"
@@ -167,7 +163,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  Giờ
+                  Time
                 </label>
                 <input
                   type="time"
@@ -181,11 +177,11 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Nội dung buổi hẹn
+                Meeting Content
               </label>
               <input
                 type="text"
-                placeholder="Ví dụ: Trao đổi về Project React..."
+                placeholder="Example: Discuss React Project..."
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                 onChange={(e) =>
                   setFormData({ ...formData, desc: e.target.value })
@@ -200,7 +196,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
           <div className="space-y-4">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Gửi hình ảnh
+                Send Image
               </h3>
             </div>
 
@@ -221,13 +217,13 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                     <UploadCloud size={32} />
                   </div>
                   <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Nhấn để tải ảnh lên
+                    Click to upload image
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    hoặc kéo thả vào đây
+                    or drag and drop here
                   </p>
                   <p className="text-[11px] text-neutral-400 mt-3">
-                    Chỉ nhận file ảnh (PNG/JPG/WebP/GIF)
+                    Supported: PNG/JPG/WebP/GIF
                   </p>
                 </>
               ) : (
@@ -261,7 +257,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                         }}
                         className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                       >
-                        Đổi ảnh
+                        Change
                       </button>
                       <button
                         type="button"
@@ -271,7 +267,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                         }}
                         className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
                       >
-                        Xóa
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -286,8 +282,6 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               onChange={onFileChange}
               className="hidden"
             />
-
-          
           </div>
         );
 
@@ -299,11 +293,10 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
             </div>
             <div>
               <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
-                Bắt đầu phiên làm việc?
+                Start Work Session?
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 px-4">
-                Hệ thống sẽ bắt đầu tính giờ làm việc. Hãy đảm bảo bạn đã trao
-                đổi kỹ với Mentor.
+                The system will start tracking time. Please ensure you have discussed with the Mentor.
               </p>
             </div>
           </div>
@@ -314,7 +307,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     }
   };
 
-  // --- XÁC ĐỊNH MÀU NÚT THEO TYPE ---
+  // --- DETERMINE BUTTON COLOR BY TYPE ---
   const getButtonColor = () => {
     switch (type) {
       case "deal-price":
@@ -345,7 +338,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
             onClick={onClose}
             className="flex-1 py-2.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
-            Hủy bỏ
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
@@ -355,7 +348,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               : ""
               }`}
           >
-            Xác nhận
+            Confirm
           </button>
         </div>
       </div>

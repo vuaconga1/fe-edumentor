@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search, Users } from 'lucide-react';
 
-const FollowersModal = ({ isOpen, onClose, followers = [] }) => {
+const FollowersModal = ({ isOpen, onClose, followers = [], title = "Followers" }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -34,7 +34,7 @@ const FollowersModal = ({ isOpen, onClose, followers = [] }) => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-neutral-900 dark:to-neutral-900">
           <div className="flex items-center gap-2 text-neutral-900 dark:text-white">
             <Users size={20} />
-            <h3 className="font-bold text-lg">Followers</h3>
+            <h3 className="font-bold text-lg">{title}</h3>
             <span className="text-sm text-neutral-500 dark:text-neutral-400">
               ({followers.length})
             </span>
@@ -55,7 +55,7 @@ const FollowersModal = ({ isOpen, onClose, followers = [] }) => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search followers..."
+              placeholder={`Search ${title.toLowerCase()}...`}
               className="w-full pl-10 pr-4 py-2.5 bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl text-neutral-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>

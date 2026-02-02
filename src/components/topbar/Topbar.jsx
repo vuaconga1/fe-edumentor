@@ -9,7 +9,7 @@ export default function Topbar({ onMenuClick, title = "Dashboard", user }) {
   return (
     <header className="fixed top-0 left-0 right-0 w-full h-14 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-neutral-200 dark:border-neutral-800 px-4 flex items-center justify-between z-40">
       {/* LEFT: Hamburger + Logo */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Hamburger button - only visible on mobile */}
         <button
           onClick={onMenuClick}
@@ -19,9 +19,9 @@ export default function Topbar({ onMenuClick, title = "Dashboard", user }) {
         </button>
 
         {/* Logo */}
-        <a className="flex items-center gap-2 group" href="/" data-discover="true">
-          <img className="h-8 sm:h-10 transition-transform group-hover:scale-105" alt="EduMentor Logo" src="/edumentor-logo.png" />
-          <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-sky-500 bg-clip-text text-transparent">EduMentor</span>
+        <a className="flex items-center gap-1.5 sm:gap-2 group" href="/" data-discover="true">
+          <img className="h-7 sm:h-8 md:h-10 transition-transform group-hover:scale-105" alt="EduMentor Logo" src="/edumentor-logo.png" />
+          <span className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-primary-600 to-sky-500 bg-clip-text text-transparent">EduMentor</span>
         </a>
       </div>
 

@@ -184,11 +184,24 @@ const EditMentorProfilePage = () => {
       try {
         setLoadingCatHash(true);
         const [catRes, hashRes] = await Promise.all([
-          axiosClient.get("/api/Admin/categories"),
-          axiosClient.get("/api/Admin/hashtags"),
+          axiosClient.get("/api/Category"),
+          axiosClient.get("/api/hashtags"),
         ]);
-        setAllCategories(catRes?.data?.data || []);
-        setAllHashtags(hashRes?.data?.data?.items || []);
+        
+        // Flatten categories: parent first, then children
+        const parentCats = catRes?.data?.data || [];
+        const flattenedCats = [];
+        parentCats.forEach(parent => {
+          flattenedCats.push(parent);
+          if (parent.children && parent.children.length > 0) {
+            parent.children.forEach(child => {
+              flattenedCats.push({ ...child, parentId: parent.id });
+            });
+          }
+        });
+        
+        setAllCategories(flattenedCats);
+        setAllHashtags(hashRes?.data?.data || []);
       } catch (err) {
         console.log("Fetch categories/hashtags failed:", err);
       } finally {
@@ -198,12 +211,48 @@ const EditMentorProfilePage = () => {
     fetchCatHash();
   }, []);
 
+  // Load hashtags when categories change
+  useEffect(() => {
+    if (selectedCategoryIds.length > 0) {
+      loadHashtagsByCategories(selectedCategoryIds);
+    }
+  }, [selectedCategoryIds]);
+
+  const loadHashtagsByCategories = async (categoryIds) => {
+    try {
+      const allHashtags = [];
+      const seenIds = new Set();
+
+      for (const catId of categoryIds) {
+        const res = await axiosClient.get(`/api/Category/${catId}/hashtags`);
+        if (res?.data?.data?.hashtags) {
+          for (const h of res.data.data.hashtags) {
+            if (!seenIds.has(h.id)) {
+              seenIds.add(h.id);
+              allHashtags.push(h);
+            }
+          }
+        }
+      }
+      setAllHashtags(allHashtags);
+    } catch (err) {
+      console.log("Failed to load hashtags by categories:", err);
+    }
+  };
+
   const toggleCategory = (catId) => {
-    setSelectedCategoryIds((prev) =>
-      prev.includes(catId)
+    setSelectedCategoryIds((prev) => {
+      const newCategoryIds = prev.includes(catId)
         ? prev.filter((id) => id !== catId)
-        : [...prev, catId]
-    );
+        : [...prev, catId];
+      
+      // Clear selected hashtags when unchecking category
+      if (prev.includes(catId)) {
+        setSelectedHashtagIds([]);
+      }
+      
+      return newCategoryIds;
+    });
   };
 
   const toggleHashtag = (hashId) => {
@@ -481,6 +530,7 @@ const EditMentorProfilePage = () => {
                       name="phone"
                       value={form.phone}
                       onChange={handleChange}
+                      placeholder="Your phone"
                       className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -680,6 +730,7 @@ const EditMentorProfilePage = () => {
                               <label
                                 key={cat.id}
                                 className="flex items-center px-4 py-2.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer"
+                                style={{ paddingLeft: cat.parentId ? '2.5rem' : '1rem' }}
                               >
                                 <input
                                   type="checkbox"
@@ -687,8 +738,8 @@ const EditMentorProfilePage = () => {
                                   onChange={() => toggleCategory(cat.id)}
                                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
-                                <span className="ml-3 text-sm text-neutral-700 dark:text-neutral-300">
-                                  {cat.name}
+                                <span className={`ml-3 text-sm text-neutral-700 dark:text-neutral-300 ${!cat.parentId ? 'font-semibold' : ''}`}>
+                                  {cat.parentId ? '└─ ' : ''}{cat.name}
                                 </span>
                               </label>
                             ))}
@@ -724,7 +775,7 @@ const EditMentorProfilePage = () => {
                     {/* Hashtags Dropdown */}
                     <div ref={hashtagDropdownRef}>
                       <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-2">
-                        <HiTag className="w-4 h-4 text-emerald-600" />
+                        <HiTag className="w-4 h-4 text-blue-600" />
                         Skills (Hashtags)
                       </label>
                       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
@@ -734,7 +785,7 @@ const EditMentorProfilePage = () => {
                         <button
                           type="button"
                           onClick={() => setHashtagDropdownOpen(!hashtagDropdownOpen)}
-                          className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-left flex items-center justify-between focus:ring-2 focus:ring-emerald-500"
+                          className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500"
                         >
                           <span className="text-sm text-neutral-700 dark:text-neutral-300">
                             {selectedHashtagIds.length === 0
@@ -755,7 +806,7 @@ const EditMentorProfilePage = () => {
                                   type="checkbox"
                                   checked={selectedHashtagIds.includes(tag.id)}
                                   onChange={() => toggleHashtag(tag.id)}
-                                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                                 />
                                 <span className="ml-3 text-sm text-neutral-700 dark:text-neutral-300">
                                   #{tag.name}
@@ -774,13 +825,13 @@ const EditMentorProfilePage = () => {
                             return tag ? (
                               <span
                                 key={tagId}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg"
                               >
                                 #{tag.name}
                                 <button
                                   type="button"
                                   onClick={() => toggleHashtag(tagId)}
-                                  className="hover:text-emerald-900 dark:hover:text-emerald-200"
+                                  className="hover:text-blue-900 dark:hover:text-blue-200"
                                 >
                                   ×
                                 </button>
@@ -791,23 +842,6 @@ const EditMentorProfilePage = () => {
                       )}
                     </div>
 
-                    {/* New hashtags (optional) - Full width */}
-                    <div className="lg:col-span-2">
-                      <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                        Add New Skills (comma separated)
-                      </label>
-                      <input
-                        type="text"
-                        name="newHashtagsText"
-                        value={form.newHashtagsText}
-                        onChange={handleChange}
-                        placeholder="reactjs, nodejs, typescript"
-                        className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <p className="text-xs text-neutral-500 mt-1">
-                        Add new skills if your skill is not listed in the dropdown
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>

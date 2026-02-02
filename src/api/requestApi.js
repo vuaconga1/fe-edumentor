@@ -72,17 +72,13 @@ const requestApi = {
   },
 
   // Get proposals sent by current mentor
-  getMyProposals(pageNumber = 1, pageSize = 10) {
-    return axiosClient.get("/api/Community/proposals/my-proposals", {
-      params: { pageNumber, pageSize }
-    });
+  getMyProposals() {
+    return axiosClient.get("/api/Community/proposals/my-proposals");
   },
 
   // Get proposals received on my posts (for students)
-  getReceivedProposals(pageNumber = 1, pageSize = 10) {
-    return axiosClient.get("/api/Community/proposals/received", {
-      params: { pageNumber, pageSize }
-    });
+  getReceivedProposals() {
+    return axiosClient.get("/api/Community/proposals/received");
   },
 
   // Create a new proposal (mentors only) - on a community post
@@ -101,14 +97,12 @@ const requestApi = {
     return axiosClient.post(`/api/Proposal/${proposalId}/cancel`);
   },
 
-  // Accept a proposal (student only) - opens chat
   acceptProposal(proposalId) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/accept`);
+    return axiosClient.post(`/api/Community/proposals/${proposalId}/accept`);
   },
 
-  // Reject a proposal (student only)
   rejectProposal(proposalId, reason = null) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/reject`);
+    return axiosClient.post(`/api/Community/proposals/${proposalId}/reject`);
   },
 };
 

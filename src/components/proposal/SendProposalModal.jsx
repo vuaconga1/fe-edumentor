@@ -1,16 +1,78 @@
 // src/components/proposal/SendProposalModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HiX, HiCurrencyDollar, HiClock, HiPaperAirplane } from 'react-icons/hi';
 import requestApi from '../../api/requestApi';
 
 const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [checkingExisting, setCheckingExisting] = useState(false);
+  const [hasPendingProposal, setHasPendingProposal] = useState(false);
   const [formData, setFormData] = useState({
     price: '',
     estimatedHours: '',
     message: '',
   });
+
+  const isPendingStatus = (status) => {
+    if (typeof status === 'number') {
+      return status === 0; // Pending status
+    }
+    const normalized = String(status || '').toLowerCase();
+    return normalized === 'pending' || normalized === 'open';
+  };
+
+  const checkExistingProposal = async () => {
+    if (!post?.id) return false;
+    
+    try {
+      let page = 1;
+      let totalPages = 1;
+
+      do {
+        const res = await requestApi.getMyProposals(page, 50);
+        const data = res?.data?.data;
+        const items = data?.items || [];
+        totalPages = data?.totalPages || 1;
+
+        const pending = items.some((proposal) => {
+          const postIdMatch = proposal?.postId === post.id || proposal?.communityPostId === post.id;
+          const statusCheck = isPendingStatus(proposal?.status);
+          return postIdMatch && statusCheck;
+        });
+
+        if (pending) {
+          return true;
+        }
+        page += 1;
+      } while (page <= totalPages && page <= 5);
+
+      return false;
+    } catch (err) {
+      console.error('Check existing proposal failed:', err);
+      return false;
+    }
+  };
+
+  // Check for pending proposals when modal opens
+  useEffect(() => {
+    const checkPending = async () => {
+      if (!isOpen || !post?.id) return;
+      
+      setCheckingExisting(true);
+      setHasPendingProposal(false);
+      try {
+        const pending = await checkExistingProposal();
+        setHasPendingProposal(pending);
+      } catch (err) {
+        console.error('Check pending failed:', err);
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+
+    checkPending();
+  }, [isOpen, post?.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,10 +96,19 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
       return;
     }
 
+    // Re-check pending before submit
     setLoading(true);
     setError('');
 
     try {
+      const pending = await checkExistingProposal();
+      if (pending) {
+        setHasPendingProposal(true);
+        setError('You already have a pending proposal for this post. Please wait for the student to respond.');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         postId: post.id,
         price: Number(formData.price),
@@ -91,6 +162,19 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {checkingExisting && (
+            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 text-sm flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              Checking for existing proposals...
+            </div>
+          )}
+
+          {hasPendingProposal && !checkingExisting && (
+            <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 text-sm">
+              ⚠️ You already have a pending proposal for this post. Please wait for the student to respond.
+            </div>
+          )}
+
           {error && (
             <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
               {error}
@@ -166,13 +250,13 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-medium transition-colors flex items-center justify-center gap-2"
+              disabled={loading || checkingExisting || hasPendingProposal}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-medium transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? (
+              {loading || checkingExisting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Sending...
+                  {checkingExisting ? 'Checking...' : 'Sending...'}
                 </>
               ) : (
                 <>
