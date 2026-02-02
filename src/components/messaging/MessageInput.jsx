@@ -6,8 +6,9 @@ import ActionModals from "./ActionModals";
 /**
  * Props:
  * - onSend: (text: string) => void | Promise<void>
+ *  * - onStartWork: () => void | Promise<void>
  */
-export default function MessageInput({ onSend }) {
+export default function MessageInput({ onSend, onStartWork }) {
   const [message, setMessage] = useState("");
   const [showActionPopup, setShowActionPopup] = useState(false);
   const [activeModal, setActiveModal] = useState(null);
@@ -43,6 +44,9 @@ export default function MessageInput({ onSend }) {
   };
 
   const handleSubmitAction = async (type, data) => {
+    if (type === "start-work") {
+      await onStartWork?.(data);
+    }
     // nếu mày muốn gửi system message thì làm ở đây
     setActiveModal(null);
   };
