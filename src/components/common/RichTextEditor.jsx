@@ -1,185 +1,226 @@
-import React, { useEffect, useRef, useLayoutEffect } from 'react';
-import Quill from 'quill';
-import 'quill/dist/quill.snow.css';
+import React, { useEffect } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import Link from '@tiptap/extension-link';
+import Placeholder from '@tiptap/extension-placeholder';
 
 const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." }) => {
-    const wrapperRef = useRef(null);
-    const quillRef = useRef(null);
-    const onChangeRef = useRef(onChange);
+    const editor = useEditor({
+        extensions: [
+            StarterKit.configure({
+                heading: {
+                    levels: [1, 2],
+                },
+            }),
+            Underline,
+            Link.configure({
+                openOnClick: false,
+            }),
+            Placeholder.configure({
+                placeholder,
+            }),
+        ],
+        content: content || '',
+        onUpdate: ({ editor }) => {
+            const html = editor.isEmpty ? '' : editor.getHTML();
+            onChange?.(html);
+        },
+    });
 
-    // Keep onChange ref updated
+    // Update content when prop changes
     useEffect(() => {
-        onChangeRef.current = onChange;
-    }, [onChange]);
-
-    // Initialize Quill only once
-    useLayoutEffect(() => {
-        if (!wrapperRef.current) return;
-
-        // Clear wrapper first to prevent duplicates
-        wrapperRef.current.innerHTML = '';
-        
-        // Create editor container
-        const editorDiv = document.createElement('div');
-        wrapperRef.current.appendChild(editorDiv);
-
-        const quill = new Quill(editorDiv, {
-            theme: 'snow',
-            placeholder,
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline', 'code'],
-                    [{ 'header': 1 }, { 'header': 2 }],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }, 'blockquote'],
-                    ['link'],
-                    ['clean'],
-                ],
-            },
-        });
-
-        // Set initial content
-        if (content) {
-            quill.root.innerHTML = content;
+        if (editor && content !== editor.getHTML()) {
+            editor.commands.setContent(content || '');
         }
+    }, [content, editor]);
 
-        quill.on('text-change', () => {
-            const html = quill.root.innerHTML;
-            const isEmpty = html === '<p><br></p>' || !quill.getText().trim();
-            onChangeRef.current(isEmpty ? '' : html);
-        });
-
-        quillRef.current = quill;
-
-        return () => {
-            quillRef.current = null;
-        };
-    }, []);
+    if (!editor) {
+        return null;
+    }
 
     return (
         <div className="rich-text-editor">
-            <div ref={wrapperRef} />
+            <div className="toolbar">
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBold().run()}
+                    className={editor.isActive('bold') ? 'is-active' : ''}
+                >
+                    <strong>B</strong>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleItalic().run()}
+                    className={editor.isActive('italic') ? 'is-active' : ''}
+                >
+                    <em>I</em>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleUnderline().run()}
+                    className={editor.isActive('underline') ? 'is-active' : ''}
+                >
+                    <u>U</u>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleCode().run()}
+                    className={editor.isActive('code') ? 'is-active' : ''}
+                >
+                    {'</>'}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+                    className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+                >
+                    H1
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+                    className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+                >
+                    H2
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBulletList().run()}
+                    className={editor.isActive('bulletList') ? 'is-active' : ''}
+                >
+                    •
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleOrderedList().run()}
+                    className={editor.isActive('orderedList') ? 'is-active' : ''}
+                >
+                    1.
+                </button>
+                <button
+                    type="button"
+                    onClick={() => editor.chain().focus().toggleBlockquote().run()}
+                    className={editor.isActive('blockquote') ? 'is-active' : ''}
+                >
+                    "
+                </button>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const url = window.prompt('URL');
+                        if (url) {
+                            editor.chain().focus().setLink({ href: url }).run();
+                        }
+                    }}
+                    className={editor.isActive('link') ? 'is-active' : ''}
+                >
+                    Link
+                </button>
+            </div>
+
+            <EditorContent editor={editor} />
 
             <style>{`
-                .rich-text-editor .ql-toolbar {
+                .rich-text-editor .toolbar {
+                    display: flex;
+                    gap: 0.25rem;
+                    padding: 0.5rem;
                     border-top-left-radius: 0.75rem;
                     border-top-right-radius: 0.75rem;
-                    border-color: rgb(229 231 235);
+                    border: 1px solid rgb(229 231 235);
+                    border-bottom: none;
                     background-color: rgb(249 250 251);
+                    flex-wrap: wrap;
                 }
-                .rich-text-editor .ql-container {
-                    border-bottom-left-radius: 0.75rem;
-                    border-bottom-right-radius: 0.75rem;
-                    border-color: rgb(229 231 235);
-                    font-size: 16px;
+                .rich-text-editor .toolbar button {
+                    padding: 0.375rem 0.75rem;
+                    border: 1px solid rgb(229 231 235);
+                    border-radius: 0.375rem;
+                    background-color: white;
+                    cursor: pointer;
+                    font-size: 0.875rem;
+                    transition: all 0.15s;
                 }
-                .rich-text-editor .ql-editor {
+                .rich-text-editor .toolbar button:hover {
+                    background-color: rgb(243 244 246);
+                }
+                .rich-text-editor .toolbar button.is-active {
+                    background-color: rgb(59 130 246);
+                    color: white;
+                    border-color: rgb(59 130 246);
+                }
+                .rich-text-editor .ProseMirror {
                     min-height: 150px;
                     padding: 1rem;
+                    border-bottom-left-radius: 0.75rem;
+                    border-bottom-right-radius: 0.75rem;
+                    border: 1px solid rgb(229 231 235);
+                    font-size: 16px;
+                    outline: none;
                 }
-                .rich-text-editor .ql-editor.ql-blank::before {
+                .rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
                     color: rgb(156 163 175);
-                    font-style: normal;
-                    left: 1rem;
-                    right: 1rem;
+                    content: attr(data-placeholder);
+                    float: left;
+                    height: 0;
+                    pointer-events: none;
                 }
                 /* Dark mode support */
-                .dark .rich-text-editor .ql-toolbar {
+                .dark .rich-text-editor .toolbar {
                     border-color: rgb(64 64 64);
                     background-color: rgb(38 38 38);
                 }
-                .dark .rich-text-editor .ql-container {
+                .dark .rich-text-editor .toolbar button {
+                    border-color: rgb(64 64 64);
+                    background-color: rgb(23 23 23);
+                    color: rgb(163 163 163);
+                }
+                .dark .rich-text-editor .toolbar button:hover {
+                    background-color: rgb(38 38 38);
+                }
+                .dark .rich-text-editor .ProseMirror {
                     border-color: rgb(64 64 64);
                     background-color: rgb(23 23 23);
                     color: white;
                 }
-                .dark .rich-text-editor .ql-toolbar .ql-stroke {
-                    stroke: rgb(163 163 163);
-                }
-                .dark .rich-text-editor .ql-toolbar .ql-fill {
-                    fill: rgb(163 163 163);
-                }
-                .dark .rich-text-editor .ql-toolbar .ql-picker {
-                    color: rgb(163 163 163);
-                }
-                .dark .rich-text-editor .ql-toolbar .ql-picker-options {
-                    background-color: rgb(38 38 38);
-                    border-color: rgb(64 64 64);
-                }
-                .dark .rich-text-editor .ql-toolbar button:hover .ql-stroke,
-                .dark .rich-text-editor .ql-toolbar .ql-picker-label:hover .ql-stroke {
-                    stroke: rgb(255 255 255);
-                }
-                .dark .rich-text-editor .ql-toolbar button:hover .ql-fill,
-                .dark .rich-text-editor .ql-toolbar .ql-picker-label:hover .ql-fill {
-                    fill: rgb(255 255 255);
-                }
-                .dark .rich-text-editor .ql-toolbar button.ql-active .ql-stroke {
-                    stroke: rgb(59 130 246);
-                }
-                .dark .rich-text-editor .ql-toolbar button.ql-active .ql-fill {
-                    fill: rgb(59 130 246);
-                }
-                .dark .rich-text-editor .ql-editor.ql-blank::before {
-                    color: rgb(115 115 115);
-                }
-                /* Link styling */
-                .rich-text-editor .ql-editor a {
-                    color: rgb(37 99 235);
-                }
-                .rich-text-editor .ql-editor a:hover {
-                    text-decoration: underline;
-                }
-                /* Blockquote styling */
-                .rich-text-editor .ql-editor blockquote {
-                    border-left: 4px solid rgb(59 130 246);
-                    padding-left: 1rem;
-                    margin-left: 0;
-                    margin-right: 0;
-                    color: rgb(107 114 128);
-                }
-                .dark .rich-text-editor .ql-editor blockquote {
-                    color: rgb(163 163 163);
-                }
-                /* Code styling */
-                .rich-text-editor .ql-editor code {
-                    background-color: rgb(243 244 246);
-                    padding: 0.125rem 0.375rem;
-                    border-radius: 0.25rem;
-                    font-family: ui-monospace, monospace;
-                }
-                .dark .rich-text-editor .ql-editor code {
-                    background-color: rgb(64 64 64);
-                }
-                /* Heading styling */
-                .rich-text-editor .ql-editor h1 {
+                /* Content styling */
+                .rich-text-editor .ProseMirror h1 {
                     font-size: 2em;
                     font-weight: bold;
-                    margin-bottom: 0.5rem;
+                    margin: 0.67em 0;
                 }
-                .rich-text-editor .ql-editor h2 {
+                .rich-text-editor .ProseMirror h2 {
                     font-size: 1.5em;
                     font-weight: bold;
-                    margin-bottom: 0.5rem;
+                    margin: 0.75em 0;
                 }
-                /* List styling */
-                .rich-text-editor .ql-editor ol,
-                .rich-text-editor .ql-editor ul {
+                .rich-text-editor .ProseMirror ul,
+                .rich-text-editor .ProseMirror ol {
                     padding-left: 1.5rem;
                 }
-                /* Snow tooltip (link input) dark mode */
-                .dark .ql-snow .ql-tooltip {
+                .rich-text-editor .ProseMirror blockquote {
+                    border-left: 3px solid rgb(229 231 235);
+                    padding-left: 1rem;
+                    margin-left: 0;
+                    color: rgb(107 114 128);
+                }
+                .dark .rich-text-editor .ProseMirror blockquote {
+                    border-left-color: rgb(64 64 64);
+                    color: rgb(156 163 175);
+                }
+                .rich-text-editor .ProseMirror a {
+                    color: rgb(59 130 246);
+                    text-decoration: underline;
+                }
+                .rich-text-editor .ProseMirror code {
+                    background-color: rgb(243 244 246);
+                    padding: 0.125rem 0.25rem;
+                    border-radius: 0.25rem;
+                    font-family: monospace;
+                }
+                .dark .rich-text-editor .ProseMirror code {
                     background-color: rgb(38 38 38);
-                    border-color: rgb(64 64 64);
-                    color: white;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-                }
-                .dark .ql-snow .ql-tooltip input[type="text"] {
-                    background-color: rgb(23 23 23);
-                    border-color: rgb(64 64 64);
-                    color: white;
-                }
-                .dark .ql-snow .ql-tooltip a {
-                    color: rgb(96 165 250);
                 }
             `}</style>
         </div>

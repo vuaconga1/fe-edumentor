@@ -98,11 +98,11 @@ const requestApi = {
   },
 
   acceptProposal(proposalId) {
-    return axiosClient.post(`/api/Community/proposals/${proposalId}/accept`);
+    return axiosClient.put(`/api/Community/proposals/${proposalId}/accept`);
   },
 
   rejectProposal(proposalId, reason = null) {
-    return axiosClient.post(`/api/Community/proposals/${proposalId}/reject`);
+    return axiosClient.put(`/api/Community/proposals/${proposalId}/reject`);
   },
 };
 
