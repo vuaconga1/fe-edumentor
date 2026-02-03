@@ -23,21 +23,6 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
   const [filePreviewUrl, setFilePreviewUrl] = useState(null);
 
-  // Tạo preview cho ảnh
-  useEffect(() => {
-    if (!formData.file) {
-      setFilePreviewUrl(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(formData.file);
-    setFilePreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [formData.file]);
-
-
-  const [filePreviewUrl, setFilePreviewUrl] = useState(null);
-
   // Create image preview
   useEffect(() => {
     if (!formData.file) {

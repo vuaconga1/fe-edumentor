@@ -42,9 +42,12 @@ import WalletPage from '../pages/common/WalletPage';
 import OrderHistoryPage from '../pages/student/OrderHistoryPage';
 import MentorReviewsPage from '../pages/mentor/MentorReviewsPage';
 import MentorProfilePage from '../pages/mentor/MentorProfilePage';
+import MentorRequestsPage from '../pages/mentor/MentorRequestsPage';
 import StudentProfilePage from '../pages/student/StudentProfilePage';
 import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
 import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
+import MentorDetailPage from '../pages/student/MentorDetailPage';
+import MyRequestsPage from '../pages/student/MyRequestsPage';
 import JoinGroupPage from '../pages/JoinGroupPage';
 
 const AppRoutes = () => {
