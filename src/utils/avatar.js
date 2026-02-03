@@ -24,6 +24,27 @@ export function normalizeAvatarUrl(url) {
   return `${apiBase}/${s}`;
 }
 
+// Normalize file URL (similar to avatar but for any file)
+export function normalizeFileUrl(url) {
+  if (!url) return null;
+
+  const s = String(url).trim();
+  if (!s) return null;
+
+  // absolute url
+  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+
+  // blob url
+  if (s.startsWith("blob:")) return s;
+
+  // relative path -> prefix API base
+  const apiBase = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "");
+  if (!apiBase) return s;
+
+  if (s.startsWith("/")) return `${apiBase}${s}`;
+  return `${apiBase}/${s}`;
+}
+
 // Palette màu đẹp để nhìn "random" nhưng không xấu
 const PALETTE = [
   "1abc9c", "2ecc71", "3498db", "9b59b6", "e67e22",

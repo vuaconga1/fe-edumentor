@@ -44,6 +44,8 @@ const ChangePassword = () => {
 
     if (!formData.newPassword) {
       newErrors.newPassword = 'Please enter a new password';
+    } else if (formData.newPassword === formData.currentPassword) {
+      newErrors.newPassword = 'New password must be different from current password';
     } else if (formData.newPassword.length < 8) {
       newErrors.newPassword = 'Password must be at least 8 characters';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.newPassword)) {

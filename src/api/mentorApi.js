@@ -2,7 +2,21 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://localhost:7082",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  paramsSerializer: {
+    serialize: (params) => {
+      const parts = [];
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+        if (Array.isArray(value)) {
+          value.forEach(v => parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`));
+        } else {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+        }
+      });
+      return parts.join('&');
+    }
+  }
 });
 
 // attach token (nếu cần auth)

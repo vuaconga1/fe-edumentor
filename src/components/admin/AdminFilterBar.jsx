@@ -102,9 +102,9 @@ export default function AdminFilterBar({
                 <HiFilter className="w-4 h-4" />
                 <span>Filters</span>
                 {expanded ? (
-                  <HiChevronUp className="w-4 h-4" />
+                  <HiChevronUp className="w-5 h-5" />
                 ) : (
-                  <HiChevronDown className="w-4 h-4" />
+                  <HiChevronDown className="w-5 h-5" />
                 )}
               </button>
             )}

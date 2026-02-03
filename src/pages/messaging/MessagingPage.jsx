@@ -733,6 +733,214 @@ const MessagingPage = () => {
     return base + Math.max(0, diff);
   }, [workSession?.status, workSession?.startTime, workSession?.totalMinutes, tick]);
 
+  // ===== Send image/file =====
+  const handleSendImage = async ({ file, desc }) => {
+    if (!activeConversationId || !file) return;
+
+    const caption = (desc ?? "").trim();
+    const isImage = file.type?.startsWith("image/");
+    const tempId = `temp-att-${Date.now()}`;
+    const localPreview = isImage ? URL.createObjectURL(file) : null;
+
+    // optimistic
+    setMessages((prev) => [
+      ...(Array.isArray(prev) ? prev : []),
+      {
+        id: tempId,
+        conversationId: activeConversationId,
+        messageType: isImage ? 1 : 2,
+        content: isImage ? localPreview : file.name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isOwn: true,
+        senderName: "You",
+        createdAt: new Date().toISOString(),
+        isUploading: true,
+      },
+    ]);
+
+    try {
+      const res = isImage
+        ? await fileApi.uploadChatImage(file)
+        : await fileApi.uploadChatFile(file);
+
+      const data = res?.data?.data;
+
+      const fileUrl =
+        data?.fileUrl ||
+        data?.url ||
+        (Array.isArray(data?.fileUrls) ? data.fileUrls[0] : null);
+
+      if (!fileUrl) throw new Error("Upload OK but missing fileUrl");
+
+      setMessages((prev) =>
+        (Array.isArray(prev) ? prev : []).map((m) =>
+          m.id === tempId ? { ...m, isUploading: false, content: toAbsolute(fileUrl) } : m
+        )
+      );
+
+      await hubSendMessage({
+        conversationId: activeConversationId,
+        messageType: isImage ? 1 : 2,
+        content: fileUrl, // relative
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+
+      if (caption) {
+        await hubSendMessage({
+          conversationId: activeConversationId,
+          messageType: 0,
+          content: caption,
+        });
+      }
+    } catch (e) {
+      console.error("Send attachment failed", e);
+      setMessages((prev) =>
+        (Array.isArray(prev) ? prev : []).map((m) =>
+          m.id === tempId ? { ...m, isUploading: false, isError: true } : m
+        )
+      );
+    } finally {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    }
+  };
+
+  // ===== Work handlers (invoke hub wrapper) =====
+  // const handleStartWork = async () => {
+  //   console.log("activeConversation =", activeConversation);
+  //   console.log("workContext =", workContext);
+  //   const { orderId, mentorId, studentId } = workContext;
+  //   if (!orderId || !mentorId || !studentId) {
+  //     toast.error("Thiếu thông tin để bắt đầu phiên làm việc.");
+  //     return;
+  //   }
+
+  //   await requestStartWork(orderId, mentorId, studentId);
+  // };
+  const handleStartWork = async () => {
+    try {
+      console.log("FORCE start work", workContext);
+
+      await requestStartWork(
+        Number(workContext.conversationId || activeConversationId),
+        Number(workContext.orderId || 0),
+        Number(workContext.mentorId || 0),
+        Number(workContext.studentId || 0)
+      );
+    } catch (e) {
+      console.error("RequestStartWork failed", e);
+      toast.error("Start work failed (check server log)");
+    }
+  };
+
+  const handlePauseWork = async () => {
+    if (!workSession?.sessionId || !activeConversationId) return;
+    await requestPauseWork(activeConversationId, workSession.sessionId);
+  };
+
+  const handleEndWork = async () => {
+    if (!workSession?.sessionId || !activeConversationId) return;
+    await requestEndWork(activeConversationId, workSession.sessionId);
+  };
+  const handleRespondWorkAction = async (accept) => {
+    const rid = String(workActionPopup?.requestId ?? "").trim();
+    console.log("[ui] RespondWorkAction click:", { rid, accept, workActionPopup });
+
+    if (!rid) {
+      toast.error("Missing requestId (popup not ready).");
+      return;
+    }
+
+    try {
+      await respondWorkAction(rid, !!accept);
+    } catch (e) {
+      console.error("RespondWorkAction failed", e);
+      toast.error(e?.message || "RespondWorkAction failed");
+    } finally {
+      setWorkActionPopup(null);
+    }
+  };
+
+
+  // ===== Timer for pinned bar =====
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!workSession || workSession.status !== "running") return;
+    const t = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [workSession?.status]);
+
+  const elapsedSeconds = useMemo(() => {
+    if (!workSession) return 0;
+
+    // paused/pending: show totalMinutes (from server) as fixed counter
+    if (workSession.status === "paused" || workSession.status === "pending") {
+      return Number(workSession.totalMinutes || 0) * 60;
+    }
+
+    // running: (now - startTime) + already accumulated minutes
+    const start = workSession.startTime ? new Date(workSession.startTime).getTime() : null;
+    if (!start) return Number(workSession.totalMinutes || 0) * 60;
+
+    const base = Number(workSession.totalMinutes || 0) * 60;
+    // Difference in seconds
+    const diff = Math.floor((Date.now() - start) / 1000);
+    return base + Math.max(0, diff);
+  }, [workSession?.status, workSession?.startTime, workSession?.totalMinutes, tick]);
+
+
+  // ===== Handle Work Action Confirm =====
+  const handleAcceptAction = async () => {
+    if (!workActionPopup) return;
+    try {
+        await respondWorkAction(workActionPopup.requestId, true);
+        setWorkActionPopup(null);
+    } catch (e) {
+        toast.error("Failed to accept");
+    }
+  };
+
+  const handleRejectAction = async () => {
+    if (!workActionPopup) return;
+    try {
+        await respondWorkAction(workActionPopup.requestId, false);
+        setWorkActionPopup(null);
+    } catch (e) {
+        toast.error("Failed to reject");
+    }
+  };
+
+  // ===== Handle Trigger Actions (from UI) =====
+  const handleTriggerStart = async () => {
+     if (!workContext) return;
+     try {
+         await requestStartWork(workContext.conversationId, workContext.orderId, workContext.mentorId, workContext.studentId);
+         toast.info("Request sent to partner...");
+     } catch (e) {
+         toast.error("Failed to send request");
+     }
+  };
+
+  const handleTriggerPause = async () => {
+    if (!workSession?.sessionId) return;
+    try {
+        await requestPauseWork(workContext.conversationId, workSession.sessionId);
+        toast.info("Request sent...");
+    } catch(e) { toast.error("Failed"); }
+  };
+
+  const handleTriggerEnd = async () => {
+    if (!workSession?.sessionId) return;
+    try {
+        await requestEndWork(workContext.conversationId, workSession.sessionId);
+        toast.info("Request sent...");
+    } catch(e) { toast.error("Failed"); }
+  };
+
+
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-neutral-50 dark:bg-neutral-950">
       {/* ✅ Modal confirm (for other user) */}

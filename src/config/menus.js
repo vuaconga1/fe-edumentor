@@ -16,6 +16,7 @@ import {
   HiCash,
   HiLink,
 } from "react-icons/hi";
+import { HomeIcon, MessageCircle, UsersRound, Wallet, Star, Home, Search, History, FileText } from 'lucide-react';
 
 // ADMIN MENU
 export const ADMIN_MENU = [
@@ -39,17 +40,21 @@ export const ADMIN_MENU = [
 
 // MENTOR MENU
 export const MENTOR_MENU = [
-  { label: "Dashboard", icon: HiChartPie, href: "/mentor" },
-  { label: "Assigned Jobs", icon: HiCollection, href: "/mentor/jobs" },
-  { label: "Earnings", icon: HiCurrencyDollar, href: "/mentor/earnings" },
-  { label: "Profile", icon: HiUser, href: "/mentor/profile" },
+  { label: "Home", href: "/mentor", icon: HomeIcon },
+  { label: "Requests", href: "/mentor/requests", icon: FileText },
+  { label: "Community", href: "/mentor/community", icon: UsersRound },
+  { label: "Messaging", href: "/mentor/messaging", icon: MessageCircle },
+  { label: "My Wallet", href: "/mentor/wallet", icon: Wallet },
+  { label: "Reviews", href: "/mentor/reviews", icon: Star },
 ];
 
 // STUDENT MENU
 export const STUDENT_MENU = [
-  { label: "Dashboard", icon: HiChartPie, href: "/student" },
-  { label: "Find Mentor", icon: HiSearch, href: "/student/find-mentor" },
-  { label: "My Orders", icon: HiClipboard, href: "/student/orders" },
-  { label: "My Wallet", icon: HiCurrencyDollar, href: "/student/wallet" },
-  { label: "Profile", icon: HiUser, href: "/student/profile" },
+  { label: "Home", href: "/student", icon: Home },
+  { label: "Find Mentor", href: "/student/find-mentor", icon: Search },
+  { label: "My Requests", href: "/student/my-requests", icon: FileText },
+  { label: "Community", href: "/student/community", icon: UsersRound },
+  { label: "Messaging", href: "/student/messaging", icon: MessageCircle },
+  { label: "My Wallet", href: "/student/wallet", icon: Wallet },
+  { label: "Order History", href: "/student/orders", icon: History },
 ];

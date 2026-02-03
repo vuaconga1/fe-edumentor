@@ -146,7 +146,7 @@ const LandingPage = () => {
                 experience, and teaching style that fits you best.
               </p>
               <Link
-                to="/student/find-mentor"
+                to="/register"
                 className="group inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 Explore mentors
@@ -192,7 +192,7 @@ const LandingPage = () => {
       <section
         id="community"
         ref={feature2Ref}
-        className="relative py-32 lg:py-48 overflow-hidden bg-neutral-50 dark:bg-neutral-900/50 transition-colors duration-300"
+        className="relative py-32 lg:py-48 overflow-hidden"
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
@@ -234,7 +234,7 @@ const LandingPage = () => {
                 Ask questions, share experiences, grow together.
               </p>
               <Link
-                to="/community"
+                to="/register"
                 className="group inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 Join community
@@ -265,7 +265,7 @@ const LandingPage = () => {
                 Discuss, ask questions, and build lasting mentor-mentee relationships.
               </p>
               <Link
-                to="/messages"
+                to="/register"
                 className="group inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 Start chatting
@@ -302,7 +302,7 @@ const LandingPage = () => {
       <section
         id="payment"
         ref={feature4Ref}
-        className="relative py-32 lg:py-48 overflow-hidden bg-neutral-50 dark:bg-neutral-900/50 transition-colors duration-300"
+        className="relative py-32 lg:py-48 overflow-hidden"
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
@@ -342,7 +342,7 @@ const LandingPage = () => {
                 Money is only transferred to the mentor when you're satisfied with the session.
               </p>
               <Link
-                to="/wallet"
+                to="/register"
                 className="group inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-semibold hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 Learn more

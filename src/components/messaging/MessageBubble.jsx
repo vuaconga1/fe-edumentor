@@ -1,3 +1,6 @@
+import React from "react";
+import { FileIcon, ExternalLink } from "lucide-react";
+
 export default function MessageBubble({ message, isMine }) {
   const senderName = message?.senderName || "Unknown";
 

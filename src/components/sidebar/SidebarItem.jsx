@@ -15,11 +15,11 @@ export default function SidebarItem({ icon: Icon, label, href, collapsed, onClic
         ${collapsed ? "justify-center px-2" : ""}
         ${isActive 
           ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold" 
-          : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"}
+          : "text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"}
       `}
     >
       <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-      {!collapsed && <span className="text-sm font-medium truncate">{label}</span>}
+      {!collapsed && <span className="text-base font-medium truncate">{label}</span>}
     </Link>
   );
 }

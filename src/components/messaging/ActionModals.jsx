@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { X, UploadCloud, Calendar, DollarSign, Clock } from "lucide-react";
 
 /**
- * ActionModals - Quản lý hiển thị các popup chức năng chat
+ * ActionModals - Managing chat action popups
  * Props:
  * - isOpen: boolean
  * - onClose: function
@@ -35,7 +35,22 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     return () => URL.revokeObjectURL(url);
   }, [formData.file]);
 
-  // Reset form khi mở mới
+
+  const [filePreviewUrl, setFilePreviewUrl] = useState(null);
+
+  // Create image preview
+  useEffect(() => {
+    if (!formData.file) {
+      setFilePreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(formData.file);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [formData.file]);
+
+  // Reset form when opening
   useEffect(() => {
     if (isOpen) {
       setFormData({ price: "", desc: "", date: "", time: "", file: null });
@@ -86,7 +101,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     onClose();
   };
 
-  // --- RENDER CONTENT THEO TYPE ---
+  // --- RENDER CONTENT BY TYPE ---
   const renderContent = () => {
     switch (type) {
       case "deal-price":
@@ -185,7 +200,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               </label>
               <input
                 type="text"
-                placeholder="Ví dụ: Trao đổi về Project React..."
+                placeholder="Example: Discuss React Project..."
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-purple-500 outline-none"
                 onChange={(e) =>
                   setFormData({ ...formData, desc: e.target.value })
@@ -314,7 +329,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
     }
   };
 
-  // --- XÁC ĐỊNH MÀU NÚT THEO TYPE ---
+  // --- DETERMINE BUTTON COLOR BY TYPE ---
   const getButtonColor = () => {
     switch (type) {
       case "deal-price":
@@ -345,7 +360,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
             onClick={onClose}
             className="flex-1 py-2.5 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors"
           >
-            Hủy bỏ
+            Cancel
           </button>
           <button
             onClick={handleSubmit}
@@ -355,7 +370,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               : ""
               }`}
           >
-            Xác nhận
+            Confirm
           </button>
         </div>
       </div>

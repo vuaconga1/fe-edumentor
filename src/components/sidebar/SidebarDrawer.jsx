@@ -27,7 +27,7 @@ export default function SidebarDrawer({ open, onClose, menu = [] }) {
         </div>
 
         {/* Menu Items */}
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
           {menu.map((item, index) => {
             const Icon = item.icon;
             return (
