@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from "react";
 import ConversationItem from "./ConversationItem";
+import CreateGroupModal from "../CreateGroupModal";
+import { HiPlus } from "react-icons/hi";
 
 const ConversationList = ({ conversations = [], activeConversationId, onSelectConversation }) => {
   const [search, setSearch] = useState("");
+  const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -15,14 +18,33 @@ const ConversationList = ({ conversations = [], activeConversationId, onSelectCo
 
   const loading = !conversations;
 
+  const handleGroupCreated = (newGroup) => {
+    // Could notify parent or just close. 
+    // If the parent updates the list automatically (e.g. via websocket or refetch), it's fine.
+    setIsCreateGroupModalOpen(false);
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3">
+      <div className="p-3 flex items-center gap-2">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search..."
-          className="w-full px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none"
+          className="flex-1 px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none"
+        />
+        <button
+          onClick={() => setIsCreateGroupModalOpen(true)}
+          className="p-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+          title="Create Group"
+        >
+          <HiPlus className="w-5 h-5" />
+        </button>
+
+        <CreateGroupModal
+          isOpen={isCreateGroupModalOpen}
+          onClose={() => setIsCreateGroupModalOpen(false)}
+          onGroupCreated={handleGroupCreated}
         />
       </div>
 

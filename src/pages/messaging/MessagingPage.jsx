@@ -7,15 +7,16 @@ import axiosClient from "../../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import WorkActionConfirmModal from "../../components/messaging/WorkActionConfirmModal";
-import { Play, Pause, Square, Clock } from "lucide-react";
 
 import {
   startChatHub,
   joinConversation,
   leaveConversation,
-  getOnlineUsers,
+  getOnlineUsers, // ✅ existing
   on,
   sendMessage as hubSendMessage,
+
+  // ✅ start work features
   requestStartWork,
   requestPauseWork,
   requestEndWork,
@@ -42,6 +43,7 @@ const formatHMS = (totalSeconds) => {
 };
 
 const MessagingPage = () => {
+  const workActionPopupRef = useRef(null);
   const [conversations, setConversations] = useState([]);
   const [activeConversationId, setActiveConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -56,7 +58,13 @@ const MessagingPage = () => {
   const [workActionPopup, setWorkActionPopup] = useState(null);
 
   const activeConversationIdRef = useRef(null);
+  const currentUserIdRef = useRef(null);
+  const prevConversationIdRef = useRef(null);
+
   const hubStartedRef = useRef(false);
+
+  // for reverting pinned when action rejected
+  const pendingSnapshotRef = useRef(null);
 
   const token = localStorage.getItem("token");
 
@@ -92,6 +100,10 @@ const MessagingPage = () => {
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
 
   // ===== Start hub only once + register listeners (messages + online + work events) =====
   useEffect(() => {
@@ -268,10 +280,10 @@ const MessagingPage = () => {
           ) {
             setWorkSession((prev) => {
               if (!prev) return prev;
-              pendingSnapshotRef.current = prev;
+
+              // ❌ không set status="pending" nữa để timer không bị đứng
               return {
                 ...prev,
-                status: "pending",
                 pendingActionType: actionType,
                 pendingRequestId: payload?.requestId,
               };
@@ -286,10 +298,12 @@ const MessagingPage = () => {
 
           setWorkSession({
             status: "running",
-            sessionId: payload?.sessionId ?? payload?.id,
+            sessionId: payload?.sessionId,
             orderId: payload?.orderId,
             startTime: payload?.startTime,
             totalMinutes: 0,
+            pendingActionType: null,
+            pendingRequestId: null,
           });
           pendingSnapshotRef.current = null;
         });
@@ -300,11 +314,11 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession((prev) => ({
+            ...prev,
             status: "paused",
-            sessionId: payload?.sessionId ?? payload?.id ?? prev?.sessionId,
-            orderId: payload?.orderId ?? prev?.orderId,
-            startTime: prev?.startTime,
             totalMinutes: payload?.totalMinutes ?? prev?.totalMinutes ?? 0,
+            pendingActionType: null,
+            pendingRequestId: null,
           }));
           pendingSnapshotRef.current = null;
         });
@@ -315,7 +329,7 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null);
-          pendingSnapshotRef.current = null;
+          setWorkSession(null);
         });
 
         // ===== WORK: rejected -> revert pinned snapshot =====
@@ -355,7 +369,7 @@ const MessagingPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // ===== switch conversation: leave old -> load history -> join room =====
+  // ===== switch conversation: leave old -> load history -> join room (keep your logic) =====
   useEffect(() => {
     if (!activeConversationId) {
       const prev = prevConversationIdRef.current;
@@ -386,7 +400,7 @@ const MessagingPage = () => {
         else if (Array.isArray(data?.items)) list = data.items;
         else if (Array.isArray(data?.messages)) list = data.messages;
 
-        const normalized = list.map((m) => {
+        const normalized = (Array.isArray(list) ? list : []).map((m) => {
           const senderId = Number(m.senderId ?? m.senderID ?? m.userId ?? m.userID);
           const type = Number(m.messageType ?? m.type ?? 0);
           return {
@@ -397,15 +411,6 @@ const MessagingPage = () => {
             content: type === 1 || type === 2 ? toAbsolute(m.content) : m.content,
           };
         });
-        
-        // Sort chronological
-        normalized.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-        setMessages(normalized);
-        
-        // Join signalR group
-        if (hubStartedRef.current) {
-          joinConversation(activeConversationId);
-        }
 
         setMessages(normalized);
 
@@ -439,8 +444,6 @@ const MessagingPage = () => {
 
   // ===== work context from conversation =====
   const workContext = useMemo(() => {
-    if (!activeConversation) return null;
-
     const orderId =
       activeConversation?.orderId ||
       activeConversation?.order?.orderId ||
@@ -448,9 +451,50 @@ const MessagingPage = () => {
       activeConversation?.request?.orderId ||
       activeConversation?.request?.order?.id;
 
-    // Direct assignment if available, else derive (simplified for now)
-    const mentorId = activeConversation?.mentorId || activeConversation?.mentor?.id;
-    const studentId = activeConversation?.studentId || activeConversation?.student?.id;
+    // ưu tiên lấy trực tiếp
+    let mentorId = null;
+    let studentId = null;
+
+    // 1) Nếu backend trả thẳng
+    mentorId =
+      activeConversation?.mentorId ||
+      activeConversation?.mentor?.id ||
+      null;
+
+    studentId =
+      activeConversation?.studentId ||
+      activeConversation?.student?.id ||
+      null;
+
+    // 2) Fallback: suy ra từ messages
+    if ((!mentorId || !studentId) && Array.isArray(messages) && currentUserId) {
+      const otherMsg = messages.find(m => Number(m.senderId) !== Number(currentUserId));
+      const otherUserId = otherMsg?.senderId;
+
+      if (otherUserId) {
+        // Giả định: currentUser là mentor nếu trong màn hình mentor, hoặc student nếu không
+        // TẠM: gán currentUser là mentor
+        mentorId = Number(currentUserId);
+        studentId = Number(otherUserId);
+      }
+    }
+
+    // fallback theo participantRole/participantId nếu thiếu
+    const participantId =
+      activeConversation?.participantId ||
+      activeConversation?.participantUserId;
+
+    const role = String(activeConversation?.participantRole || "").toLowerCase();
+
+    if ((!mentorId || !studentId) && participantId && currentUserId) {
+      if (role.includes("mentor")) {
+        mentorId = Number(participantId);
+        studentId = Number(currentUserId);
+      } else if (role.includes("student")) {
+        studentId = Number(participantId);
+        mentorId = Number(currentUserId);
+      }
+    }
 
     return {
       orderId: orderId ? Number(orderId) : null,
@@ -458,10 +502,10 @@ const MessagingPage = () => {
       studentId,
       conversationId: activeConversationId ? Number(activeConversationId) : null,
     };
-  }, [activeConversation, activeConversationId]);
+  }, [activeConversation, activeConversationId, currentUserId]);
 
 
-  // ===== reload active session when entering a conversation =====
+  // ===== reload active session when entering a conversation (important) =====
   useEffect(() => {
     if (!workContext?.orderId || !activeConversationId) {
       setWorkSession(null);
@@ -472,31 +516,28 @@ const MessagingPage = () => {
 
     const loadActiveSession = async () => {
       try {
+        // keep your endpoint assumption; adjust if backend differs
         const res = await axiosClient.get(
           `/api/order/${workContext.orderId}/sessions/summary`
         );
 
         const payload = res?.data?.data ?? res?.data;
-        const active = payload?.activeSession || payload?.currentSession || payload?.session;
+        const active =
+          payload?.activeSession || payload?.currentSession || payload?.session;
 
-        if (!isMounted) return;
-
-        if (!active) {
-            setWorkSession(null);
-            return;
-        }
+        if (!active || !isMounted) return;
 
         const status = String(active?.status || active?.state || "").toLowerCase();
         const normalizedStatus =
           status.includes("pause") || status.includes("paused")
             ? "paused"
             : status.includes("finish") || status.includes("end")
-              ? "ended"
+              ? null
               : "running";
-        
-        if (normalizedStatus === "ended") {
-            setWorkSession(null);
-            return;
+
+        if (!normalizedStatus) {
+          setWorkSession(null);
+          return;
         }
 
         setWorkSession({
@@ -507,6 +548,7 @@ const MessagingPage = () => {
           totalMinutes: active?.totalMinutes || active?.elapsedMinutes || 0,
         });
       } catch (err) {
+        // ignore if endpoint not ready
         setWorkSession(null);
       }
     };
@@ -518,7 +560,7 @@ const MessagingPage = () => {
     };
   }, [activeConversationId, workContext?.orderId]);
 
-  // ===== Send text =====
+  // ===== Send text (keep your current behavior) =====
   const handleSendText = async (text) => {
     if (!activeConversationId) return;
     const t = (text ?? "").trim();
@@ -530,6 +572,166 @@ const MessagingPage = () => {
       messageType: 0,
     });
   };
+  const handleResumeWork = async () => {
+    // tạm thời: chưa có backend resume
+    toast.info("Resume chưa implement backend. Cần API/Hub RequestResumeWork.");
+  };
+  // ===== Send image/file (keep your current behavior) =====
+  const handleSendImage = async ({ file, desc }) => {
+    if (!activeConversationId || !file) return;
+
+    const caption = (desc ?? "").trim();
+    const isImage = file.type?.startsWith("image/");
+    const tempId = `temp-att-${Date.now()}`;
+    const localPreview = isImage ? URL.createObjectURL(file) : null;
+
+    // optimistic
+    setMessages((prev) => [
+      ...(Array.isArray(prev) ? prev : []),
+      {
+        id: tempId,
+        conversationId: activeConversationId,
+        messageType: isImage ? 1 : 2,
+        content: isImage ? localPreview : file.name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        isOwn: true,
+        senderName: "You",
+        createdAt: new Date().toISOString(),
+        isUploading: true,
+      },
+    ]);
+
+    try {
+      const res = isImage
+        ? await fileApi.uploadChatImage(file)
+        : await fileApi.uploadChatFile(file);
+
+      const data = res?.data?.data;
+
+      const fileUrl =
+        data?.fileUrl ||
+        data?.url ||
+        (Array.isArray(data?.fileUrls) ? data.fileUrls[0] : null);
+
+      if (!fileUrl) throw new Error("Upload OK but missing fileUrl");
+
+      setMessages((prev) =>
+        (Array.isArray(prev) ? prev : []).map((m) =>
+          m.id === tempId ? { ...m, isUploading: false, content: toAbsolute(fileUrl) } : m
+        )
+      );
+
+      await hubSendMessage({
+        conversationId: activeConversationId,
+        messageType: isImage ? 1 : 2,
+        content: fileUrl, // relative
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+
+      if (caption) {
+        await hubSendMessage({
+          conversationId: activeConversationId,
+          messageType: 0,
+          content: caption,
+        });
+      }
+    } catch (e) {
+      console.error("Send attachment failed", e);
+      setMessages((prev) =>
+        (Array.isArray(prev) ? prev : []).map((m) =>
+          m.id === tempId ? { ...m, isUploading: false, isError: true } : m
+        )
+      );
+    } finally {
+      if (localPreview) URL.revokeObjectURL(localPreview);
+    }
+  };
+
+  // ===== Work handlers (invoke hub wrapper) =====
+  // const handleStartWork = async () => {
+  //   console.log("activeConversation =", activeConversation);
+  //   console.log("workContext =", workContext);
+  //   const { orderId, mentorId, studentId } = workContext;
+  //   if (!orderId || !mentorId || !studentId) {
+  //     toast.error("Thiếu thông tin để bắt đầu phiên làm việc.");
+  //     return;
+  //   }
+
+  //   await requestStartWork(orderId, mentorId, studentId);
+  // };
+  const handleStartWork = async () => {
+    try {
+      console.log("FORCE start work", workContext);
+
+      await requestStartWork(
+        Number(workContext.conversationId || activeConversationId),
+        Number(workContext.orderId || 0),
+        Number(workContext.mentorId || 0),
+        Number(workContext.studentId || 0)
+      );
+    } catch (e) {
+      console.error("RequestStartWork failed", e);
+      toast.error("Start work failed (check server log)");
+    }
+  };
+
+  const handlePauseWork = async () => {
+    if (!workSession?.sessionId || !activeConversationId) return;
+    await requestPauseWork(activeConversationId, workSession.sessionId);
+  };
+
+  const handleEndWork = async () => {
+    if (!workSession?.sessionId || !activeConversationId) return;
+    await requestEndWork(activeConversationId, workSession.sessionId);
+  };
+  const handleRespondWorkAction = async (accept) => {
+    const rid = String(workActionPopup?.requestId ?? "").trim();
+    console.log("[ui] RespondWorkAction click:", { rid, accept, workActionPopup });
+
+    if (!rid) {
+      toast.error("Missing requestId (popup not ready).");
+      return;
+    }
+
+    try {
+      await respondWorkAction(rid, !!accept);
+    } catch (e) {
+      console.error("RespondWorkAction failed", e);
+      toast.error(e?.message || "RespondWorkAction failed");
+    } finally {
+      setWorkActionPopup(null);
+    }
+  };
+
+
+  // ===== Timer for pinned bar =====
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!workSession || workSession.status !== "running") return;
+    const t = setInterval(() => setTick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [workSession?.status]);
+
+  const elapsedSeconds = useMemo(() => {
+    if (!workSession) return 0;
+
+    // paused/pending: show totalMinutes (from server) as fixed counter
+    if (workSession.status === "paused" || workSession.status === "pending") {
+      return Number(workSession.totalMinutes || 0) * 60;
+    }
+
+    // running: (now - startTime) + already accumulated minutes (if any)
+    const start = workSession.startTime ? new Date(workSession.startTime).getTime() : null;
+    if (!start) return Number(workSession.totalMinutes || 0) * 60;
+
+    const base = Number(workSession.totalMinutes || 0) * 60;
+    const diff = Math.floor((Date.now() - start) / 1000);
+    return base + Math.max(0, diff);
+  }, [workSession?.status, workSession?.startTime, workSession?.totalMinutes, tick]);
 
   // ===== Send image/file =====
   const handleSendImage = async ({ file, desc }) => {
@@ -760,8 +962,6 @@ const MessagingPage = () => {
           onSelectConversation={setActiveConversationId}
         />
       </div>
-
-      RIGHT: chat
       <div className={`flex-1 min-w-0 ${!activeConversationId ? "hidden md:block" : "block"}`}>
         {/* ✅ pinned top-middle (overlay). Only shows when session exists */}
         <div className="relative h-full">
@@ -834,6 +1034,7 @@ const MessagingPage = () => {
             // ✅ pass handlers down in case you want a Start button in ChatWindow header/menu
             onStartWork={handleStartWork}
             workSession={workSession}
+            onResumeWork={handleResumeWork}
           />
         </div>
       </div>
