@@ -44,6 +44,7 @@ import ProfilePage from '../pages/common/ProfilePage';
 import StudentProfilePage from '../pages/student/StudentProfilePage';
 import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
 import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
+import JoinGroupPage from '../pages/JoinGroupPage';
 
 const AppRoutes = () => {
   return (
@@ -99,6 +100,9 @@ const AppRoutes = () => {
         <Route path="mentor/:mentorId" element={<ProfilePage />} />
         <Route path="change-password" element={<ChangePassword />} />
       </Route>
+
+      {/* Group Invite */}
+      <Route path="/groups/join/:inviteCode" element={<JoinGroupPage />} />
 
       {/* Auth */}
       <Route path="/login" element={<Login />} />

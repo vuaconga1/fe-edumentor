@@ -280,10 +280,10 @@ const MessagingPage = () => {
           ) {
             setWorkSession((prev) => {
               if (!prev) return prev;
-              pendingSnapshotRef.current = prev;
+
+              // ❌ không set status="pending" nữa để timer không bị đứng
               return {
                 ...prev,
-                status: "pending",
                 pendingActionType: actionType,
                 pendingRequestId: payload?.requestId,
               };
@@ -298,10 +298,12 @@ const MessagingPage = () => {
 
           setWorkSession({
             status: "running",
-            sessionId: payload?.sessionId ?? payload?.id,
+            sessionId: payload?.sessionId,
             orderId: payload?.orderId,
             startTime: payload?.startTime,
             totalMinutes: 0,
+            pendingActionType: null,
+            pendingRequestId: null,
           });
           pendingSnapshotRef.current = null;
         });
@@ -312,11 +314,11 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession((prev) => ({
+            ...prev,
             status: "paused",
-            sessionId: payload?.sessionId ?? payload?.id ?? prev?.sessionId,
-            orderId: payload?.orderId ?? prev?.orderId,
-            startTime: prev?.startTime,
             totalMinutes: payload?.totalMinutes ?? prev?.totalMinutes ?? 0,
+            pendingActionType: null,
+            pendingRequestId: null,
           }));
           pendingSnapshotRef.current = null;
         });
@@ -327,7 +329,7 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null);
-          pendingSnapshotRef.current = null;
+          setWorkSession(null);
         });
 
         // ===== WORK: rejected -> revert pinned snapshot =====
@@ -570,7 +572,10 @@ const MessagingPage = () => {
       messageType: 0,
     });
   };
-
+  const handleResumeWork = async () => {
+    // tạm thời: chưa có backend resume
+    toast.info("Resume chưa implement backend. Cần API/Hub RequestResumeWork.");
+  };
   // ===== Send image/file (keep your current behavior) =====
   const handleSendImage = async ({ file, desc }) => {
     if (!activeConversationId || !file) return;
@@ -749,8 +754,6 @@ const MessagingPage = () => {
           onSelectConversation={setActiveConversationId}
         />
       </div>
-
-
       <div className={`flex-1 min-w-0 ${!activeConversationId ? "hidden md:block" : "block"}`}>
         {/* ✅ pinned top-middle (overlay). Only shows when session exists */}
         <div className="relative h-full">
@@ -823,6 +826,7 @@ const MessagingPage = () => {
             // ✅ pass handlers down in case you want a Start button in ChatWindow header/menu
             onStartWork={handleStartWork}
             workSession={workSession}
+            onResumeWork={handleResumeWork}
           />
         </div>
       </div>

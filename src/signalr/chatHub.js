@@ -19,8 +19,11 @@ const handlers = {
   WorkActionState: new Set(),
   WorkSessionStarted: new Set(),
   WorkSessionPaused: new Set(),
+  WorkSessionResumed: new Set(), // ✅ Added
   WorkSessionEnded: new Set(),
   WorkActionRejected: new Set(),
+  ReceiveGroupMessage: new Set(),
+  UserGroupTyping: new Set(),
 };
 
 // ===== Start Hub (safe, no race) =====
@@ -180,6 +183,14 @@ export function requestEndWork(conversationId, sessionId) {
   );
 }
 
+export function requestResumeWork(conversationId, sessionId) {
+  return ensureConnected().invoke(
+    "RequestResumeWork",
+    Number(conversationId),
+    Number(sessionId)
+  );
+}
+
 export const respondWorkAction = (requestId, accept) => {
   const rid = String(requestId ?? "").trim();
   console.log("[hub] RespondWorkAction invoke args:", { rid, accept });
@@ -190,5 +201,31 @@ export const respondWorkAction = (requestId, accept) => {
   // ✅ đúng signature BE: (string requestId, bool accept)
   return connection.invoke("RespondWorkAction", rid, Boolean(accept));
 };
+
+// ===== Group Chat Methods =====
+export function joinGroupRoom(groupId) {
+  return ensureConnected().invoke("JoinGroupRoom", Number(groupId));
+}
+
+export function leaveGroupRoom(groupId) {
+  return ensureConnected().invoke("LeaveGroupRoom", Number(groupId));
+}
+
+export function sendGroupMessage({ groupId, content, messageType = 0 }) {
+  return ensureConnected().invoke("SendGroupMessage", {
+    groupId: Number(groupId),
+    content,
+    messageType,
+  });
+}
+
+export function groupTyping(groupId, isTyping) {
+  return ensureConnected().invoke(
+    "GroupTyping",
+    Number(groupId),
+    Boolean(isTyping)
+  );
+}
+
 
 
