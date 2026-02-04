@@ -44,7 +44,54 @@ const WorkSessionPinnedBar = ({
   const canPause = isRunning && !isPending;
   const canEnd = (isRunning || isPaused) && !isPending;
 
- 
+  return (
+    <div
+      className="absolute top-0 left-0 right-0 z-10 
+                 bg-gradient-to-r from-blue-500 to-blue-600 
+                 text-white px-4 py-2 shadow-lg"
+    >
+      <div className="flex items-center justify-between max-w-4xl mx-auto">
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-medium">
+            {isRunning && "⏱️ Đang làm việc"}
+            {isPaused && "⏸️ Đã tạm dừng"}
+            {isPending && "⏳ Chờ xác nhận..."}
+          </div>
+          <div className="text-lg font-mono font-bold">
+            {formatDuration(elapsedSeconds)}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {canPause && (
+            <button
+              type="button"
+              onClick={onPause}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg 
+                         bg-white/20 hover:bg-white/30 transition-colors
+                         text-sm font-medium"
+            >
+              <Pause className="w-4 h-4" />
+              Tạm dừng
+            </button>
+          )}
+
+          {canEnd && (
+            <button
+              type="button"
+              onClick={onEnd}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg 
+                         bg-red-500 hover:bg-red-600 transition-colors
+                         text-sm font-medium"
+            >
+              <Square className="w-4 h-4" />
+              Kết thúc
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default WorkSessionPinnedBar;

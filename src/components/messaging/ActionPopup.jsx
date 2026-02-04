@@ -25,9 +25,9 @@ const ActionPopup = ({ isOpen, onClose, onAction }) => {
       icon: DollarSign,
     },
     {
-      id: 'start-work',
-      label: 'Start Work',
-      desc: 'Activate time tracking',
+      id: 'complete-order',
+      label: 'Hoàn thành đơn hàng',
+      desc: 'Yêu cầu hoàn thành đơn hàng',
       icon: Play,
     },
     {
