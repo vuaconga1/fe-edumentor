@@ -41,6 +41,11 @@ const MyRequestsPage = () => {
   const [proposalsPage, setProposalsPage] = useState(1);
   const [proposalsTotalPages, setProposalsTotalPages] = useState(1);
 
+  // Reject modal state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectProposalId, setRejectProposalId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
+
   const formatDate = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -139,9 +144,19 @@ const MyRequestsPage = () => {
   };
 
   const handleRejectProposal = async (proposalId) => {
-    if (!confirm("Are you sure you want to reject this proposal?")) return;
+    setRejectProposalId(proposalId);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const confirmRejectProposal = async () => {
+    if (!rejectProposalId) return;
+    
     try {
-      await requestApi.rejectProposal(proposalId);
+      await requestApi.rejectProposal(rejectProposalId, rejectReason);
+      setShowRejectModal(false);
+      setRejectProposalId(null);
+      setRejectReason("");
       fetchProposals();
     } catch (err) {
       console.log("Reject proposal failed:", err);
@@ -245,7 +260,9 @@ const MyRequestsPage = () => {
             ) : (
               <div className="space-y-4">
                 {requests.map((req) => {
-                  const statusConfig = REQUEST_STATUS[req.status] || REQUEST_STATUS.Open;
+                  // Backend returns statusDisplay as string, but status as enum number
+                  const statusText = req.statusDisplay || req.status;
+                  const statusConfig = REQUEST_STATUS[statusText] || REQUEST_STATUS.Open;
                   const StatusIcon = statusConfig.icon;
 
                   return (
@@ -269,10 +286,6 @@ const MyRequestsPage = () => {
                               <HiCurrencyDollar className="w-4 h-4" />
                               {formatCurrency(req.expectedBudget)}
                             </span>
-                            <span className="flex items-center gap-1">
-                              <HiClock className="w-4 h-4" />
-                              {req.expectedHours ? `${req.expectedHours} hours` : "Not specified"}
-                            </span>
                             <span>{formatDate(req.createdAt)}</span>
                           </div>
                         </div>
@@ -284,7 +297,7 @@ const MyRequestsPage = () => {
                           </span>
 
                           <div className="flex items-center gap-2">
-                            {req.status === "Accepted" && (
+                            {(statusText === "Accepted" || statusText === 1) && (
                               <button
                                 onClick={() => handleGoToChat(req.conversationId)}
                                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
@@ -294,23 +307,14 @@ const MyRequestsPage = () => {
                               </button>
                             )}
 
-                            {req.status === "Open" && (
-                              <>
-                                <button
-                                  onClick={() => handleCloseRequest(req.id)}
-                                  className="p-2 rounded-lg text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
-                                  title="Close request"
-                                >
-                                  <HiXCircle className="w-5 h-5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteRequest(req.id)}
-                                  className="p-2 rounded-lg text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                  title="Delete request"
-                                >
-                                  <HiTrash className="w-5 h-5" />
-                                </button>
-                              </>
+                            {(statusText === "Open" || statusText === 0) && (
+                              <button
+                                onClick={() => handleDeleteRequest(req.id)}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              >
+                                <HiXCircle className="w-4 h-4" />
+                                Cancel
+                              </button>
                             )}
                           </div>
                         </div>
@@ -378,7 +382,9 @@ const MyRequestsPage = () => {
             ) : (
               <div className="space-y-4">
                 {proposals.map((proposal) => {
-                  const statusConfig = PROPOSAL_STATUS[proposal.status] || PROPOSAL_STATUS.Pending;
+                  // Backend returns statusDisplay as string, but status as enum number
+                  const statusText = proposal.statusDisplay || proposal.status;
+                  const statusConfig = PROPOSAL_STATUS[statusText] || PROPOSAL_STATUS.Pending;
 
                   return (
                     <div
@@ -438,12 +444,6 @@ const MyRequestsPage = () => {
                               <HiCurrencyDollar className="w-4 h-4" />
                               {formatCurrency(proposal.price)}
                             </span>
-                            {proposal.estimatedHours && (
-                              <span className="flex items-center gap-1">
-                                <HiClock className="w-4 h-4" />
-                                {proposal.estimatedHours} hours
-                              </span>
-                            )}
                           </div>
                         </div>
 
@@ -453,7 +453,7 @@ const MyRequestsPage = () => {
                             {statusConfig.label}
                           </span>
 
-                          {proposal.status === "Pending" && (
+                          {(statusText === "Pending" || statusText === 0) && (
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleAcceptProposal(proposal.id)}
@@ -472,7 +472,7 @@ const MyRequestsPage = () => {
                             </div>
                           )}
 
-                          {proposal.status === "Accepted" && (
+                          {(statusText === "Accepted" || statusText === 1) && (
                             <button
                               onClick={() => handleGoToChat(proposal.conversationId)}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
@@ -514,6 +514,50 @@ const MyRequestsPage = () => {
           </>
         )}
       </div>
+
+      {/* Reject Proposal Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
+              Reject Proposal
+            </h3>
+            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+              Are you sure you want to reject this proposal? You can optionally provide a reason.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                Reason (Optional)
+              </label>
+              <textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={3}
+                placeholder="Let the mentor know why you're rejecting..."
+                className="w-full px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectProposalId(null);
+                  setRejectReason("");
+                }}
+                className="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRejectProposal}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

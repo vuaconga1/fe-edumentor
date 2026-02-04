@@ -10,7 +10,6 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
   const [hasPendingProposal, setHasPendingProposal] = useState(false);
   const [formData, setFormData] = useState({
     price: '',
-    estimatedHours: '',
     message: '',
   });
 
@@ -112,7 +111,6 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
       const payload = {
         postId: post.id,
         price: Number(formData.price),
-        estimatedHours: formData.estimatedHours ? Number(formData.estimatedHours) : null,
         message: formData.message.trim(),
       };
 
@@ -121,7 +119,6 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
       // Reset form
       setFormData({
         price: '',
-        estimatedHours: '',
         message: '',
       });
       
@@ -181,38 +178,22 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
             </div>
           )}
 
-          {/* Price & Hours */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <HiCurrencyDollar className="inline w-4 h-4 mr-1" />
-                Your Price (VND) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="E.g.: 500000"
-                min="0"
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <HiClock className="inline w-4 h-4 mr-1" />
-                Estimated Hours
-              </label>
-              <input
-                type="number"
-                name="estimatedHours"
-                value={formData.estimatedHours}
-                onChange={handleChange}
-                placeholder="E.g.: 5"
-                min="1"
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-              />
-            </div>
+          {/* Price */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              <HiCurrencyDollar className="inline w-4 h-4 mr-1" />
+              Your Price (VND) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              placeholder="E.g.: 500000"
+              min="0"
+              disabled={hasPendingProposal || checkingExisting}
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            />
           </div>
 
           {/* Message */}
@@ -227,7 +208,8 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
               onChange={handleChange}
               rows={4}
               placeholder="Introduce yourself and explain how you can help the student..."
-              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all resize-none"
+              disabled={hasPendingProposal || checkingExisting}
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -240,18 +222,11 @@ const SendProposalModal = ({ isOpen, onClose, post, onSuccess }) => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 font-medium hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            >
-              Cancel
-            </button>
+          <div className="flex pt-2">
             <button
               type="submit"
               disabled={loading || checkingExisting || hasPendingProposal}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed text-white font-medium transition-colors flex items-center justify-center gap-2"
             >
               {loading || checkingExisting ? (
                 <>

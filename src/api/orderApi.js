@@ -4,12 +4,17 @@ import axiosClient from "./axios";
 /**
  * Swagger:
  * - GET  /api/Order/my-orders/student
+ * - GET  /api/Order/my-orders/mentor
  * - GET  /api/Order/{orderId}
  * - POST /api/Order/{orderId}/reviews
  */
 const orderApi = {
   getMyOrdersStudent(params = {}) {
     return axiosClient.get("/api/Order/my-orders/student", { params });
+  },
+
+  getMyOrdersMentor(params = {}) {
+    return axiosClient.get("/api/Order/my-orders/mentor", { params });
   },
 
   getOrderDetail(orderId) {

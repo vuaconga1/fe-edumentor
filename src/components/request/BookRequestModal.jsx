@@ -12,7 +12,6 @@ const BookRequestModal = ({ isOpen, onClose, mentor, onSuccess }) => {
     title: '',
     description: '',
     expectedBudget: '',
-    expectedHours: '',
   });
 
   const isPendingStatus = (status) => {
@@ -139,7 +138,6 @@ const BookRequestModal = ({ isOpen, onClose, mentor, onSuccess }) => {
         title: formData.title.trim(),
         description: formData.description.trim(),
         expectedBudget: formData.expectedBudget ? Number(formData.expectedBudget) : null,
-        expectedHours: formData.expectedHours ? Number(formData.expectedHours) : null,
       };
 
       await requestApi.create(payload);
@@ -149,7 +147,6 @@ const BookRequestModal = ({ isOpen, onClose, mentor, onSuccess }) => {
         title: '',
         description: '',
         expectedBudget: '',
-        expectedHours: '',
       });
       
       onSuccess?.();
@@ -231,38 +228,21 @@ const BookRequestModal = ({ isOpen, onClose, mentor, onSuccess }) => {
             />
           </div>
 
-          {/* Budget & Hours */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <HiCurrencyDollar className="inline w-4 h-4 mr-1" />
-                Budget (VND)
-              </label>
-              <input
-                type="number"
-                name="expectedBudget"
-                value={formData.expectedBudget}
-                onChange={handleChange}
-                placeholder="E.g.: 500000"
-                min="0"
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                <HiClock className="inline w-4 h-4 mr-1" />
-                Expected Hours
-              </label>
-              <input
-                type="number"
-                name="expectedHours"
-                value={formData.expectedHours}
-                onChange={handleChange}
-                placeholder="E.g.: 5"
-                min="1"
-                className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
-              />
-            </div>
+          {/* Budget */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
+              <HiCurrencyDollar className="inline w-4 h-4 mr-1" />
+              Budget (VND)
+            </label>
+            <input
+              type="number"
+              name="expectedBudget"
+              value={formData.expectedBudget}
+              onChange={handleChange}
+              placeholder="E.g.: 500000"
+              min="0"
+              className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all"
+            />
           </div>
 
           {/* Info Note */}

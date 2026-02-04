@@ -242,7 +242,9 @@ const MentorRequestsPage = () => {
             ) : (
               <div className="space-y-4">
                 {requests.map((req) => {
-                  const statusConfig = REQUEST_STATUS[req.status] || REQUEST_STATUS.Open;
+                  // Backend returns statusDisplay as string, but status as enum number
+                  const statusText = req.statusDisplay || req.status;
+                  const statusConfig = REQUEST_STATUS[statusText] || REQUEST_STATUS.Open;
                   const StatusIcon = statusConfig.icon;
 
                   return (
@@ -303,10 +305,6 @@ const MentorRequestsPage = () => {
                               <HiCurrencyDollar className="w-4 h-4" />
                               {formatCurrency(req.expectedBudget)}
                             </span>
-                            <span className="flex items-center gap-1">
-                              <HiClock className="w-4 h-4" />
-                              {req.expectedHours ? `${req.expectedHours} hours` : "Not specified"}
-                            </span>
                           </div>
                         </div>
 
@@ -316,7 +314,7 @@ const MentorRequestsPage = () => {
                             {statusConfig.label}
                           </span>
 
-                          {req.status === "Open" && (
+                          {(statusText === "Open" || statusText === 0) && (
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleAcceptRequest(req.id)}
@@ -335,7 +333,7 @@ const MentorRequestsPage = () => {
                             </div>
                           )}
 
-                          {req.status === "Accepted" && (
+                          {(statusText === "Accepted" || statusText === 1) && (
                             <button
                               onClick={() => handleGoToChat(req.conversationId)}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
@@ -440,12 +438,6 @@ const MentorRequestsPage = () => {
                               <HiCurrencyDollar className="w-4 h-4" />
                               {formatCurrency(proposal.price)}
                             </span>
-                            {proposal.estimatedHours && (
-                              <span className="flex items-center gap-1">
-                                <HiClock className="w-4 h-4" />
-                                {proposal.estimatedHours} hours
-                              </span>
-                            )}
                             <span>{formatDate(proposal.createdAt)}</span>
                           </div>
                         </div>
