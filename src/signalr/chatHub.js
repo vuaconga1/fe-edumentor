@@ -23,7 +23,9 @@ const handlers = {
   WorkSessionEnded: new Set(),
   WorkActionRejected: new Set(),
   ReceiveGroupMessage: new Set(),
+  ReceiveGroupMessage: new Set(),
   UserGroupTyping: new Set(),
+  OrderCompleted: new Set(), // ✅ Added
 };
 
 // ===== Start Hub (safe, no race) =====
@@ -188,6 +190,14 @@ export function requestResumeWork(conversationId, sessionId) {
     "RequestResumeWork",
     Number(conversationId),
     Number(sessionId)
+  );
+}
+
+export function requestCompleteOrder(conversationId, orderId) {
+  return ensureConnected().invoke(
+    "RequestCompleteOrder",
+    Number(conversationId),
+    Number(orderId)
   );
 }
 

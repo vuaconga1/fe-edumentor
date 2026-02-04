@@ -15,9 +15,11 @@ export default function ChatWindow({
   onBack,
   currentUserId,
   workSession,
+  workContext, // ✅ Added to check orderId
   onStartWork,
   onPauseWork,
   onEndWork,
+  onCompleteOrder, // ✅ Added
 }) {
   const bottomRef = useRef(null);
 
@@ -110,16 +112,16 @@ export default function ChatWindow({
             </div>
           </div>
 
-          {/* ✅ Start Work button in header (optional, keeps UI clean) */}
+          {/* ✅ Complete Order button - show when there's an active order */}
           <div className="flex items-center gap-2">
-            {!workSession && (
+            {workContext?.orderId && (
               <button
                 type="button"
-                onClick={onStartWork}
-                className="h-9 px-3 rounded-lg bg-neutral-900 text-white text-sm font-semibold
-                           hover:opacity-90 active:opacity-80"
+                onClick={onCompleteOrder}
+                className="h-9 px-3 rounded-lg bg-green-600 text-white text-sm font-semibold
+                           hover:bg-green-700 active:opacity-90 transition-colors"
               >
-                Start work
+                Hoàn thành đơn hàng
               </button>
             )}
 
@@ -137,9 +139,8 @@ export default function ChatWindow({
             <div key={msg.id ?? index} className="space-y-1">
               {!!msg.senderName && (
                 <div
-                  className={`text-xs font-semibold text-neutral-700 dark:text-neutral-300 ${
-                    mine ? "text-right" : "text-left"
-                  }`}
+                  className={`text-xs font-semibold text-neutral-700 dark:text-neutral-300 ${mine ? "text-right" : "text-left"
+                    }`}
                 >
                   {/* {msg.senderName} */}
                 </div>
@@ -157,6 +158,11 @@ export default function ChatWindow({
           isOpen={openActions}
           onClose={() => setOpenActions(false)}
           onAction={(type) => {
+            if (type === "complete-order") {
+              onCompleteOrder?.();
+              setOpenActions(false);
+              return;
+            }
             setModalType(type);
             setOpenActions(false);
           }}

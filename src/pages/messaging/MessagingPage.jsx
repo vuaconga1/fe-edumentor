@@ -15,11 +15,10 @@ import {
   getOnlineUsers, // ✅ existing
   on,
   sendMessage as hubSendMessage,
-
-  // ✅ start work features
   requestStartWork,
   requestPauseWork,
   requestEndWork,
+  requestCompleteOrder, // ✅ Added
   respondWorkAction,
 } from "../../signalr/chatHub";
 
@@ -249,7 +248,8 @@ const MessagingPage = () => {
             console.error("WorkActionPopup missing requestId!", payload);
             return;
           }
-          if (!["start", "pause", "end"].includes(actionType)) return;
+
+          if (!["start", "pause", "end", "complete"].includes(actionType)) return;
 
           // ✅ store full payload (not only requestId)
           setWorkActionPopup({
@@ -342,6 +342,16 @@ const MessagingPage = () => {
 
           pendingSnapshotRef.current = null;
           toast.error("Yêu cầu đã bị từ chối.");
+        });
+
+        // ===== WORK: Order Completed =====
+        on("OrderCompleted", (payload) => {
+          const conversationId = Number(payload?.conversationId);
+          if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
+
+          setWorkSession(null); // Clear session if any
+          toast.success("Đơn hàng đã hoàn thành!");
+          // Potentially refresh conversation to show status update
         });
       } catch (e) {
         console.error("startChatHub failed", e);
@@ -688,6 +698,18 @@ const MessagingPage = () => {
     if (!workSession?.sessionId || !activeConversationId) return;
     await requestEndWork(activeConversationId, workSession.sessionId);
   };
+
+  const handleRequestCompleteOrder = async () => {
+    // Logic for request complete order
+    if (!workContext?.orderId || !activeConversationId) return;
+    try {
+      await requestCompleteOrder(activeConversationId, workContext.orderId);
+      toast.info("Đã gửi yêu cầu hoàn thành...");
+    } catch (e) {
+      console.error("RequestCompleteOrder failed", e);
+      toast.error("Gửi yêu cầu thất bại");
+    }
+  };
   const handleRespondWorkAction = async (accept) => {
     const rid = String(workActionPopup?.requestId ?? "").trim();
     console.log("[ui] RespondWorkAction click:", { rid, accept, workActionPopup });
@@ -737,48 +759,48 @@ const MessagingPage = () => {
   const handleAcceptAction = async () => {
     if (!workActionPopup) return;
     try {
-        await respondWorkAction(workActionPopup.requestId, true);
-        setWorkActionPopup(null);
+      await respondWorkAction(workActionPopup.requestId, true);
+      setWorkActionPopup(null);
     } catch (e) {
-        toast.error("Failed to accept");
+      toast.error("Failed to accept");
     }
   };
 
   const handleRejectAction = async () => {
     if (!workActionPopup) return;
     try {
-        await respondWorkAction(workActionPopup.requestId, false);
-        setWorkActionPopup(null);
+      await respondWorkAction(workActionPopup.requestId, false);
+      setWorkActionPopup(null);
     } catch (e) {
-        toast.error("Failed to reject");
+      toast.error("Failed to reject");
     }
   };
 
   // ===== Handle Trigger Actions (from UI) =====
   const handleTriggerStart = async () => {
-     if (!workContext) return;
-     try {
-         await requestStartWork(workContext.conversationId, workContext.orderId, workContext.mentorId, workContext.studentId);
-         toast.info("Request sent to partner...");
-     } catch (e) {
-         toast.error("Failed to send request");
-     }
+    if (!workContext) return;
+    try {
+      await requestStartWork(workContext.conversationId, workContext.orderId, workContext.mentorId, workContext.studentId);
+      toast.info("Request sent to partner...");
+    } catch (e) {
+      toast.error("Failed to send request");
+    }
   };
 
   const handleTriggerPause = async () => {
     if (!workSession?.sessionId) return;
     try {
-        await requestPauseWork(workContext.conversationId, workSession.sessionId);
-        toast.info("Request sent...");
-    } catch(e) { toast.error("Failed"); }
+      await requestPauseWork(workContext.conversationId, workSession.sessionId);
+      toast.info("Request sent...");
+    } catch (e) { toast.error("Failed"); }
   };
 
   const handleTriggerEnd = async () => {
     if (!workSession?.sessionId) return;
     try {
-        await requestEndWork(workContext.conversationId, workSession.sessionId);
-        toast.info("Request sent...");
-    } catch(e) { toast.error("Failed"); }
+      await requestEndWork(workContext.conversationId, workSession.sessionId);
+      toast.info("Request sent...");
+    } catch (e) { toast.error("Failed"); }
   };
 
 
@@ -872,9 +894,14 @@ const MessagingPage = () => {
             onSendImage={handleSendImage} // ✅ image/file
             onBack={() => setActiveConversationId(null)}
             currentUserId={currentUserId}
+
             // ✅ pass handlers down in case you want a Start button in ChatWindow header/menu
             onStartWork={handleStartWork}
+            onPauseWork={handlePauseWork} // ✅ Added
+            onEndWork={handleEndWork} // ✅ Added
+            onCompleteOrder={handleRequestCompleteOrder} // ✅ New handler
             workSession={workSession}
+            workContext={workContext} // ✅ Pass workContext to check orderId
             onResumeWork={handleResumeWork}
           />
         </div>

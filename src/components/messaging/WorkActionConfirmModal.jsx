@@ -5,6 +5,7 @@ const actionLabels = {
   start: "Bắt đầu",
   pause: "Tạm dừng",
   end: "Kết thúc",
+  complete: "Hoàn thành đơn hàng", // ✅ Added
 };
 
 const normalizeActionType = (actionType) =>
