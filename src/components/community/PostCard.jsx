@@ -6,6 +6,7 @@ import { getRoleName } from '../../utils/userRole';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl, normalizeFileUrl } from '../../utils/avatar';
 import { useAuth } from '../../context/AuthContext';
 import communityApi from '../../api/communityApi';
+import requestApi from '../../api/requestApi';
 
 const PostCard = ({ post, onRefresh }) => {
   const { user: currentUser } = useAuth();
@@ -32,6 +33,8 @@ const PostCard = ({ post, onRefresh }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [hasPendingProposal, setHasPendingProposal] = useState(false);
+  const [checkingProposal, setCheckingProposal] = useState(false);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -72,6 +75,46 @@ const PostCard = ({ post, onRefresh }) => {
   const handleSendProposal = () => {
     setIsProposalModalOpen(true);
   };
+
+  // Check for pending proposal when component mounts (for mentors only)
+  useEffect(() => {
+    const checkPendingProposal = async () => {
+      if (!isMentor || !id) return;
+      
+      setCheckingProposal(true);
+      try {
+        let page = 1;
+        let totalPages = 1;
+
+        do {
+          const res = await requestApi.getMyProposals(page, 50);
+          const data = res?.data?.data;
+          const items = data?.items || [];
+          totalPages = data?.totalPages || 1;
+
+          const pending = items.some((proposal) => {
+            const postIdMatch = proposal?.postId === id || proposal?.communityPostId === id;
+            const isPending = proposal?.status === 0 || 
+                             proposal?.status === 'Pending' || 
+                             proposal?.statusDisplay === 'Pending';
+            return postIdMatch && isPending;
+          });
+
+          if (pending) {
+            setHasPendingProposal(true);
+            break;
+          }
+          page += 1;
+        } while (page <= totalPages && page <= 5);
+      } catch (err) {
+        console.error('Check pending proposal failed:', err);
+      } finally {
+        setCheckingProposal(false);
+      }
+    };
+
+    checkPendingProposal();
+  }, [isMentor, id]);
 
   const handleProposalSubmit = async (proposalData) => {
     try {
@@ -280,18 +323,6 @@ const PostCard = ({ post, onRefresh }) => {
         </div>
       )}
 
-      {/* --- PROPOSAL COUNT (for post author) --- */}
-      {proposalCount > 0 && isOwnPost && (
-        <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-            <FileText size={18} />
-            <span className="text-sm font-medium">
-              {proposalCount} proposal{proposalCount > 1 ? 's' : ''} received
-            </span>
-          </div>
-        </div>
-      )}
-
       {/* --- FOOTER ACTIONS --- */}
       <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-neutral-800">
 
@@ -314,11 +345,21 @@ const PostCard = ({ post, onRefresh }) => {
           {isMentor && !isOwnPost && (author.role === 'Student' || author.role === 0) && (
             <button
               onClick={handleSendProposal}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-              title="Send Proposal"
+              disabled={hasPendingProposal || checkingProposal}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 disabled:cursor-not-allowed rounded-lg transition-colors"
+              title={hasPendingProposal ? "You already have a pending proposal" : "Send Proposal"}
             >
-              <Send size={16} />
-              <span className="hidden sm:inline">Send Proposal</span>
+              {checkingProposal ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span className="hidden sm:inline">Checking...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  <span className="hidden sm:inline">{hasPendingProposal ? 'Proposal Sent' : 'Send Proposal'}</span>
+                </>
+              )}
             </button>
           )}
         </div>
@@ -334,6 +375,7 @@ const PostCard = ({ post, onRefresh }) => {
         onSubmit={handleProposalSubmit}
         postTitle={title}
         authorName={author.name}
+        postId={id}
       />
     </div>
   );

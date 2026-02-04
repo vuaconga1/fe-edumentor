@@ -97,12 +97,14 @@ const requestApi = {
     return axiosClient.post(`/api/Proposal/${proposalId}/cancel`);
   },
 
+  // Accept a proposal (student only) - fixed endpoint
   acceptProposal(proposalId) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/accept`);
+    return axiosClient.post(`/api/Proposal/${proposalId}/accept`);
   },
 
+  // Reject a proposal (student only) - fixed endpoint
   rejectProposal(proposalId, reason = null) {
-    return axiosClient.put(`/api/Community/proposals/${proposalId}/reject`);
+    return axiosClient.post(`/api/Proposal/${proposalId}/reject`, { reason });
   },
 };
 

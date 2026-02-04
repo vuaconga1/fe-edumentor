@@ -42,6 +42,7 @@ export const ADMIN_MENU = [
 export const MENTOR_MENU = [
   { label: "Home", href: "/mentor", icon: HomeIcon },
   { label: "Requests", href: "/mentor/requests", icon: FileText },
+  { label: "Orders", href: "/mentor/orders", icon: History },
   { label: "Community", href: "/mentor/community", icon: UsersRound },
   { label: "Messaging", href: "/mentor/messaging", icon: MessageCircle },
   { label: "My Wallet", href: "/mentor/wallet", icon: Wallet },

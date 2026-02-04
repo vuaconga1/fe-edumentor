@@ -43,6 +43,7 @@ import OrderHistoryPage from '../pages/student/OrderHistoryPage';
 import MentorReviewsPage from '../pages/mentor/MentorReviewsPage';
 import MentorProfilePage from '../pages/mentor/MentorProfilePage';
 import MentorRequestsPage from '../pages/mentor/MentorRequestsPage';
+import MentorOrdersPage from '../pages/mentor/MentorOrdersPage';
 import StudentProfilePage from '../pages/student/StudentProfilePage';
 import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
 import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
@@ -88,6 +89,7 @@ const AppRoutes = () => {
         <Route path="community" element={<Community />} />
         <Route path="messaging" element={<MessagingPage />} />
         <Route path="wallet" element={<WalletPage />} />
+        <Route path="orders" element={<MentorOrdersPage />} />
         <Route path="reviews" element={<MentorReviewsPage />} />
         <Route path="requests" element={<MentorRequestsPage />} />
         <Route path="profile" element={<MentorProfilePage />} />

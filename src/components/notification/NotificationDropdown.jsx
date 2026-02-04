@@ -84,48 +84,51 @@ const NotificationDropdown = () => {
     const baseRoute = getBaseRoute();
     const isMentor = baseRoute === '/mentor';
     
-    // NotificationType enum: 0=System, 1=RequestCreated, 2=RequestAssigned, 3=ProposalCreated, 
-    // 4=NewProposal, 5=ProposalAccepted, 6=ProposalRejected, 7=OrderStarted, 8=OrderCompleted,
-    // 9=OrderDisputed, 10=WalletTransaction, 11=RelevantPost, 12=NewComment, 13=NewFollower
+    // NotificationType enum: 0=System, 1=RequestCreated, 2=RequestAssigned, 3=RequestAccepted,
+    // 4=RequestRejected, 5=ProposalCreated, 6=NewProposal, 7=ProposalAccepted, 8=ProposalRejected,
+    // 9=OrderStarted, 10=OrderCompleted, 11=OrderDisputed, 12=WalletTransaction, 
+    // 13=RelevantPost, 14=NewComment, 15=NewFollower
     const type = notification.type;
     
-    // Request related (1, 2)
-    if (type === 1 || type === 2 || type === "RequestCreated" || type === "RequestAssigned") {
+    // Request related (1, 2, 3, 4)
+    if (type === 1 || type === 2 || type === 3 || type === 4 ||
+        type === "RequestCreated" || type === "RequestAssigned" || 
+        type === "RequestAccepted" || type === "RequestRejected") {
       navigate(isMentor ? "/mentor/requests" : "/student/my-requests");
     }
-    // Proposal related (3, 4, 5, 6)
-    else if (type === 3 || type === 4 || type === 5 || type === 6 || 
+    // Proposal related (5, 6, 7, 8)
+    else if (type === 5 || type === 6 || type === 7 || type === 8 || 
              type === "ProposalCreated" || type === "NewProposal" || 
              type === "ProposalAccepted" || type === "ProposalRejected") {
       navigate(isMentor ? "/mentor/requests" : "/student/my-requests");
     }
-    // Order related (7, 8, 9)
-    else if (type === 7 || type === 8 || type === 9 || 
+    // Order related (9, 10, 11)
+    else if (type === 9 || type === 10 || type === 11 || 
              type === "OrderStarted" || type === "OrderCompleted" || type === "OrderDisputed") {
       navigate(`${baseRoute}/orders`);
     }
-    // Wallet (10)
-    else if (type === 10 || type === "WalletTransaction") {
+    // Wallet (12)
+    else if (type === 12 || type === "WalletTransaction") {
       navigate(`${baseRoute}/wallet`);
     }
-    // Community Post (11)
-    else if (type === 11 || type === "RelevantPost") {
+    // Community Post (13)
+    else if (type === 13 || type === "RelevantPost") {
       if (data.postId) {
         navigate(`${baseRoute}/community?postId=${data.postId}`);
       } else {
         navigate(`${baseRoute}/community`);
       }
     }
-    // New Comment (12)
-    else if (type === 12 || type === "NewComment") {
+    // New Comment (14)
+    else if (type === 14 || type === "NewComment") {
       if (data.postId) {
         navigate(`${baseRoute}/community?postId=${data.postId}`);
       } else {
         navigate(`${baseRoute}/community`);
       }
     }
-    // New Follower (13)
-    else if (type === 13 || type === "NewFollower") {
+    // New Follower (15)
+    else if (type === 15 || type === "NewFollower") {
       navigate(`${baseRoute}/profile`);
     }
     // System or unknown - go to profile

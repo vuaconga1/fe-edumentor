@@ -158,7 +158,7 @@ const Community = () => {
         communityApi.getCategories(),
         communityApi.getHashtags()
       ]);
-      console.log('Categories API response:', JSON.stringify(catRes?.data, null, 2));
+      // ...removed debug log...
       if (catRes?.data?.data) {
         setCategories(catRes.data.data);
       }

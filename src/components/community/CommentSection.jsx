@@ -25,8 +25,8 @@ const CommentSection = ({ postId }) => {
       try {
         const res = await communityApi.getComments(postId);
         if (res?.data?.data) {
-          // Map API response to component format
-          const mappedComments = res.data.data.map(c => ({
+          // Recursive function to map comment tree
+          const mapComment = (c) => ({
             id: c.id,
             user: {
               id: c.authorId,
@@ -35,8 +35,14 @@ const CommentSection = ({ postId }) => {
               isMentor: c.isAuthorMentor
             },
             content: c.content,
-            time: formatTime(c.createdAt)
-          }));
+            time: formatTime(c.createdAt),
+            parentCommentId: c.parentCommentId,
+            // Recursively map nested replies
+            replies: c.replies ? c.replies.map(mapComment) : []
+          });
+          
+          // Map all top-level comments with their nested replies
+          const mappedComments = res.data.data.map(mapComment);
           setComments(mappedComments);
         }
       } catch (err) {
@@ -142,6 +148,63 @@ const CommentSection = ({ postId }) => {
     setShowEmojiPicker(false);
   };
 
+  // Recursive comment rendering
+  const renderComment = (comment, depth = 0) => {
+    const isNested = depth > 0;
+    const avatarSize = isNested ? 'w-6 h-6' : 'w-8 h-8';
+    const bubbleRounded = isNested ? 'rounded-xl' : 'rounded-2xl rounded-tl-none';
+    const textSize = isNested ? 'text-xs' : 'text-sm';
+    const nameSize = isNested ? 'text-xs' : 'text-sm';
+    const marginLeft = isNested ? 'ml-4' : '';
+
+    return (
+      <div key={comment.id} className={`flex gap-${isNested ? '2' : '3'} group ${marginLeft}`}>
+        <img 
+          src={normalizeAvatarUrl(comment.user.avatarUrl || comment.user.avatar) || buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name })} 
+          alt={comment.user.name} 
+          className={`${avatarSize} rounded-full object-cover border border-neutral-200 dark:border-neutral-800 mt-1`}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name });
+          }}
+        />
+        <div className="flex-1">
+          {/* Bubble Content */}
+          <div className={`bg-neutral-50 dark:bg-neutral-800/50 ${bubbleRounded} px-${isNested ? '3' : '4'} py-2.5 inline-block`}>
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`${nameSize} font-semibold text-neutral-900 dark:text-white`}>
+                {comment.user.name}
+              </span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {comment.time}
+              </span>
+            </div>
+            <p className={`${textSize} text-neutral-700 dark:text-neutral-300 leading-relaxed`}>
+              {comment.content}
+            </p>
+          </div>
+
+          {/* Actions (Reply only) */}
+          <div className="flex items-center gap-4 mt-1 ml-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <button 
+              onClick={() => handleReply(comment)}
+              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              Reply
+            </button>
+          </div>
+
+          {/* Nested Replies - Recursive */}
+          {comment.replies && comment.replies.length > 0 && (
+            <div className="mt-3 space-y-3 border-l-2 border-neutral-100 dark:border-neutral-800 pl-4">
+              {comment.replies.map((reply) => renderComment(reply, depth + 1))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700 animate-in fade-in slide-in-from-top-2 duration-200">
       
@@ -228,84 +291,7 @@ const CommentSection = ({ postId }) => {
         <p className="text-center text-sm text-neutral-500 py-4">No comments yet. Be the first to comment!</p>
       ) : (
         <div className="space-y-4">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3 group">
-            <img 
-              src={normalizeAvatarUrl(comment.user.avatarUrl || comment.user.avatar) || buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name })} 
-              alt={comment.user.name} 
-              className="w-8 h-8 rounded-full object-cover border border-neutral-200 dark:border-neutral-800 mt-1"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = buildDefaultAvatarUrl({ id: comment.user.id, fullName: comment.user.name });
-              }}
-            />
-            <div className="flex-1">
-              {/* Bubble Content */}
-              <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl rounded-tl-none px-4 py-2.5 inline-block">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    {comment.user.name}
-                  </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {comment.time}
-                  </span>
-                </div>
-                <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
-                  {comment.content}
-                </p>
-              </div>
-
-              {/* Actions (Reply only - removed Like) */}
-              <div className="flex items-center gap-4 mt-1 ml-2 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-                <button 
-                  onClick={() => handleReply(comment)}
-                  className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                >
-                  Reply
-                </button>
-              </div>
-
-              {/* Replies */}
-              {comment.replies && comment.replies.length > 0 && (
-                <div className="ml-4 mt-3 space-y-3 border-l-2 border-neutral-100 dark:border-neutral-800 pl-4">
-                  {comment.replies.map((reply) => (
-                    <div key={reply.id} className="flex gap-2">
-                      <img 
-                        src={normalizeAvatarUrl(reply.user.avatarUrl || reply.user.avatar) || buildDefaultAvatarUrl({ id: reply.user.id, fullName: reply.user.name })} 
-                        alt={reply.user.name} 
-                        className="w-6 h-6 rounded-full object-cover border border-neutral-200 dark:border-neutral-800"
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = buildDefaultAvatarUrl({ id: reply.user.id, fullName: reply.user.name });
-                        }}
-                      />
-                      <div className="flex-1">
-                        <div className="bg-neutral-50 dark:bg-neutral-800/50 rounded-xl px-3 py-2 inline-block">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs font-semibold text-neutral-900 dark:text-white">
-                              {reply.user.name}
-                            </span>
-                            <span className="text-xs text-neutral-400">
-                              {reply.time}
-                            </span>
-                          </div>
-                          <p className="text-xs text-neutral-700 dark:text-neutral-300">
-                            {reply.content}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* More Option (Hidden by default, show on hover) */}
-            <button className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-neutral-600 transition-all self-center">
-               <MoreHorizontal size={16} />
-            </button>
-          </div>
-        ))}
+          {comments.map((comment) => renderComment(comment))}
         </div>
       )}
     </div>
