@@ -2,6 +2,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AppRoutes from './routes/AppRoutes';
 import ChangePasswordModal from './components/auth/ChangePasswordModal';
+import { FloatingChatButton, ChatWindow } from './components/AIChat';
 import './App.css';
 
 function App() {
@@ -9,6 +10,11 @@ function App() {
     <>
       <AppRoutes />
       <ChangePasswordModal />
+      
+      {/* AI Chatbot */}
+      <FloatingChatButton />
+      <ChatWindow />
+      
       <ToastContainer 
         position="top-right" 
         autoClose={3000}

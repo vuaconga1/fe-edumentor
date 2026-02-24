@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { HiX, HiUpload, HiTrash, HiCheck, HiChevronDown } from "react-icons/hi";
+import { HiX, HiUpload, HiTrash, HiCheck, HiChevronDown, HiLightBulb, HiCheckCircle, HiExclamationCircle, HiXCircle } from "react-icons/hi";
 import axios from "axios";
 import mentorApi from "../../api/mentorApi";
 import axiosClient from "../../api/axios";
@@ -39,6 +39,7 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
     const [files, setFiles] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [showGuidelines, setShowGuidelines] = useState(true); // Show guidelines by default
 
     // Dropdown states
     const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -309,6 +310,163 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                         </div>
                     )}
 
+                    {/* AI Evaluation Guidelines */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setShowGuidelines(!showGuidelines)}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <HiLightBulb className="w-5 h-5 text-yellow-500" />
+                                <span className="font-semibold text-blue-900 dark:text-blue-100">
+                                    AI Evaluation Guidelines - How to get approved faster
+                                </span>
+                            </div>
+                            <HiChevronDown className={`w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform duration-200 ${showGuidelines ? 'rotate-180' : ''}`} />
+                        </button>
+                        
+                        {showGuidelines && (
+                            <div className="px-4 py-4 space-y-4 border-t border-blue-200 dark:border-blue-800">
+                                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
+                                    Your application will be automatically reviewed by AI. Here's how to increase your approval chances:
+                                </p>
+                                
+                                {/* Score Legend */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div className="flex items-start gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                        <HiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-bold text-green-900 dark:text-green-100">Score ≥ 80%</p>
+                                            <p className="text-xs text-green-700 dark:text-green-300">Auto-Approved</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
+                                        <HiExclamationCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-bold text-yellow-900 dark:text-yellow-100">Score 40-79%</p>
+                                            <p className="text-xs text-yellow-700 dark:text-yellow-300">Manual Review</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
+                                        <HiXCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-xs font-bold text-red-900 dark:text-red-100">Score &lt; 40%</p>
+                                            <p className="text-xs text-red-700 dark:text-red-300">Auto-Rejected</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Evaluation Criteria */}
+                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-3">
+                                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white">AI evaluates 4 key areas (100 points total):</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
+                                            <div>
+                                                <p className="font-semibold text-neutral-900 dark:text-white">Experience Level</p>
+                                                <p className="text-neutral-600 dark:text-neutral-400">Years & relevance of experience</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
+                                            <div>
+                                                <p className="font-semibold text-neutral-900 dark:text-white">Introduction Quality</p>
+                                                <p className="text-neutral-600 dark:text-neutral-400">Clarity, professionalism, passion</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
+                                            <div>
+                                                <p className="font-semibold text-neutral-900 dark:text-white">Portfolio Quality</p>
+                                                <p className="text-neutral-600 dark:text-neutral-400">GitHub/LinkedIn/Website quality</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start gap-2">
+                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
+                                            <div>
+                                                <p className="font-semibold text-neutral-900 dark:text-white">Overall Fit</p>
+                                                <p className="text-neutral-600 dark:text-neutral-400">Alignment with mentor role</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tips */}
+                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-2">
+                                    <h4 className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
+                                        Tips for High Score (80%+):
+                                    </h4>
+                                    <ul className="text-xs space-y-1.5 text-neutral-700 dark:text-neutral-300">
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>3+ years experience</strong> in your field (5+ is ideal)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>Introduction: 150-300 words</strong> - Highlight achievements, teaching passion, specific expertise</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>Active GitHub</strong> (10+ repos, contributions) or well-maintained LinkedIn profile</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>Professional certifications</strong> (AWS, Google Cloud, Microsoft, etc.) in <strong>PDF format</strong></span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>Quality CV</strong> - Professional format, clear structure (ATS-friendly)</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
+                                            <span><strong>Accurate categories & hashtags</strong> matching your expertise</span>
+                                        </li>
+                                    </ul>
+                                </div>
+
+                                {/* File Format Tips */}
+                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-2">
+                                    <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400">Best File Formats for AI:</h4>
+                                    <div className="text-xs space-y-1.5 text-neutral-700 dark:text-neutral-300">
+                                        <p><strong className="text-green-600 dark:text-green-400">Recommended:</strong> PDF (best for AI reading), JPG/PNG (for scanned certificates)</p>
+                                        <p><strong className="text-yellow-600 dark:text-yellow-400">Acceptable:</strong> DOC/DOCX (less optimal)</p>
+                                        <p><strong className="text-red-600 dark:text-red-400">Avoid:</strong> Low-quality images, blurry scans, unrelated files</p>
+                                    </div>
+                                </div>
+
+                                {/* Red Flags */}
+                                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2 border border-red-200 dark:border-red-800">
+                                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                        Common Red Flags (Low Score):
+                                    </h4>
+                                    <ul className="text-xs space-y-1.5 text-red-700 dark:text-red-300">
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0">✗</span>
+                                            <span>&lt; 1 year experience or unclear background</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0">✗</span>
+                                            <span>Very short introduction (1-2 sentences) or many grammar errors</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0">✗</span>
+                                            <span>Empty GitHub, broken links, or no real portfolio</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0">✗</span>
+                                            <span>Unrelated files, blurry scans, or no certifications</span>
+                                        </li>
+                                        <li className="flex items-start gap-2">
+                                            <span className="flex-shrink-0">✗</span>
+                                            <span>Inconsistent information (claim 10 years but empty portfolio)</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Specialization */}
                         <div className="space-y-2">
@@ -341,6 +499,9 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                 max="50"
                                 className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
                             />
+                            <p className={`text-xs ${formData.experienceYears >= 3 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-neutral-500'}`}>
+                                {formData.experienceYears >= 3 ? 'Great! 3+ years increases approval chance' : '3+ years recommended for higher AI score'}
+                            </p>
                         </div>
                     </div>
 
@@ -527,19 +688,19 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                     {/* Introduction */}
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            Introduction (min 50 chars) <span className="text-red-500">*</span>
+                            Introduction (min 50 chars, recommend 150-300 words) <span className="text-red-500">*</span>
                         </label>
                         <textarea
                             name="introduction"
                             value={formData.introduction}
                             onChange={handleChange}
                             required
-                            rows={4}
-                            placeholder="Tell us about yourself and why you want to be a mentor..."
+                            rows={5}
+                            placeholder="Tell us about your experience, achievements, teaching philosophy, and why you want to mentor. Be specific and professional. Example: 'I'm a Senior Software Engineer with 7 years in full-stack development. I've mentored 50+ junior developers and published technical articles with 100k+ views...'"
                             className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white resize-none"
                         />
-                        <p className="text-xs text-neutral-500 text-right">
-                            {formData.introduction.length}/50 characters
+                        <p className={`text-xs text-right ${formData.introduction.length >= 150 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-neutral-500'}`}>
+                            {formData.introduction.length} characters {formData.introduction.length >= 150 && '✓ Great length!'}
                         </p>
                     </div>
 
@@ -548,6 +709,9 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                         <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                             Certifications / CV (Max 2 files, 20MB each) <span className="text-red-500">*</span>
                         </label>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                            Best formats: PDF (recommended), JPG/PNG for certificates. Upload professional certifications for higher AI score!
+                        </p>
 
                         <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer relative group">
                             <input
@@ -565,7 +729,7 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                     Click to upload or drag and drop
                                 </p>
                                 <p className="text-xs text-neutral-500">
-                                    PDF, Word, or Images (max 20MB)
+                                    PDF (best), JPG, PNG, Word • Max 20MB per file
                                 </p>
                             </div>
                         </div>

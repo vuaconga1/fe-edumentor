@@ -596,6 +596,107 @@ export default function MentorApplicationsPage() {
                                     <p className="text-sm text-red-600">{selectedApp.rejectionReason}</p>
                                 </div>
                             )}
+
+                            {/* AI Analysis Section */}
+                            {selectedApp.isAiReviewed && (
+                                <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                        </svg>
+                                        <h4 className="font-semibold text-neutral-900 dark:text-white">🤖 AI Analysis</h4>
+                                        {selectedApp.aiModelVersion && (
+                                            <span className="text-xs text-neutral-400">({selectedApp.aiModelVersion})</span>
+                                        )}
+                                    </div>
+
+                                    {/* Confidence Score */}
+                                    {selectedApp.aiConfidenceScore != null && (
+                                        <div className="mb-4">
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-xs text-neutral-500">Confidence Score</span>
+                                                <span className={`text-sm font-bold ${
+                                                    selectedApp.aiConfidenceScore >= 80 ? 'text-emerald-600' :
+                                                    selectedApp.aiConfidenceScore >= 40 ? 'text-amber-600' :
+                                                    'text-red-600'
+                                                }`}>
+                                                    {selectedApp.aiConfidenceScore}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2.5">
+                                                <div 
+                                                    className={`h-2.5 rounded-full transition-all ${
+                                                        selectedApp.aiConfidenceScore >= 80 ? 'bg-emerald-500' :
+                                                        selectedApp.aiConfidenceScore >= 40 ? 'bg-amber-500' :
+                                                        'bg-red-500'
+                                                    }`}
+                                                    style={{ width: `${selectedApp.aiConfidenceScore}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Recommended Action */}
+                                    {selectedApp.aiRecommendedAction && (
+                                        <div className="mb-4">
+                                            <span className="text-xs text-neutral-500 block mb-1">AI Recommendation</span>
+                                            <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
+                                                selectedApp.aiRecommendedAction === 'AUTO_APPROVE' 
+                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                selectedApp.aiRecommendedAction === 'AUTO_REJECT'
+                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                            }`}>
+                                                {selectedApp.aiRecommendedAction === 'AUTO_APPROVE' ? '✓ Auto Approved' :
+                                                 selectedApp.aiRecommendedAction === 'AUTO_REJECT' ? '✗ Auto Rejected' :
+                                                 '⏳ Manual Review Required'}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {/* AI Reasoning */}
+                                    {selectedApp.aiReasoning && (
+                                        <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">AI Reasoning</p>
+                                            <p className="text-sm text-purple-800 dark:text-purple-300">{selectedApp.aiReasoning}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Key Points */}
+                                    {selectedApp.aiKeyPoints && selectedApp.aiKeyPoints.length > 0 && (
+                                        <div className="mb-4">
+                                            <p className="text-xs text-neutral-500 mb-2">✅ Key Strengths</p>
+                                            <ul className="space-y-1">
+                                                {selectedApp.aiKeyPoints.map((point, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
+                                                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <span>{point}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Red Flags */}
+                                    {selectedApp.aiRedFlags && selectedApp.aiRedFlags.length > 0 && (
+                                        <div className="mb-4">
+                                            <p className="text-xs text-neutral-500 mb-2">⚠️ Concerns / Red Flags</p>
+                                            <ul className="space-y-1">
+                                                {selectedApp.aiRedFlags.map((flag, idx) => (
+                                                    <li key={idx} className="flex items-start gap-2 text-sm text-red-700 dark:text-red-400">
+                                                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <span>{flag}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {(selectedApp.approvalStatus === "Pending" || selectedApp.approvalStatus === 0) && (

@@ -22,7 +22,16 @@ export default {
           900: '#312e81',
           950: '#1e1b4b',
         }
-      }
+      },
+      animation: {
+        'slide-up': 'slideUp 0.3s ease-out',
+      },
+      keyframes: {
+        slideUp: {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+      },
     },
   },
   plugins: [require("flowbite/plugin")],
