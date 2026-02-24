@@ -1,9 +1,11 @@
 // src/components/sidebar/SidebarItem.jsx
 import { Link, useLocation } from "react-router-dom";
 
-export default function SidebarItem({ icon: Icon, label, href, collapsed, onClick }) {
+export default function SidebarItem({ icon: Icon, label, href, collapsed, onClick, badge }) {
   const location = useLocation();
   const isActive = location.pathname === href;
+  const hasBadge = badge && badge > 0;
+  const showBadgeNumber = badge && badge > 0;
 
   return (
     <Link
@@ -11,15 +13,29 @@ export default function SidebarItem({ icon: Icon, label, href, collapsed, onClic
       onClick={onClick}
       className={`
         flex items-center gap-3 px-3 py-2.5 rounded-xl
-        transition-all duration-200 group
+        transition-all duration-200 group relative
         ${collapsed ? "justify-center px-2" : ""}
         ${isActive 
           ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-semibold" 
           : "text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800"}
       `}
     >
-      <Icon className={`w-5 h-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-      {!collapsed && <span className="text-base font-medium truncate">{label}</span>}
+      <div className="relative flex-shrink-0">
+        <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`} />
+        {hasBadge && (
+          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm animate-pulse" />
+        )}
+      </div>
+      {!collapsed && (
+        <>
+          <span className="text-base font-medium truncate flex-1">{label}</span>
+          {showBadgeNumber && (
+            <span className="min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-sm">
+              {badge > 99 ? "99+" : badge}
+            </span>
+          )}
+        </>
+      )}
     </Link>
   );
 }

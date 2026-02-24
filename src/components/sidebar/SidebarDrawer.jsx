@@ -30,15 +30,26 @@ export default function SidebarDrawer({ open, onClose, menu = [] }) {
         <nav className="p-4 space-y-1 overflow-y-auto max-h-[calc(100vh-80px)] scrollbar-thin scrollbar-thumb-neutral-300 dark:scrollbar-thumb-neutral-700 scrollbar-track-transparent">
           {menu.map((item, index) => {
             const Icon = item.icon;
+            const hasBadge = item.badge && item.badge > 0;
             return (
               <Link
                 key={index}
                 to={item.href}
                 onClick={onClose}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-all font-medium"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white transition-all font-medium relative"
               >
-                {Icon && <Icon className="w-5 h-5" />}
-                <span>{item.label}</span>
+                <div className="relative flex-shrink-0">
+                  {Icon && <Icon className="w-5 h-5" />}
+                  {hasBadge && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm animate-pulse" />
+                  )}
+                </div>
+                <span className="flex-1">{item.label}</span>
+                {hasBadge && (
+                  <span className="min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                    {item.badge > 99 ? "99+" : item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

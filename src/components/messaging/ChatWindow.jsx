@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { HiArrowLeft } from "react-icons/hi";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
@@ -20,17 +20,63 @@ export default function ChatWindow({
   onPauseWork,
   onEndWork,
   onCompleteOrder, // ✅ Added
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
 }) {
   const bottomRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const isFirstLoad = useRef(true);
+  const prevScrollHeight = useRef(0);
 
   // Keep your existing input UI (plus button + modals) intact
   const [text, setText] = useState("");
   const [openActions, setOpenActions] = useState(false);
   const [modalType, setModalType] = useState(null);
 
+  // Scroll to bottom on first load or new message (only if already near bottom)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!scrollContainerRef.current) return;
+    const el = scrollContainerRef.current;
+
+    if (isFirstLoad.current) {
+      el.scrollTop = el.scrollHeight;
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // Check if user is near bottom (within 150px)
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150;
+    if (isNearBottom) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
+
+  // Reset first load flag when conversation changes
+  useEffect(() => {
+    isFirstLoad.current = true;
+  }, [conversation?.id]);
+
+  // Restore scroll position after loading older messages
+  useEffect(() => {
+    if (!loadingMore && prevScrollHeight.current > 0 && scrollContainerRef.current) {
+      const el = scrollContainerRef.current;
+      const newScrollHeight = el.scrollHeight;
+      el.scrollTop = newScrollHeight - prevScrollHeight.current;
+      prevScrollHeight.current = 0;
+    }
+  }, [loadingMore, messages]);
+
+  // Infinite scroll: load older messages on scroll to top
+  const handleScroll = useCallback(() => {
+    if (!scrollContainerRef.current || loadingMore || !hasMore) return;
+    const el = scrollContainerRef.current;
+
+    if (el.scrollTop < 80) {
+      prevScrollHeight.current = el.scrollHeight;
+      onLoadMore?.();
+    }
+  }, [loadingMore, hasMore, onLoadMore]);
 
   // Empty state when no conversation selected
   if (!conversation) {
@@ -132,7 +178,24 @@ export default function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-3 bg-white dark:bg-neutral-950">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-3 bg-white dark:bg-neutral-950"
+      >
+        {/* Loading older messages spinner */}
+        {loadingMore && (
+          <div className="flex justify-center py-3">
+            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!hasMore && list.length > 0 && (
+          <div className="flex justify-center py-2">
+            <span className="text-xs text-neutral-400">Đã hiển thị tất cả tin nhắn</span>
+          </div>
+        )}
+
         {list.map((msg, index) => {
           const mine = !!msg.isOwn;
           return (
