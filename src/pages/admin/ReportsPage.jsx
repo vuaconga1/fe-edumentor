@@ -19,16 +19,17 @@ const ReportsPage = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
 
   const filteredReports = reports.filter(report => {
-    if (filterType !== 'all' && report.type !== filterType) return false;
+    if (filterType !== 'all' && report.reason !== filterType) return false;
     if (filterStatus !== 'all' && report.status !== filterStatus) return false;
     
     // Search filter
     if (searchKeyword.trim()) {
       const keyword = searchKeyword.toLowerCase();
       const matchReason = (report.reason || '').toLowerCase().includes(keyword);
-      const matchReportedUser = (report.reportedUser || '').toLowerCase().includes(keyword);
-      const matchReportedBy = (report.reportedBy || '').toLowerCase().includes(keyword);
-      if (!matchReason && !matchReportedUser && !matchReportedBy) return false;
+      const matchDetails = (report.details || '').toLowerCase().includes(keyword);
+      const matchReportedUser = (report.reportedUserName || '').toLowerCase().includes(keyword);
+      const matchReporter = (report.reporterName || '').toLowerCase().includes(keyword);
+      if (!matchReason && !matchDetails && !matchReportedUser && !matchReporter) return false;
     }
     
     return true;
@@ -126,10 +127,11 @@ const ReportsPage = () => {
               className="px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
             >
               <option value="all">All Types</option>
-              <option value="user">User</option>
-              <option value="content">Content</option>
-              <option value="review">Review</option>
-              <option value="payment">Payment</option>
+              <option value="spam">Spam</option>
+              <option value="inappropriate">Inappropriate</option>
+              <option value="fake">Fake</option>
+              <option value="privacy">Privacy</option>
+              <option value="other">Other</option>
             </select>
             <select
               value={filterStatus}
@@ -138,9 +140,9 @@ const ReportsPage = () => {
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
-              <option value="investigating">Investigating</option>
-              <option value="resolved">Resolved</option>
-              <option value="dismissed">Dismissed</option>
+              <option value="Open">Open</option>
+              <option value="Resolved">Resolved</option>
+              <option value="Dismissed">Dismissed</option>
             </select>
             {hasActiveFilters && (
               <button
@@ -182,10 +184,11 @@ const ReportsPage = () => {
                 className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
                 <option value="all">All Types</option>
-                <option value="user">User</option>
-                <option value="content">Content</option>
-                <option value="review">Review</option>
-                <option value="payment">Payment</option>
+                <option value="spam">Spam</option>
+                <option value="inappropriate">Inappropriate</option>
+                <option value="fake">Fake</option>
+                <option value="privacy">Privacy</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div>
@@ -197,9 +200,9 @@ const ReportsPage = () => {
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
-                <option value="investigating">Investigating</option>
-                <option value="resolved">Resolved</option>
-                <option value="dismissed">Dismissed</option>
+                <option value="Open">Open</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Dismissed">Dismissed</option>
               </select>
             </div>
             {hasActiveFilters && (
@@ -217,23 +220,26 @@ const ReportsPage = () => {
   };
 
   const getStatusColor = (status) => {
+    const s = (status || '').toLowerCase();
     const colors = {
       pending: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400',
+      open: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
       investigating: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
       resolved: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
       dismissed: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400'
     };
-    return colors[status] || colors.pending;
+    return colors[s] || colors.pending;
   };
 
   const getTypeColor = (type) => {
     const colors = {
-      user: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
-      content: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400',
-      review: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400',
-      payment: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400'
+      spam: 'text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400',
+      inappropriate: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400',
+      fake: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400',
+      privacy: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
+      other: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400'
     };
-    return colors[type] || colors.user;
+    return colors[type] || colors.other;
   };
 
   const formatDate = (dateString) => {
@@ -253,7 +259,7 @@ const ReportsPage = () => {
       render: (value) => <span className="text-neutral-500 font-mono text-xs">#{value}</span>
     },
     {
-      key: 'type',
+      key: 'reason',
       label: 'Type',
       render: (value) => (
         <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getTypeColor(value)}`}>
@@ -262,19 +268,19 @@ const ReportsPage = () => {
       )
     },
     {
-      key: 'reason',
+      key: 'details',
       label: 'Reason',
-      render: (value) => <span className="text-neutral-900 dark:text-white font-medium">{value}</span>
+      render: (value) => <span className="text-neutral-900 dark:text-white font-medium">{value || '-'}</span>
     },
     {
-      key: 'reportedUser',
+      key: 'reportedUserName',
       label: 'Reported User',
-      render: (value) => <span className="text-neutral-600 dark:text-neutral-300">{value}</span>
+      render: (value) => <span className="text-neutral-600 dark:text-neutral-300">{value || '-'}</span>
     },
     {
-      key: 'reportedBy',
+      key: 'reporterName',
       label: 'Reported By',
-      render: (value) => <span className="text-neutral-500">{value}</span>
+      render: (value) => <span className="text-neutral-500">{value || '-'}</span>
     },
     {
       key: 'status',
@@ -302,7 +308,7 @@ const ReportsPage = () => {
             onClick={(e) => { e?.stopPropagation?.(); handleView(row); }}
             variant="info"
           />
-          {row.status === 'pending' || row.status === 'investigating' ? (
+          {['pending', 'open', 'investigating'].includes(row.status?.toLowerCase()) ? (
             <>
               <ActionButton
                 icon={<HiCheck className="w-4 h-4" />}
@@ -333,12 +339,17 @@ const ReportsPage = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {['pending', 'investigating', 'resolved', 'dismissed'].map(status => {
-          const count = reports.filter(r => r.status === status).length;
+        {[
+          { key: 'pending', label: 'Pending', match: (s) => s?.toLowerCase() === 'pending' || s?.toLowerCase() === 'open' },
+          { key: 'investigating', label: 'Investigating', match: (s) => s?.toLowerCase() === 'investigating' },
+          { key: 'resolved', label: 'Resolved', match: (s) => s?.toLowerCase() === 'resolved' },
+          { key: 'dismissed', label: 'Dismissed', match: (s) => s?.toLowerCase() === 'dismissed' },
+        ].map(({ key, label, match }) => {
+          const count = reports.filter(r => match(r.status)).length;
           return (
-            <div key={status} className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
+            <div key={key} className="p-3 sm:p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
               <p className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">{count}</p>
-              <p className="text-xs sm:text-sm text-neutral-500 capitalize">{status}</p>
+              <p className="text-xs sm:text-sm text-neutral-500 capitalize">{label}</p>
             </div>
           );
         })}
@@ -385,8 +396,8 @@ const ReportsPage = () => {
               </div>
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Type</p>
-                <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getTypeColor(selectedReport.type)}`}>
-                  {selectedReport.type}
+                <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getTypeColor(selectedReport.reason)}`}>
+                  {selectedReport.reason}
                 </span>
               </div>
               <div>
@@ -400,26 +411,22 @@ const ReportsPage = () => {
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl space-y-3">
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reason</p>
-                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.reason}</p>
-              </div>
-              <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Description</p>
-                <p className="text-neutral-700 dark:text-neutral-300">{selectedReport.description}</p>
+                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.details || '-'}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reported User</p>
-                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.reportedUser}</p>
+                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.reportedUser?.fullName || selectedReport.reportedUserName || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reported By</p>
-                <p className="text-neutral-900 dark:text-white">{selectedReport.reportedBy}</p>
+                <p className="text-neutral-900 dark:text-white">{selectedReport.reporter?.fullName || selectedReport.reporterName || '-'}</p>
               </div>
             </div>
 
-            {(selectedReport.status === 'pending' || selectedReport.status === 'investigating') && (
+            {['pending', 'open', 'investigating'].includes(selectedReport.status?.toLowerCase()) && (
               <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <button
                   onClick={() => { setIsDetailOpen(false); handleAction(selectedReport, 'resolve'); }}

@@ -7,36 +7,45 @@ import { Image, Play, DollarSign, Calendar } from 'lucide-react';
  * - isOpen: boolean
  * - onClose: function
  * - onAction: function(actionType)
+ * - hideWorkActions: boolean (optional, hides work-related actions for group chat)
  */
-const ActionPopup = ({ isOpen, onClose, onAction }) => {
+const ActionPopup = ({ isOpen, onClose, onAction, hideWorkActions = false }) => {
   if (!isOpen) return null;
 
-  const actions = [
+  const allActions = [
     {
       id: 'image',
-      label: 'Send Image',
-      desc: 'JPG, PNG up to 5MB',
+      label: 'Send Image/File',
+      desc: 'Upload images or files',
       icon: Image,
+      isWorkAction: false,
     },
     {
       id: 'deal-price',
       label: 'Proposal',
       desc: 'Create a cost proposal',
       icon: DollarSign,
+      isWorkAction: true,
     },
     {
       id: 'complete-order',
       label: 'Hoàn thành đơn hàng',
       desc: 'Yêu cầu hoàn thành đơn hàng',
       icon: Play,
+      isWorkAction: true,
     },
     {
       id: 'schedule',
       label: 'Schedule Meeting',
       desc: 'Set up a meeting time',
       icon: Calendar,
+      isWorkAction: true,
     }
   ];
+
+  const actions = hideWorkActions 
+    ? allActions.filter(a => !a.isWorkAction)
+    : allActions;
 
   return (
     <>

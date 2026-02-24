@@ -1,23 +1,40 @@
 import React from "react";
 import { FileIcon, ExternalLink } from "lucide-react";
+import { formatTime } from "../../utils/dateUtils";
 
 export default function MessageBubble({ message, isMine }) {
   const senderName = message?.senderName || "Unknown";
 
-
-  const type = Number(message?.messageType ?? 0);
+  // Handle both number and string messageType
+  // C# enum: Text=0, File=1, Image=2, System=3
+  const rawType = message?.messageType ?? 0;
+  let type;
+  if (typeof rawType === 'string') {
+    // Backend trả về dạng string enum name
+    if (rawType === 'Image') type = 2;
+    else if (rawType === 'File') type = 1;
+    else if (rawType === 'Text') type = 0;
+    else type = Number(rawType) || 0;
+  } else {
+    type = Number(rawType);
+  }
+  
   const content = String(message?.content ?? "");
-  // ✅ Chỉ coi là ảnh khi:
-  // - messageType === 1
-  // - content là URL hoặc /uploads...
-  // - và có đuôi ảnh (tránh case "Mình đã upload file....")
-  const isImage =
-    type === 1 &&
-    (/^https?:\/\//i.test(content) || content.startsWith("/uploads/")) &&
-    /\.(png|jpg|jpeg|gif|webp)(\?.*)?$/i.test(content);
+  
+  // Check if content is a URL pointing to uploads
+  const isUrl = /^https?:\/\//i.test(content) || content.startsWith("/uploads/");
+  
+  // Check if URL has image extension (fallback for old messages with wrong messageType)
+  const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i;
+  const hasImageExtension = imageExtensions.test(content);
+  
+  // ✅ Coi là ảnh nếu:
+  // - messageType === 2 (Image) VÀ là URL, HOẶC
+  // - URL có đuôi ảnh (fallback cho tin nhắn cũ bị sai messageType)
+  const isImage = (type === 2 && isUrl) || (isUrl && hasImageExtension);
 
-  const isFile =
-    type === 2 && (/^https?:\/\//i.test(content) || content.startsWith("/uploads/"));
+  // File: messageType === 1 VÀ là URL VÀ KHÔNG phải ảnh
+  const isFile = type === 1 && isUrl && !hasImageExtension;
 
   return (
     <div className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
@@ -62,12 +79,7 @@ export default function MessageBubble({ message, isMine }) {
 
 
       <span className="text-[10px] text-gray-400 mt-1">
-        {message?.createdAt
-          ? new Date(message.createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-          : ""}
+        {message?.createdAt ? formatTime(message.createdAt) : ""}
       </span>
     </div>
   );

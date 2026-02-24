@@ -25,6 +25,7 @@ const handlers = {
   ReceiveGroupMessage: new Set(),
   ReceiveGroupMessage: new Set(),
   UserGroupTyping: new Set(),
+  GroupMessagesRead: new Set(),
   OrderCompleted: new Set(), // ✅ Added
 };
 
@@ -115,11 +116,14 @@ function ensureConnected() {
   }
 
   if (connection.state !== signalR.HubConnectionState.Connected) {
-
-    return null;
+    throw new Error(`ChatHub not connected. Current state: ${connection.state}`);
   }
 
   return connection;
+}
+
+export function isConnected() {
+  return connection && connection.state === signalR.HubConnectionState.Connected;
 }
 
 
@@ -235,6 +239,10 @@ export function groupTyping(groupId, isTyping) {
     Number(groupId),
     Boolean(isTyping)
   );
+}
+
+export function markGroupAsRead(groupId) {
+  return ensureConnected().invoke("MarkGroupAsRead", Number(groupId));
 }
 
 

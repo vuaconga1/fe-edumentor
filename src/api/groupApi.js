@@ -45,6 +45,22 @@ const groupApi = {
   // Swagger: POST /api/Group/{groupId}/leave
   leaveGroup(groupId) {
     return axiosClient.post(`${base}/${groupId}/leave`);
+  },
+
+  // Add member to group (by admin)
+  // Swagger: POST /api/Group/{groupId}/members/{userId}
+  addMember(groupId, userId) {
+    return axiosClient.post(`${base}/${groupId}/members/${userId}`);
+  },
+
+  // Send message to group
+  // Swagger: POST /api/Group/{groupId}/messages
+  sendMessage(groupId, content, messageType = 0) {
+    // MessageType: 0 = Text, 1 = File, 2 = Image, 3 = System
+    return axiosClient.post(`${base}/${groupId}/messages`, {
+      content,
+      messageType
+    });
   }
 };
 

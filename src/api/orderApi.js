@@ -25,6 +25,10 @@ const orderApi = {
     // payload: { rating: int, comment?: string }
     return axiosClient.post(`/api/Order/${orderId}/reviews`, payload);
   },
+
+  getOrderReviews(orderId) {
+    return axiosClient.get(`/api/Order/${orderId}/reviews`);
+  },
 };
 
 export default orderApi;

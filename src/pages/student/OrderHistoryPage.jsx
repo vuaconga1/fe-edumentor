@@ -4,6 +4,7 @@ import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 import OrderDetailModal from "../../components/order/OrderDetailModal";
 import ReviewModal from "../../components/order/ReviewModal";
+import ViewReviewModal from "../../components/order/ViewReviewModal";
 import orderApi from "../../api/orderApi";
 
 // --- helpers ---
@@ -90,6 +91,7 @@ const OrderHistoryPage = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  const [isViewReviewOpen, setIsViewReviewOpen] = useState(false);
 
   // local “reviewed” state (vì list dto không có isReviewed)
   const [reviewedOrderIds, setReviewedOrderIds] = useState(() => new Set());
@@ -161,6 +163,9 @@ const OrderHistoryPage = () => {
             statusKey, // completed/pending/cancelled
             statusDisplay, // text từ backend
 
+            // Review state from backend
+            isReviewed: !!o.isReviewed,
+
             // escrow info nếu cần
             hasEscrow: !!o.hasEscrow,
           };
@@ -196,6 +201,11 @@ const OrderHistoryPage = () => {
   const handleOpenReview = (order) => {
     setSelectedOrder(order);
     setIsReviewOpen(true);
+  };
+
+  const handleOpenViewReview = (order) => {
+    setSelectedOrder(order);
+    setIsViewReviewOpen(true);
   };
 
   const handleSubmitReview = async (reviewData) => {
@@ -341,7 +351,7 @@ const OrderHistoryPage = () => {
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {!loading && filteredOrders.length > 0 ? (
               filteredOrders.map((order) => {
-                const isReviewed = reviewedOrderIds.has(order.id);
+                const isReviewed = reviewedOrderIds.has(order.id) || order.isReviewed;
 
                 return (
                   <div
@@ -419,7 +429,15 @@ const OrderHistoryPage = () => {
                       )}
 
                       {order.statusKey === "completed" && isReviewed && (
-                        <span className="text-xs text-neutral-400">Reviewed</span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenViewReview(order);
+                          }}
+                          className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 text-xs font-medium rounded-lg transition-colors border border-emerald-200 dark:border-emerald-800"
+                        >
+                          View Review
+                        </button>
                       )}
                     </div>
 
@@ -459,6 +477,12 @@ const OrderHistoryPage = () => {
           onClose={() => setIsReviewOpen(false)}
           order={selectedOrder}
           onSubmit={handleSubmitReview}
+        />
+
+        <ViewReviewModal
+          isOpen={isViewReviewOpen}
+          onClose={() => setIsViewReviewOpen(false)}
+          order={selectedOrder}
         />
       </div>
     </div>

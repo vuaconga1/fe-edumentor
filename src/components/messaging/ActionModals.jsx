@@ -200,7 +200,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
           <div className="space-y-4">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Gửi hình ảnh
+                Gửi hình ảnh hoặc file
               </h3>
             </div>
 
@@ -221,13 +221,13 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                     <UploadCloud size={32} />
                   </div>
                   <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Nhấn để tải ảnh lên
+                    Nhấn để tải file lên
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
                     hoặc kéo thả vào đây
                   </p>
                   <p className="text-[11px] text-neutral-400 mt-3">
-                    Chỉ nhận file ảnh (PNG/JPG/WebP/GIF)
+                    Ảnh (PNG/JPG/GIF) hoặc File (PDF/DOC/XLS)
                   </p>
                 </>
               ) : (

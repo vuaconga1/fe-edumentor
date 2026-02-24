@@ -52,6 +52,7 @@ export default function Sidebar({ menu = [], collapsed, onToggle }) {
             label={item.label}
             href={item.href}
             collapsed={collapsed}
+            badge={item.badge}
           />
         ))}
       </nav>

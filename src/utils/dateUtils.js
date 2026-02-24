@@ -74,6 +74,24 @@ export const formatDate = (dateString, options = {}) => {
 };
 
 /**
+ * Format time only for display (e.g., "1:29 PM")
+ * @param {string} dateString - DateTime string from server
+ * @param {string} locale - Locale string (default: 'vi-VN')
+ * @returns {string} Formatted time
+ */
+export const formatTime = (dateString, locale = 'vi-VN') => {
+  if (!dateString) return '';
+  
+  const date = parseUTCDate(dateString);
+  if (!date) return '';
+  
+  return date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+/**
  * Format date and time for display
  * @param {string} dateString - DateTime string from server
  * @returns {string} Formatted date and time

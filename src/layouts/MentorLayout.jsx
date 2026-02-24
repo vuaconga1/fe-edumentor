@@ -2,13 +2,23 @@ import { Outlet } from 'react-router-dom';
 import SidebarLayout from './SidebarLayout';
 import { MENTOR_MENU } from '../config/menus';
 import { useAuth } from '../context/AuthContext';
+import useUnseenMessages from '../hooks/useUnseenMessages';
 
 export default function MentorLayout() {
   const { user, loading } = useAuth();
+  const unseenCount = useUnseenMessages();
+
+  // Add badge to Messaging menu item
+  const menuWithBadges = MENTOR_MENU.map(item => {
+    if (item.href === '/mentor/messaging') {
+      return { ...item, badge: unseenCount };
+    }
+    return item;
+  });
 
   return (
     <SidebarLayout
-      menu={MENTOR_MENU}
+      menu={menuWithBadges}
       title="EduMentor"
       user={user}
       loading={loading}

@@ -33,13 +33,7 @@ const ConversationList = ({ conversations = [], activeConversationId, onSelectCo
           placeholder="Search..."
           className="flex-1 px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 outline-none"
         />
-        <button
-          onClick={() => setIsCreateGroupModalOpen(true)}
-          className="p-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors"
-          title="Create Group"
-        >
-          <HiPlus className="w-5 h-5" />
-        </button>
+  
 
         <CreateGroupModal
           isOpen={isCreateGroupModalOpen}

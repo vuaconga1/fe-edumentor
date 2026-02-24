@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import ConversationList from "../../components/messaging/ConversationList";
+import GroupList from "../../components/messaging/GroupList";
 import ChatWindow from "../../components/messaging/ChatWindow";
+import GroupChatWindow from "../../components/messaging/GroupChatWindow";
 import chatApi from "../../api/chatApi";
+import groupApi from "../../api/groupApi";
 import fileApi from "../../api/fileApi";
 import axiosClient from "../../api/axios";
 import { jwtDecode } from "jwt-decode";
@@ -15,11 +18,17 @@ import {
   getOnlineUsers, // ✅ existing
   on,
   sendMessage as hubSendMessage,
+  markAsRead, // ✅ mark messages as read
   requestStartWork,
   requestPauseWork,
   requestEndWork,
   requestCompleteOrder, // ✅ Added
   respondWorkAction,
+  joinGroupRoom,
+  leaveGroupRoom,
+  sendGroupMessage as hubSendGroupMessage,
+  markGroupAsRead, // ✅ mark group messages as read
+  isConnected, // ✅ Added
 } from "../../signalr/chatHub";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -44,9 +53,21 @@ const formatHMS = (totalSeconds) => {
 const MessagingPage = () => {
   const workActionPopupRef = useRef(null);
   const [conversations, setConversations] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [activeTab, setActiveTab] = useState("conversations"); // "conversations" | "groups"
   const [activeConversationId, setActiveConversationId] = useState(null);
+  const [activeGroupId, setActiveGroupId] = useState(null);
+  const [activeGroup, setActiveGroup] = useState(null); // Full group object for chat window
   const [messages, setMessages] = useState([]);
+  const [msgPage, setMsgPage] = useState(1);
+  const [msgHasMore, setMsgHasMore] = useState(false);
+  const [msgLoadingMore, setMsgLoadingMore] = useState(false);
+  const [groupMessages, setGroupMessages] = useState([]);
+  const [groupMsgPage, setGroupMsgPage] = useState(1);
+  const [groupHasMore, setGroupHasMore] = useState(false);
+  const [groupLoadingMore, setGroupLoadingMore] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserName, setCurrentUserName] = useState(null);
 
   const [hubReady, setHubReady] = useState(false);
 
@@ -59,6 +80,8 @@ const MessagingPage = () => {
   const activeConversationIdRef = useRef(null);
   const currentUserIdRef = useRef(null);
   const prevConversationIdRef = useRef(null);
+  const conversationsJoinedRef = useRef(false);
+  const activeGroupIdRef = useRef(null);
 
   const hubStartedRef = useRef(false);
 
@@ -83,15 +106,54 @@ const MessagingPage = () => {
     }
   }, [token]);
 
-  // load conversations
+  // load conversations and join all for realtime updates
   useEffect(() => {
     (async () => {
       try {
         const res = await chatApi.getConversations();
-        setConversations(res?.data?.data ?? []);
+        console.log('[MessagingPage] Conversations loaded from API:', res?.data?.data);
+        const conversations = (res?.data?.data ?? []).map(c => {
+          // Format lastMessage based on URL pattern
+          const lastMsg = c.lastMessage ?? "";
+          const isImageUrl = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(lastMsg);
+          const isFileUrl = /^\/uploads\//i.test(lastMsg) || /^https?:\/\//i.test(lastMsg);
+          
+          let formattedLastMessage = lastMsg;
+          if (isImageUrl) {
+            formattedLastMessage = "📷 Ảnh";
+          } else if (isFileUrl && !isImageUrl) {
+            formattedLastMessage = "📄 File";
+          }
+          
+          console.log(`[MessagingPage] Conversation ${c.id} unreadCount from API:`, c.unreadCount);
+          
+          return {
+            ...c,
+            lastMessage: formattedLastMessage
+          };
+        });
+        setConversations(conversations);
+        
+        // ❌ KHÔNG join tất cả conversations ở đây vì server JoinConversation
+        // sẽ gọi MarkMessagesAsReadAsync → đánh dấu TẤT CẢ tin nhắn đã đọc.
+        // Chỉ join khi user click vào conversation cụ thể (trong useEffect activeConversationId).
       } catch (e) {
         console.error("Load conversations failed", e);
         setConversations([]);
+      }
+    })();
+  }, [hubReady]); // Depend on hubReady to join after hub connected
+
+  // load groups
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await groupApi.getMyGroups();
+        console.log('[MessagingPage] Groups loaded:', res?.data?.data);
+        setGroups(res?.data?.data ?? []);
+      } catch (e) {
+        console.error("Load groups failed", e);
+        setGroups([]);
       }
     })();
   }, []);
@@ -99,6 +161,393 @@ const MessagingPage = () => {
   useEffect(() => {
     activeConversationIdRef.current = activeConversationId;
   }, [activeConversationId]);
+
+  const handleSelectConversation = (id) => {
+    setActiveTab("conversations");
+    setActiveConversationId(id);
+    setActiveGroupId(null);
+    
+    // Reset unread count cho conversation này (optimistic)
+    setConversations((prev) =>
+      (Array.isArray(prev) ? prev : []).map((c) =>
+        c.id === id ? { ...c, unreadCount: 0 } : c
+      )
+    );
+    
+    // ✅ Gọi markAsRead trên server để đánh dấu tin nhắn đã đọc
+    try {
+      markAsRead(id);
+    } catch (e) {
+      console.error("markAsRead failed:", e);
+    }
+    
+    // Leave any active group room
+    if (activeGroupId) {
+      try { leaveGroupRoom(activeGroupId); } catch (e) { console.error(e); }
+    }
+  };
+
+
+  
+  useEffect(() => {
+    activeGroupIdRef.current = activeGroupId;
+  }, [activeGroupId]);
+
+  const handleSelectGroup = async (id) => {
+    // Leave previous group room
+    if (activeGroupId && activeGroupId !== id) {
+      try { leaveGroupRoom(activeGroupId); } catch (e) { console.error(e); }
+    }
+    
+    setActiveTab("groups");
+    setActiveGroupId(id);
+    setActiveConversationId(null);
+    setGroupMessages([]);
+    setGroupMsgPage(1);
+    setGroupHasMore(false);
+    
+    // Reset unread count cho group này
+    setGroups((prev) =>
+      (Array.isArray(prev) ? prev : []).map((g) =>
+        g.id === id ? { ...g, unreadCount: 0 } : g
+      )
+    );
+    
+    // ✅ Gọi markGroupAsRead trên server để cập nhật LastReadAt
+    try {
+      markGroupAsRead(id);
+    } catch (e) {
+      console.error("markGroupAsRead failed:", e);
+    }
+    
+    try {
+      // Join SignalR group room for realtime messages
+      await joinGroupRoom(id);
+      console.log(`[MessagingPage] Joined group room ${id}`);
+      
+      // Load group details
+      const groupRes = await groupApi.getGroup(id);
+      if (groupRes?.data?.success) {
+        setActiveGroup(groupRes.data.data);
+      }
+      
+      // Load group messages (paginated - load recent first)
+      const msgRes = await groupApi.getGroupMessages(id, { pageNumber: 1, pageSize: 20 });
+      if (msgRes?.data?.success) {
+        const responseData = msgRes.data.data;
+        // Support both paginated response {messages, hasMore, ...} and flat array
+        const rawMessages = responseData?.messages ?? responseData ?? [];
+        setGroupHasMore(responseData?.hasMore ?? false);
+        setGroupMsgPage(1);
+        
+        // Map messages và convert relative URL thành absolute
+        const messages = (rawMessages).map(m => {
+          const rawType = m.messageType;
+          let type;
+          if (typeof rawType === 'string') {
+            if (rawType === 'Image') type = 2;
+            else if (rawType === 'File') type = 1;
+            else if (rawType === 'Text') type = 0;
+            else if (rawType === 'System') type = 3;
+            else type = Number(rawType) || 0;
+          } else {
+            type = Number(rawType ?? 0);
+          }
+          
+          // Check if content looks like image URL (fallback for old messages)
+          const content = String(m.content ?? "");
+          const isUrl = /^\/uploads\//i.test(content) || /^https?:\/\//i.test(content);
+          const hasImageExt = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(content);
+          const isFileOrImage = type === 1 || type === 2 || (isUrl && hasImageExt);
+          
+          const mapped = {
+            ...m,
+            messageType: type,
+            content: isFileOrImage ? toAbsolute(content) : content,
+          };
+          
+          return mapped;
+        });
+        
+        // Log tổng số messages và số ảnh
+        const imageCount = messages.filter(m => m.messageType === 2).length;
+        console.log(`[DEBUG] Loaded ${messages.length} messages (${imageCount} images) for group ${id}`);
+        
+        setGroupMessages(messages);
+      }
+      
+      // Refresh groups list
+      const res = await groupApi.getMyGroups();
+      setGroups(res?.data?.data ?? []);
+    } catch (e) {
+      console.error("Load group failed", e);
+    }
+  };
+
+  // ====== Load older conversation messages (infinite scroll) ======
+  const handleLoadMoreMessages = async () => {
+    if (!activeConversationId || msgLoadingMore || !msgHasMore) return;
+    setMsgLoadingMore(true);
+    try {
+      const nextPage = msgPage + 1;
+      const res = await chatApi.getMessages(activeConversationId, { pageNumber: nextPage, pageSize: 30 });
+      const data = res?.data?.data;
+
+      let list = [];
+      let hasMore = false;
+      
+      if (Array.isArray(data)) {
+        list = data;
+      } else if (Array.isArray(data?.items)) {
+        list = data.items;
+        hasMore = data.hasMore ?? false;
+      } else if (Array.isArray(data?.messages)) {
+        list = data.messages;
+        hasMore = data.hasMore ?? false;
+      }
+
+      const normalized = list.map((m) => {
+        const senderId = Number(m.senderId ?? m.senderID ?? m.userId ?? m.userID);
+        const type = Number(m.messageType ?? m.type ?? 0);
+        return {
+          ...m,
+          senderId,
+          messageType: type,
+          isOwn: currentUserId != null && senderId === Number(currentUserId),
+          content: type === 1 || type === 2 ? toAbsolute(m.content) : m.content,
+        };
+      });
+
+      // Prepend older messages
+      setMessages(prev => [...normalized, ...prev]);
+      setMsgPage(nextPage);
+      setMsgHasMore(hasMore);
+    } catch (e) {
+      console.error("Load more messages failed", e);
+    } finally {
+      setMsgLoadingMore(false);
+    }
+  };
+
+  // ====== Load older group messages (infinite scroll) ======
+  const handleLoadMoreGroupMessages = async () => {
+    if (!activeGroupId || groupLoadingMore || !groupHasMore) return;
+    setGroupLoadingMore(true);
+    try {
+      const nextPage = groupMsgPage + 1;
+      const msgRes = await groupApi.getGroupMessages(activeGroupId, { pageNumber: nextPage, pageSize: 20 });
+      if (msgRes?.data?.success) {
+        const responseData = msgRes.data.data;
+        const rawMessages = responseData?.messages ?? responseData ?? [];
+        setGroupHasMore(responseData?.hasMore ?? false);
+        setGroupMsgPage(nextPage);
+
+        const olderMessages = rawMessages.map(m => {
+          const rawType = m.messageType;
+          let type;
+          if (typeof rawType === 'string') {
+            if (rawType === 'Image') type = 2;
+            else if (rawType === 'File') type = 1;
+            else if (rawType === 'Text') type = 0;
+            else if (rawType === 'System') type = 3;
+            else type = Number(rawType) || 0;
+          } else {
+            type = Number(rawType ?? 0);
+          }
+          const content = String(m.content ?? "");
+          const isUrl = /^\/uploads\//i.test(content) || /^https?:\/\//i.test(content);
+          const hasImageExt = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(content);
+          const isFileOrImage = type === 1 || type === 2 || (isUrl && hasImageExt);
+          return { ...m, messageType: type, content: isFileOrImage ? toAbsolute(content) : content };
+        });
+
+        // Prepend older messages
+        setGroupMessages(prev => [...olderMessages, ...prev]);
+      }
+    } catch (e) {
+      console.error("Load more group messages failed", e);
+    } finally {
+      setGroupLoadingMore(false);
+    }
+  };
+
+  // ====== Leave group ======
+  const handleLeaveGroup = async (groupId) => {
+    try {
+      await groupApi.leaveGroup(groupId);
+      // Leave SignalR room
+      try { leaveGroupRoom(groupId); } catch (e) { console.error(e); }
+      // Remove from groups list
+      setGroups(prev => (Array.isArray(prev) ? prev : []).filter(g => g.id !== groupId));
+      // Reset active group
+      if (activeGroupId === groupId) {
+        setActiveGroupId(null);
+        setActiveGroup(null);
+        setGroupMessages([]);
+      }
+      toast.success("Đã rời nhóm thành công!");
+    } catch (e) {
+      console.error("Leave group failed", e);
+      toast.error("Rời nhóm thất bại!");
+      throw e;
+    }
+  };
+
+  const handleRefreshGroups = async () => {
+    try {
+      const res = await groupApi.getMyGroups();
+      setGroups(res?.data?.data ?? []);
+      
+      // Refresh active group if selected
+      if (activeGroupId) {
+        const groupRes = await groupApi.getGroup(activeGroupId);
+        if (groupRes?.data?.success) {
+          setActiveGroup(groupRes.data.data);
+        }
+      }
+    } catch (e) {
+      console.error("Refresh groups failed", e);
+    }
+  };
+
+  const handleSendGroupMessage = async (content) => {
+    if (!activeGroupId || !content.trim()) return;
+    
+    try {
+      // Optimistic update for groups list
+      setGroups((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((g) => {
+          if (g.id === activeGroupId) {
+            return {
+              ...g,
+              lastMessage: content.trim(),
+              lastMessageAt: new Date().toISOString(),
+              lastMessageSender: "You"
+            };
+          }
+          return g;
+        });
+      });
+
+      // Use SignalR for realtime messaging
+      await hubSendGroupMessage({
+        groupId: activeGroupId,
+        content: content.trim(),
+        messageType: 0 // Text
+      });
+      // Message will be added via ReceiveGroupMessage event
+    } catch (e) {
+      console.error("Send group message failed", e);
+      toast.error("Không thể gửi tin nhắn");
+    }
+  };
+
+  const handleSendGroupImage = async (fileData) => {
+    if (!activeGroupId || !fileData) return;
+    
+    // Extract file from object (GroupChatWindow sends {file, desc})
+    const file = fileData.file || fileData;
+    const desc = fileData.desc || null;
+    
+    // Validate file is a valid File/Blob object
+    if (!(file instanceof File) && !(file instanceof Blob)) {
+      console.error("Invalid file object:", fileData);
+      toast.error("File không hợp lệ");
+      return;
+    }
+
+    const isImage = file.type?.startsWith("image/");
+    const messageType = isImage ? 2 : 1; // 2 = Image, 1 = File
+    const tempId = `temp-${Date.now()}-${Math.random()}`;
+    const tempUrl = isImage ? URL.createObjectURL(file) : null;
+    
+    try {
+      // Add temporary message immediately for instant feedback
+      const tempMessage = {
+        id: tempId,
+        groupId: activeGroupId,
+        senderId: currentUserId,
+        senderName: currentUserName || "You",
+        content: isImage ? tempUrl : file.name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        messageType: messageType,
+        createdAt: new Date().toISOString(),
+        isTemp: true,
+        isUploading: true
+      };
+      
+      setGroupMessages((prev) => [...prev, tempMessage]);
+
+      // Optimistic update for groups list
+      const displayMessage = isImage ? "📷 Ảnh" : "📄 File";
+      setGroups((prev) => {
+        const list = Array.isArray(prev) ? prev : [];
+        return list.map((g) => {
+          if (g.id === activeGroupId) {
+            return {
+              ...g,
+              lastMessage: displayMessage,
+              lastMessageAt: new Date().toISOString(),
+              lastMessageSender: "You"
+            };
+          }
+          return g;
+        });
+      });
+
+      // Upload file
+      const uploadResponse = isImage 
+        ? await fileApi.uploadChatImage(file)
+        : await fileApi.uploadChatFile(file);
+      const data = uploadResponse?.data?.data;
+      const fileUrl = data?.fileUrl || data?.url || (Array.isArray(data?.fileUrls) ? data.fileUrls[0] : null);
+      
+      if (!fileUrl) {
+        console.error("Upload response:", uploadResponse);
+        throw new Error("No file URL returned from upload");
+      }
+
+      // Update temp message with real URL
+      setGroupMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === tempId ? { ...msg, content: toAbsolute(fileUrl), isTemp: false, isUploading: false } : msg
+        )
+      );
+
+      // Send via SignalR
+      await hubSendGroupMessage({
+        groupId: activeGroupId,
+        content: fileUrl,
+        messageType: messageType,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+      
+      // Send description if provided
+      if (desc && desc.trim()) {
+        await hubSendGroupMessage({
+          groupId: activeGroupId,
+          content: desc.trim(),
+          messageType: 0 // Text
+        });
+      }
+    } catch (error) {
+      console.error("Send group file failed:", error);
+      toast.error(isImage ? "Không thể gửi ảnh" : "Không thể gửi file");
+      
+      // Remove temp message on error
+      setGroupMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+    } finally {
+      // Clean up object URL
+      if (tempUrl) {
+        URL.revokeObjectURL(tempUrl);
+      }
+    }
+  };
 
   useEffect(() => {
     currentUserIdRef.current = currentUserId;
@@ -111,39 +560,67 @@ const MessagingPage = () => {
 
     hubStartedRef.current = true;
 
-    let offReceive;
-    let offOnlineUsers;
-    let offUserOnline;
-    let offUserOffline;
-
-    let offActionPopup;
-    let offActionSent;
-    let offActionState;
-    let offSessionStarted;
-    let offSessionPaused;
-    let offSessionEnded;
-    let offActionRejected;
+    // ✅ Fix StrictMode: dùng array + cancelled flag thay vì let variables
+    // Vì async function có thể chưa xong khi cleanup chạy → let variables vẫn undefined
+    const cleanupFns = [];
+    let cancelled = false;
 
     (async () => {
       try {
         await startChatHub(BASE_URL, token);
-        setHubReady(true);
+        
+        // ✅ Nếu effect đã bị cleanup (StrictMode), không đăng ký listeners
+        if (cancelled) {
+          hubStartedRef.current = false;
+          return;
+        }
+        
+        // Verify connection is actually ready before setting hubReady
+        if (isConnected()) {
+          setHubReady(true);
+        } else {
+          console.warn('ChatHub started but not yet connected');
+          // Wait a bit and check again
+          setTimeout(() => {
+            if (isConnected()) {
+              setHubReady(true);
+            }
+          }, 100);
+        }
+
+        // Track processed message IDs to prevent duplicates
+        const processedMessageIds = new Set();
 
         // ===== ReceiveMessage (keep your mapping + avoid duplicates) =====
-        offReceive = on("ReceiveMessage", (msg) => {
+        cleanupFns.push(on("ReceiveMessage", (msg) => {
+          const msgId = msg.id ?? msg.messageId;
+          if (msgId && processedMessageIds.has(String(msgId))) {
+            return;
+          }
+          if (msgId) {
+            processedMessageIds.add(String(msgId));
+          }
+          
           const cid = Number(
             msg.conversationId ?? msg.conversationID ?? msg.conversation_id
           );
           if (!cid) return;
 
-          // only append if current opened conversation
-          if (cid !== Number(activeConversationIdRef.current)) return;
-
           const senderId = Number(
             msg.senderId ?? msg.senderID ?? msg.userId ?? msg.userID
           );
           const myId = Number(currentUserIdRef.current);
-          const type = Number(msg.messageType ?? msg.type ?? 0);
+          
+          // Parse messageType - C# enum: Text=0, File=1, Image=2
+          const rawType = msg.messageType ?? msg.type;
+          let type;
+          if (typeof rawType === 'string') {
+            if (rawType === 'Image') type = 2;
+            else if (rawType === 'File') type = 1;
+            else type = Number(rawType) || 0;
+          } else {
+            type = Number(rawType ?? 0);
+          }
 
           const mapped = {
             ...msg,
@@ -151,8 +628,62 @@ const MessagingPage = () => {
             senderId,
             messageType: type,
             isOwn: myId && senderId === myId,
-            content: type === 1 || type === 2 ? toAbsolute(msg.content) : msg.content,
+            content: type === 2 || type === 1 ? toAbsolute(msg.content) : msg.content,
           };
+
+          // Format display message for preview - C# enum: Image=2, File=1
+          let displayMessage = msg.content;
+          if (type === 2) {
+            displayMessage = "📷 Ảnh";
+          } else if (type === 1) {
+            displayMessage = "📄 File";
+          }
+
+          // Tính toán bên ngoài setConversations (pure updater cho StrictMode)
+          const isActive = cid === Number(activeConversationIdRef.current);
+          const isMine = mapped.isOwn;
+
+          // Update conversations list with latest message preview
+          setConversations((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            
+            // Tìm và cập nhật conversation
+            const updatedList = list.map((c) => {
+              if (c.id === cid) {
+                // Nếu đang active -> reset count = 0
+                // Nếu không active và không phải của mình -> tăng count
+                let newUnreadCount;
+                if (isActive) {
+                  newUnreadCount = 0;
+                } else if (!isMine) {
+                  newUnreadCount = (c.unreadCount || 0) + 1;
+                } else {
+                  newUnreadCount = c.unreadCount || 0;
+                }
+                
+                return {
+                  ...c,
+                  lastMessage: displayMessage,
+                  lastMessageAt: msg.createdAt,
+                  lastMessageSenderName: isMine ? "Bạn" : msg.senderName || c.name,
+                  unreadCount: newUnreadCount
+                };
+              }
+              return c;
+            });
+            
+            // Move conversation lên đầu danh sách (giống Zalo)
+            const targetIndex = updatedList.findIndex(c => c.id === cid);
+            if (targetIndex > 0) {
+              const [target] = updatedList.splice(targetIndex, 1);
+              updatedList.unshift(target);
+            }
+            
+            return updatedList;
+          });
+
+          // only append to messages if current opened conversation
+          if (cid !== Number(activeConversationIdRef.current)) return;
 
           setMessages((prev) => {
             const list = Array.isArray(prev) ? prev : [];
@@ -202,19 +733,132 @@ const MessagingPage = () => {
             return [...list, mapped];
           });
 
-        });
+        }));
+
+        // Track processed group message IDs
+        const processedGroupMessageIds = new Set();
+
+        // ===== ReceiveGroupMessage - realtime group messages =====
+        cleanupFns.push(on("ReceiveGroupMessage", (msg) => {
+          const msgId = msg.id ?? msg.Id;
+          if (msgId && processedGroupMessageIds.has(String(msgId))) {
+            return;
+          }
+          if (msgId) {
+            processedGroupMessageIds.add(String(msgId));
+          }
+          
+          const gid = Number(msg.groupId ?? msg.GroupId);
+          if (!gid) return;
+
+          const senderId = Number(msg.senderId ?? msg.SenderId ?? 0);
+          const myId = Number(currentUserIdRef.current);
+          const isMine = myId && senderId === myId;
+
+          // Format lastMessage based on messageType
+          // C# enum: Text=0, File=1, Image=2
+          const rawType = msg.messageType;
+          let messageType;
+          if (typeof rawType === 'string') {
+            if (rawType === 'Image') messageType = 2;
+            else if (rawType === 'File') messageType = 1;
+            else if (rawType === 'System') messageType = 3;
+            else messageType = Number(rawType) || 0;
+          } else {
+            messageType = Number(rawType ?? 0);
+          }
+
+          let displayMessage = msg.content;
+          if (messageType === 2) {
+            displayMessage = "📷 Ảnh";
+          } else if (messageType === 1) {
+            displayMessage = "📄 File";
+          }
+          
+          // Tính toán bên ngoài setGroups (pure updater cho StrictMode)
+          const isActiveGroup = gid === Number(activeGroupIdRef.current);
+          
+          // Update groups list with latest message preview
+          setGroups((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            
+            // Cập nhật group
+            const updatedList = list.map((g) => {
+              if (g.id === gid) {
+                // Nếu đang active -> reset count = 0
+                // Nếu không active và không phải của mình -> tăng count
+                let newUnreadCount;
+                if (isActiveGroup) {
+                  newUnreadCount = 0;
+                } else if (!isMine) {
+                  newUnreadCount = (g.unreadCount || 0) + 1;
+                } else {
+                  newUnreadCount = g.unreadCount || 0;
+                }
+                  
+                return {
+                  ...g,
+                  lastMessage: displayMessage,
+                  lastMessageSender: isMine ? "Bạn" : msg.senderName,
+                  lastMessageAt: msg.createdAt,
+                  unreadCount: newUnreadCount
+                };
+              }
+              return g;
+            });
+            
+            // Move group lên đầu danh sách (giống Zalo)
+            const targetIndex = updatedList.findIndex(g => g.id === gid);
+            if (targetIndex > 0) {
+              const [target] = updatedList.splice(targetIndex, 1);
+              updatedList.unshift(target);
+            }
+            
+            return updatedList;
+          });
+          
+          // Only append to messages if current opened group
+          if (gid !== Number(activeGroupIdRef.current)) return;
+
+          // Convert relative URL to absolute for images/files
+          const content = String(msg.content ?? "");
+          const isUrl = /^\/uploads\//i.test(content) || /^https?:\/\//i.test(content);
+          const hasImageExt = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(content);
+          const isFileOrImage = messageType === 1 || messageType === 2 || (isUrl && hasImageExt);
+          
+          const mapped = {
+            ...msg,
+            groupId: gid,
+            senderId,
+            messageType,
+            isOwn: myId && senderId === myId,
+            content: isFileOrImage ? toAbsolute(content) : content,
+          };
+          
+          setGroupMessages((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            
+            // Check if message already exists (avoid duplicates)
+            const newId = msg.id ?? msg.Id;
+            if (newId && list.some((m) => String(m.id ?? m.Id) === String(newId))) {
+              return list;
+            }
+            
+            return [...list, mapped];
+          });
+        }));
 
         // ===== online presence listeners (keep yours) =====
-        offOnlineUsers = on("OnlineUsers", (onlineIds) => {
+        cleanupFns.push(on("OnlineUsers", (onlineIds) => {
           setConversations((prev) =>
             (Array.isArray(prev) ? prev : []).map((c) => ({
               ...c,
               isParticipantOnline: (onlineIds || []).includes(Number(c.participantId)),
             }))
           );
-        });
+        }));
 
-        offUserOnline = on("UserOnline", (userId) => {
+        cleanupFns.push(on("UserOnline", (userId) => {
           setConversations((prev) =>
             (Array.isArray(prev) ? prev : []).map((c) =>
               Number(c.participantId) === Number(userId)
@@ -222,9 +866,9 @@ const MessagingPage = () => {
                 : c
             )
           );
-        });
+        }));
 
-        offUserOffline = on("UserOffline", (userId) => {
+        cleanupFns.push(on("UserOffline", (userId) => {
           setConversations((prev) =>
             (Array.isArray(prev) ? prev : []).map((c) =>
               Number(c.participantId) === Number(userId)
@@ -232,10 +876,10 @@ const MessagingPage = () => {
                 : c
             )
           );
-        });
+        }));
 
         // ===== WORK: popup to confirm (Start/Pause/End) =====
-        offActionPopup = on("WorkActionPopup", (payload) => {
+        cleanupFns.push(on("WorkActionPopup", (payload) => {
           console.log("WorkActionPopup payload:", payload);
 
           const conversationId = payload?.conversationId;
@@ -257,17 +901,17 @@ const MessagingPage = () => {
             actionType,
             raw: payload,
           });
-        });
+        }));
 
 
         // ===== WORK: caller sent =====
-        offActionSent = on("WorkActionSent", (payload) => {
+        cleanupFns.push(on("WorkActionSent", (payload) => {
           if (!payload?.actionType) return;
           toast.info("Đã gửi yêu cầu, chờ xác nhận...");
-        });
+        }));
 
         // ===== WORK: group state pending (pause/end) =====
-        offActionState = on("WorkActionState", (payload) => {
+        cleanupFns.push(on("WorkActionState", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
@@ -289,10 +933,10 @@ const MessagingPage = () => {
               };
             });
           }
-        });
+        }));
 
         // ===== WORK: started -> show pinned running =====
-        offSessionStarted = on("WorkSessionStarted", (payload) => {
+        cleanupFns.push(on("WorkSessionStarted", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
@@ -306,10 +950,10 @@ const MessagingPage = () => {
             pendingRequestId: null,
           });
           pendingSnapshotRef.current = null;
-        });
+        }));
 
         // ===== WORK: paused -> show pinned paused =====
-        offSessionPaused = on("WorkSessionPaused", (payload) => {
+        cleanupFns.push(on("WorkSessionPaused", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
@@ -321,19 +965,19 @@ const MessagingPage = () => {
             pendingRequestId: null,
           }));
           pendingSnapshotRef.current = null;
-        });
+        }));
 
         // ===== WORK: ended -> hide pinned =====
-        offSessionEnded = on("WorkSessionEnded", (payload) => {
+        cleanupFns.push(on("WorkSessionEnded", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null);
           setWorkSession(null);
-        });
+        }));
 
         // ===== WORK: rejected -> revert pinned snapshot =====
-        offActionRejected = on("WorkActionRejected", (payload) => {
+        cleanupFns.push(on("WorkActionRejected", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
@@ -342,17 +986,100 @@ const MessagingPage = () => {
 
           pendingSnapshotRef.current = null;
           toast.error("Yêu cầu đã bị từ chối.");
-        });
+        }));
 
         // ===== WORK: Order Completed =====
-        on("OrderCompleted", (payload) => {
+        cleanupFns.push(on("OrderCompleted", (payload) => {
           const conversationId = Number(payload?.conversationId);
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null); // Clear session if any
           toast.success("Đơn hàng đã hoàn thành!");
           // Potentially refresh conversation to show status update
-        });
+        }));
+
+        // ===== MessagesRead: khi đối phương (hoặc mình) đã đọc tin nhắn =====
+        cleanupFns.push(on("MessagesRead", (payload) => {
+          const cid = Number(payload?.conversationId ?? payload?.ConversationId);
+          const readByUserId = Number(payload?.readByUserId ?? payload?.ReadByUserId ?? payload?.userId ?? payload?.UserId);
+          const myId = Number(currentUserIdRef.current);
+
+          // Nếu người đọc là mình → reset unreadCount cho conversation đó
+          if (readByUserId === myId || !readByUserId) {
+            setConversations((prev) =>
+              (Array.isArray(prev) ? prev : []).map((c) =>
+                c.id === cid ? { ...c, unreadCount: 0 } : c
+              )
+            );
+          }
+        }));
+
+        // ===== GroupMessagesRead: khi server xác nhận đã đọc group messages =====
+        cleanupFns.push(on("GroupMessagesRead", (payload) => {
+          const gid = Number(payload?.groupId ?? payload?.GroupId);
+          if (!gid) return;
+
+          setGroups((prev) =>
+            (Array.isArray(prev) ? prev : []).map((g) =>
+              g.id === gid ? { ...g, unreadCount: 0 } : g
+            )
+          );
+        }));
+
+        // ===== NewMessageNotification: nhận thông báo tin nhắn mới cho conversation chưa join =====
+        cleanupFns.push(on("NewMessageNotification", (payload) => {
+          const cid = Number(payload?.conversationId ?? payload?.ConversationId);
+          if (!cid) return;
+
+          const msg = payload?.message ?? payload?.Message ?? payload;
+          const msgId = msg?.id ?? msg?.messageId;
+          const senderId = Number(msg?.senderId ?? msg?.SenderId ?? 0);
+          const myId = Number(currentUserIdRef.current);
+          const isMine = myId && senderId === myId;
+
+          // Nếu tin nhắn đã được xử lý bởi ReceiveMessage (vì đã join room) thì bỏ qua
+          if (msgId && processedMessageIds.has(String(msgId))) return;
+          if (msgId) processedMessageIds.add(String(msgId));
+
+          // Không tăng count cho tin nhắn của mình
+          if (isMine) return;
+
+          const isActive = cid === Number(activeConversationIdRef.current);
+          if (isActive) return; // Đang xem conversation này rồi
+
+          // Format display message
+          const rawType = msg?.messageType ?? msg?.type;
+          let type = typeof rawType === 'string' 
+            ? (rawType === 'Image' ? 2 : rawType === 'File' ? 1 : Number(rawType) || 0)
+            : Number(rawType ?? 0);
+          let displayMessage = msg?.content;
+          if (type === 2) displayMessage = "📷 Ảnh";
+          else if (type === 1) displayMessage = "📄 File";
+
+          setConversations((prev) => {
+            const list = Array.isArray(prev) ? prev : [];
+            const updatedList = list.map((c) => {
+              if (c.id === cid) {
+                return {
+                  ...c,
+                  lastMessage: displayMessage || c.lastMessage,
+                  lastMessageAt: msg?.createdAt || c.lastMessageAt,
+                  lastMessageSenderName: payload?.senderName ?? payload?.SenderName ?? msg?.senderName ?? c.name,
+                  unreadCount: (c.unreadCount || 0) + 1
+                };
+              }
+              return c;
+            });
+            
+            // Move lên đầu
+            const targetIndex = updatedList.findIndex(c => c.id === cid);
+            if (targetIndex > 0) {
+              const [target] = updatedList.splice(targetIndex, 1);
+              updatedList.unshift(target);
+            }
+            return updatedList;
+          });
+        }));
       } catch (e) {
         console.error("startChatHub failed", e);
         hubStartedRef.current = false;
@@ -361,19 +1088,8 @@ const MessagingPage = () => {
     })();
 
     return () => {
-      offReceive?.();
-      offOnlineUsers?.();
-      offUserOnline?.();
-      offUserOffline?.();
-
-      offActionPopup?.();
-      offActionSent?.();
-      offActionState?.();
-      offSessionStarted?.();
-      offSessionPaused?.();
-      offSessionEnded?.();
-      offActionRejected?.();
-
+      cancelled = true;
+      cleanupFns.forEach(fn => fn?.());
       hubStartedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -401,14 +1117,24 @@ const MessagingPage = () => {
           await leaveConversation(prev);
         }
 
-        // load history
-        const res = await chatApi.getMessages(activeConversationId);
+        // load history (paginated - support both flat array and paginated response)
+        const res = await chatApi.getMessages(activeConversationId, { pageNumber: 1, pageSize: 30 });
         const data = res?.data?.data;
 
         let list = [];
-        if (Array.isArray(data)) list = data;
-        else if (Array.isArray(data?.items)) list = data.items;
-        else if (Array.isArray(data?.messages)) list = data.messages;
+        let hasMore = false;
+        
+        if (Array.isArray(data)) {
+          list = data;
+          // If API doesn't return hasMore, assume true if we got a full page
+          hasMore = list.length >= 30;
+        } else if (Array.isArray(data?.items)) {
+          list = data.items;
+          hasMore = data.hasMore ?? (list.length >= 30);
+        } else if (Array.isArray(data?.messages)) {
+          list = data.messages;
+          hasMore = data.hasMore ?? (list.length >= 30);
+        }
 
         const normalized = (Array.isArray(list) ? list : []).map((m) => {
           const senderId = Number(m.senderId ?? m.senderID ?? m.userId ?? m.userID);
@@ -423,10 +1149,26 @@ const MessagingPage = () => {
         });
 
         setMessages(normalized);
+        setMsgPage(1);
+        setMsgHasMore(hasMore);
 
-        // join room
+        // join room + mark as read
         await joinConversation(activeConversationId);
         prevConversationIdRef.current = activeConversationId;
+
+        // ✅ Gọi markAsRead để đảm bảo server đánh dấu đã đọc
+        try {
+          await markAsRead(activeConversationId);
+        } catch (e) {
+          console.error("markAsRead after join failed:", e);
+        }
+
+        // ✅ Reset unreadCount trong state (đảm bảo sync)
+        setConversations((prev) =>
+          (Array.isArray(prev) ? prev : []).map((c) =>
+            c.id === activeConversationId ? { ...c, unreadCount: 0 } : c
+          )
+        );
       } catch (err) {
         console.log("Switch conversation failed", err);
       }
@@ -575,6 +1317,22 @@ const MessagingPage = () => {
     if (!activeConversationId) return;
     const t = (text ?? "").trim();
     if (!t) return;
+
+    // Optimistic update for conversations list
+    setConversations((prev) => {
+      const list = Array.isArray(prev) ? prev : [];
+      return list.map((c) => {
+        if (c.id === activeConversationId) {
+          return {
+            ...c,
+            lastMessage: t,
+            lastMessageAt: new Date().toISOString(),
+            lastMessageSenderName: "You"
+          };
+        }
+        return c;
+      });
+    });
 
     await hubSendMessage({
       conversationId: activeConversationId,
@@ -814,19 +1572,72 @@ const MessagingPage = () => {
         onReject={() => handleRespondWorkAction(false)}
       />
 
-      {/* LEFT: conversations */}
+      {/* LEFT: conversations/groups list with tab switcher */}
       <div
-        className={`w-full md:w-80 lg:w-[340px] border-r border-neutral-200 dark:border-neutral-800 flex-shrink-0 ${activeConversationId ? "hidden md:block" : "block"
-          }`}
+        className={`w-full md:w-80 lg:w-[340px] border-r border-neutral-200 dark:border-neutral-800 flex-shrink-0 ${
+          activeConversationId || activeGroupId ? "hidden md:block" : "block"
+        }`}
       >
-        <ConversationList
-          conversations={conversations}
-          activeConversationId={activeConversationId}
-          onSelectConversation={setActiveConversationId}
-        />
+        {/* Tab Switcher */}
+        <div className="flex border-b border-neutral-200 dark:border-neutral-800">
+          <button
+            onClick={() => setActiveTab("conversations")}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+              activeTab === "conversations"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            Conversations
+          </button>
+          <button
+            onClick={() => setActiveTab("groups")}
+            className={`flex-1 py-3 text-sm font-semibold transition-colors ${
+              activeTab === "groups"
+                ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+          >
+            Groups ({groups.length})
+          </button>
+        </div>
+
+        {/* Content based on active tab */}
+        {activeTab === "conversations" ? (
+          <ConversationList
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onSelectConversation={handleSelectConversation}
+          />
+        ) : (
+          <GroupList
+            groups={groups}
+            activeGroupId={activeGroupId}
+            activeGroup={activeGroup}
+            onSelectGroup={handleSelectGroup}
+            onRefreshGroups={handleRefreshGroups}
+          />
+        )}
       </div>
-      <div className={`flex-1 min-w-0 ${!activeConversationId ? "hidden md:block" : "block"}`}>
-        {/* ✅ pinned top-middle (overlay). Only shows when session exists */}
+      <div className={`flex-1 min-w-0 ${!(activeConversationId || activeGroupId) ? "hidden md:block" : "block"}`}>
+        {/* Render GroupChatWindow or regular ChatWindow based on active tab */}
+        {activeTab === "groups" && activeGroupId ? (
+          <GroupChatWindow
+            group={activeGroup}
+            messages={groupMessages}
+            onSend={handleSendGroupMessage}
+            onSendImage={handleSendGroupImage}
+            onBack={() => {
+              setActiveGroupId(null);
+              setActiveGroup(null);
+            }}
+            currentUserId={currentUserId}
+            onLeaveGroup={handleLeaveGroup}
+            onLoadMore={handleLoadMoreGroupMessages}
+            hasMore={groupHasMore}
+            loadingMore={groupLoadingMore}
+          />
+        ) : (
         <div className="relative h-full">
           {workSession && (
             <div
@@ -903,8 +1714,14 @@ const MessagingPage = () => {
             workSession={workSession}
             workContext={workContext} // ✅ Pass workContext to check orderId
             onResumeWork={handleResumeWork}
+            
+            // ✅ Infinite scroll support
+            onLoadMore={handleLoadMoreMessages}
+            hasMore={msgHasMore}
+            loadingMore={msgLoadingMore}
           />
         </div>
+        )}
       </div>
     </div>
   );

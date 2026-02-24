@@ -4,8 +4,7 @@ import { toast } from 'react-toastify';
 
 export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
     const [formData, setFormData] = useState({
-        name: '',
-        description: ''
+        name: ''
     });
     const [loading, setLoading] = useState(false);
 
@@ -19,18 +18,27 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
 
         setLoading(true);
         try {
+            console.log('[CreateGroup] Sending request:', formData);
             const response = await groupApi.createGroup(formData);
+            console.log('[CreateGroup] Response received:', response);
+            console.log('[CreateGroup] Response.success:', response.success);
+            console.log('[CreateGroup] Response.message:', response.message);
+            console.log('[CreateGroup] Response.data:', response.data);
+            
             if (response.success) {
-                toast.success('Tạo nhóm thành công!');
+              
                 onGroupCreated(response.data);
-                setFormData({ name: '', description: '' });
+                setFormData({ name: '' });
                 onClose();
             } else {
-                toast.error(response.message || 'Không thể tạo nhóm');
+                console.error('[CreateGroup] Failed with message:', response.message);
+         
             }
         } catch (error) {
-            console.error('Error creating group:', error);
-            console.error('SERVER ERROR RESPONSE:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[CreateGroup] EXCEPTION occurred:', error);
+            console.error('[CreateGroup] Error.response:', error.response);
+            console.error('[CreateGroup] Error.response.data:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[CreateGroup] Error.response.status:', error.response?.status);
 
             const msg = error.response?.data?.message || 'Đã xảy ra lỗi khi tạo nhóm';
             toast.error(msg);
@@ -66,20 +74,6 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Nhập tên nhóm"
                             maxLength={100}
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium mb-2">
-                            Mô tả
-                        </label>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nhập mô tả nhóm (không bắt buộc)"
-                            rows={3}
-                            maxLength={500}
                         />
                     </div>
 
