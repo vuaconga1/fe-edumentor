@@ -35,7 +35,7 @@ const WorkSessionPinnedBar = ({
   const elapsedSeconds = useMemo(() => {
     const baseSeconds = Math.max(0, Number(totalMinutes) || 0) * 60;
     if (!startTime || !isRunning) return baseSeconds;
-    const startMs = new Date(startTime).getTime();
+    const startMs = new Date(startTime?.endsWith?.('Z') ? startTime : startTime + 'Z').getTime();
     if (Number.isNaN(startMs)) return baseSeconds;
     const diffSeconds = Math.floor((tick - startMs) / 1000);
     return baseSeconds + Math.max(0, diffSeconds);

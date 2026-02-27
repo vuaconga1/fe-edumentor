@@ -27,6 +27,10 @@ const handlers = {
   UserGroupTyping: new Set(),
   GroupMessagesRead: new Set(),
   OrderCompleted: new Set(), // ✅ Added
+  // Community real-time events
+  NewComment: new Set(),
+  CommentDeleted: new Set(),
+  NewNotification: new Set(),
 };
 
 // ===== Start Hub (safe, no race) =====
@@ -243,6 +247,15 @@ export function groupTyping(groupId, isTyping) {
 
 export function markGroupAsRead(groupId) {
   return ensureConnected().invoke("MarkGroupAsRead", Number(groupId));
+}
+
+// ===== Community Post Room Methods =====
+export function joinPostRoom(postId) {
+  return ensureConnected().invoke("JoinPostRoom", Number(postId));
+}
+
+export function leavePostRoom(postId) {
+  return ensureConnected().invoke("LeavePostRoom", Number(postId));
 }
 
 

@@ -34,9 +34,17 @@ export default function WalletsPage() {
     const handleSearch = () => { setPageNumber(1); fetchWallets(); };
 
     const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount || 0) + "đ";
+    const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
     const [showFilters, setShowFilters] = useState(false);
     const hasActiveFilters = keyword || filterBalance !== "all";
+
+    // Client-side balance filter
+    const filteredWallets = filterBalance === "all" ? wallets
+        : filterBalance === "hasBalance" ? wallets.filter(w => (w.balance || 0) > 0)
+        : filterBalance === "noBalance" ? wallets.filter(w => (w.balance || 0) === 0)
+        : filterBalance === "hasLocked" ? wallets.filter(w => (w.lockedBalance || 0) > 0)
+        : wallets;
 
     return (
         <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -128,15 +136,18 @@ export default function WalletsPage() {
                             <tr className="text-left text-sm font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wide">
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">User</th>
+                                <th className="px-6 py-4">Role</th>
                                 <th className="px-6 py-4">Balance</th>
                                 <th className="px-6 py-4">Locked</th>
                                 <th className="px-6 py-4">Total</th>
+                                <th className="px-6 py-4">Transactions</th>
+                                <th className="px-6 py-4">Created</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {loading ? <tr><td colSpan={5} className="px-6 py-10 text-center text-neutral-500">Loading...</td></tr>
-                                : wallets.length === 0 ? <tr><td colSpan={5} className="px-6 py-10 text-center text-neutral-500">No wallets</td></tr>
-                                    : wallets.map((w) => (
+                            {loading ? <tr><td colSpan={8} className="px-6 py-10 text-center text-neutral-500">Loading...</td></tr>
+                                : filteredWallets.length === 0 ? <tr><td colSpan={8} className="px-6 py-10 text-center text-neutral-500">No wallets</td></tr>
+                                    : filteredWallets.map((w) => (
                                         <tr key={w.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
                                             <td className="px-6 py-4 text-sm font-mono">#{w.id}</td>
                                             <td className="px-6 py-4">
@@ -156,9 +167,14 @@ export default function WalletsPage() {
                                                     </div>
                                                 </div>
                                             </td>
+                                            <td className="px-6 py-4">
+                                                <span className="inline-block px-2 py-1 text-xs font-medium rounded-full capitalize text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400">{w.userRole || "—"}</span>
+                                            </td>
                                             <td className="px-6 py-4 text-sm font-semibold text-emerald-600">{formatCurrency(w.balance)}</td>
                                             <td className="px-6 py-4 text-sm text-amber-600">{formatCurrency(w.lockedBalance)}</td>
                                             <td className="px-6 py-4 text-sm font-bold text-neutral-900 dark:text-white">{formatCurrency((w.balance || 0) + (w.lockedBalance || 0))}</td>
+                                            <td className="px-6 py-4 text-sm text-neutral-500">{w.transactionCount ?? "—"}</td>
+                                            <td className="px-6 py-4 text-sm text-neutral-500">{formatDate(w.createdAt)}</td>
                                         </tr>
                                     ))}
                         </tbody>

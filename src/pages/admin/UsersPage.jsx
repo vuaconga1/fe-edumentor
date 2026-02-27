@@ -105,8 +105,13 @@ const UsersPage = () => {
       role: mapRoleFromAPI(apiUser.role),
       status: apiUser.isActive ? "active" : "inactive",
       isVerified: apiUser.isVerified,
-      sessionsCount: 0,
-      balance: 0,
+      phone: apiUser.phone || null,
+      gender: apiUser.gender || null,
+      school: apiUser.school || null,
+      major: apiUser.major || null,
+      bio: apiUser.bio || null,
+      city: apiUser.city || null,
+      country: apiUser.country || null,
       createdAt: apiUser.createdAt || new Date().toISOString(),
     };
   }
@@ -378,21 +383,11 @@ const UsersPage = () => {
       )
     },
     {
-      key: 'sessionsCount',
-      label: 'Sessions',
-      render: (value) => <span className="text-neutral-900 dark:text-white">{value}</span>
-    },
-    {
-      key: 'balance',
-      label: 'Balance',
-      render: (value) => <span className="text-neutral-900 dark:text-white">{formatCurrency(value)}</span>
-    },
-    {
       key: 'createdAt',
       label: 'Joined',
       render: (value) => (
         <span className="text-neutral-500">
-          {new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          {new Date(value?.endsWith?.('Z') ? value : value + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
         </span>
       )
     },
@@ -785,18 +780,46 @@ const UsersPage = () => {
                 <label className="block text-sm font-medium text-neutral-500 mb-1">Verified</label>
                 <p className="text-neutral-900 dark:text-white">{viewingUser.isVerified ? 'Yes' : 'No'}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Sessions Count</label>
-                <p className="text-neutral-900 dark:text-white">{viewingUser.sessionsCount}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Balance</label>
-                <p className="text-neutral-900 dark:text-white">{formatCurrency(viewingUser.balance)}</p>
-              </div>
+              {viewingUser.phone && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">Phone</label>
+                  <p className="text-neutral-900 dark:text-white">{viewingUser.phone}</p>
+                </div>
+              )}
+              {viewingUser.gender && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">Gender</label>
+                  <p className="text-neutral-900 dark:text-white capitalize">{viewingUser.gender}</p>
+                </div>
+              )}
+              {viewingUser.school && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">School</label>
+                  <p className="text-neutral-900 dark:text-white">{viewingUser.school}</p>
+                </div>
+              )}
+              {viewingUser.major && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">Major</label>
+                  <p className="text-neutral-900 dark:text-white">{viewingUser.major}</p>
+                </div>
+              )}
+              {(viewingUser.city || viewingUser.country) && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">Location</label>
+                  <p className="text-neutral-900 dark:text-white">{[viewingUser.city, viewingUser.country].filter(Boolean).join(', ')}</p>
+                </div>
+              )}
+              {viewingUser.bio && (
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-neutral-500 mb-1">Bio</label>
+                  <p className="text-neutral-900 dark:text-white whitespace-pre-wrap">{viewingUser.bio}</p>
+                </div>
+              )}
               <div className="col-span-2">
                 <label className="block text-sm font-medium text-neutral-500 mb-1">Joined Date</label>
                 <p className="text-neutral-900 dark:text-white">
-                  {new Date(viewingUser.createdAt).toLocaleDateString('en-US', {
+                  {new Date(viewingUser.createdAt?.endsWith?.('Z') ? viewingUser.createdAt : viewingUser.createdAt + 'Z').toLocaleDateString('en-US', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',

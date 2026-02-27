@@ -20,6 +20,7 @@ export default function ChatWindow({
   onPauseWork,
   onEndWork,
   onCompleteOrder, // ✅ Added
+  completingOrder = false, // disable button while pending
   onLoadMore,
   hasMore = false,
   loadingMore = false,
@@ -164,10 +165,13 @@ export default function ChatWindow({
               <button
                 type="button"
                 onClick={onCompleteOrder}
-                className="h-9 px-3 rounded-lg bg-green-600 text-white text-sm font-semibold
-                           hover:bg-green-700 active:opacity-90 transition-colors"
+                disabled={completingOrder}
+                className={`h-9 px-3 rounded-lg text-white text-sm font-semibold transition-colors
+                  ${completingOrder
+                    ? 'bg-blue-400 cursor-not-allowed opacity-70'
+                    : 'bg-blue-600 hover:bg-blue-700 active:opacity-90'}`}
               >
-                Hoàn thành đơn hàng
+                {completingOrder ? 'Waiting...' : 'Complete Order'}
               </button>
             )}
 
@@ -192,7 +196,7 @@ export default function ChatWindow({
 
         {!hasMore && list.length > 0 && (
           <div className="flex justify-center py-2">
-            <span className="text-xs text-neutral-400">Đã hiển thị tất cả tin nhắn</span>
+            <span className="text-xs text-neutral-400">All messages have been displayed.</span>
           </div>
         )}
 

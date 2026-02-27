@@ -34,8 +34,8 @@ export const ADMIN_MENU = [
   { label: "Wallets", icon: HiCash, href: "/admin/wallets" },
   { label: "Bank Transfers", icon: HiCreditCard, href: "/admin/bank-transfers" },
   { label: "Reviews", icon: HiStar, href: "/admin/reviews" },
-  { label: "Posts", icon: HiClipboard, href: "/admin/posts" },
-  { label: "Comments", icon: HiChat, href: "/admin/comments" },
+  // { label: "Posts", icon: HiClipboard, href: "/admin/posts" },
+  // { label: "Comments", icon: HiChat, href: "/admin/comments" },
   { label: "Reports", icon: HiClipboard, href: "/admin/reports" },
 ];
 

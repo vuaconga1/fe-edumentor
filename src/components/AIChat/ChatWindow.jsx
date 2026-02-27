@@ -27,7 +27,7 @@ function ChatMessage({ message }) {
       `}>
         <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
         <p className={`text-xs mt-1 ${isUser ? 'text-blue-200' : 'text-gray-400 dark:text-neutral-500'}`}>
-          {new Date(message.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+          {new Date(message.createdAt?.endsWith?.('Z') ? message.createdAt : message.createdAt + 'Z').toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </div>
@@ -166,7 +166,7 @@ function HistoryDropdown({ isOpen, onClose, sessions, onSelect, onDelete, curren
                     {session.firstMessage || 'New conversation'}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-neutral-400">
-                    {new Date(session.lastMessageAt).toLocaleDateString()} · {session.messageCount} messages
+                    {new Date(session.lastMessageAt?.endsWith?.('Z') ? session.lastMessageAt : session.lastMessageAt + 'Z').toLocaleDateString()} · {session.messageCount} messages
                   </p>
                 </div>
                 <button

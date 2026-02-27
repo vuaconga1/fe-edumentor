@@ -38,7 +38,7 @@ export default function MentorApplicationBanner({
                         Application Under Review
                     </h3>
                     <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
-                        Your mentor application was submitted on {new Date(statusData.appliedAt).toLocaleDateString()}. We will notify you once it's reviewed.
+                        Your mentor application was submitted on {new Date(statusData.appliedAt?.endsWith?.('Z') ? statusData.appliedAt : statusData.appliedAt + 'Z').toLocaleDateString()}. We will notify you once it's reviewed.
                     </p>
                 </div>
             </div>

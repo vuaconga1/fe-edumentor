@@ -1,9 +1,12 @@
 // src/components/notification/NotificationDropdown.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { HiBell } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import notificationApi from '../../api/notificationApi';
 import { useAuth } from '../../context/AuthContext';
+import { startChatHub, on, isConnected } from '../../signalr/chatHub';
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 const NotificationDropdown = () => {
   const navigate = useNavigate();
@@ -15,7 +18,7 @@ const NotificationDropdown = () => {
   const dropdownRef = useRef(null);
 
   // Fetch notifications summary
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       const res = await notificationApi.getSummary();
       const data = res?.data?.data;
@@ -24,13 +27,38 @@ const NotificationDropdown = () => {
     } catch (err) {
       console.log("Fetch notification summary failed:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSummary();
-    // Poll every 30 seconds
+    // Poll every 30 seconds as fallback
     const interval = setInterval(fetchSummary, 30000);
     return () => clearInterval(interval);
+  }, [fetchSummary]);
+
+  // Real-time notification via SignalR
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    // Auto-connect hub if not connected
+    if (!isConnected()) {
+      startChatHub(API_BASE, token).catch(() => {});
+    }
+
+    const cleanup = on('NewNotification', (payload) => {
+      const notif = payload?.notification;
+      if (notif) {
+        setNotifications(prev => [notif, ...prev].slice(0, 10));
+      }
+      if (payload?.totalUnread != null) {
+        setUnreadCount(payload.totalUnread);
+      } else {
+        setUnreadCount(prev => prev + 1);
+      }
+    });
+
+    return cleanup;
   }, []);
 
   // Close dropdown when clicking outside

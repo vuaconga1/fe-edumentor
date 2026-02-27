@@ -83,7 +83,8 @@ const Dashboard = () => {
   const recentUsers = useMemo(() => {
     const toTime = (u) => {
       const d = u.joined || u.createdAt || u.created_at;
-      const t = d ? new Date(d).getTime() : 0;
+      const utc = d && d.endsWith?.('Z') ? d : (d ? d + 'Z' : null);
+      const t = utc ? new Date(utc).getTime() : 0;
       return Number.isFinite(t) ? t : 0;
     };
     return [...users].sort((a, b) => toTime(b) - toTime(a)).slice(0, 5);
@@ -101,7 +102,8 @@ const Dashboard = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",

@@ -925,7 +925,13 @@ const MessagingPage = () => {
         // ===== WORK: caller sent =====
         cleanupFns.push(on("WorkActionSent", (payload) => {
           if (!payload?.actionType) return;
-          toast.info("Đã gửi yêu cầu, chờ xác nhận...");
+          const actionLabel = {
+            start: "start session",
+            pause: "pause session",
+            end: "end session",
+            complete: "complete order",
+          }[String(payload.actionType).toLowerCase()] || payload.actionType;
+          toast.info(`Request to ${actionLabel} sent, waiting for confirmation...`);
         }));
 
         // ===== WORK: group state pending (pause/end) =====
@@ -1003,6 +1009,7 @@ const MessagingPage = () => {
           if (snapshot) setWorkSession({ ...snapshot });
 
           pendingSnapshotRef.current = null;
+          setCompletingOrder(false);
           toast.error("The request has been rejected.");
         }));
 
@@ -1012,7 +1019,9 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null); // Clear session if any
-          toast.success("Đơn hàng đã hoàn thành!");
+          setWorkContext(prev => prev ? { ...prev, orderId: null } : prev); // Hide Complete Order button
+          setCompletingOrder(false);
+          toast.success("Order has been completed successfully!");
           // Potentially refresh conversation to show status update
         }));
 
@@ -1479,15 +1488,19 @@ const MessagingPage = () => {
     await requestEndWork(activeConversationId, workSession.sessionId);
   };
 
+  const [completingOrder, setCompletingOrder] = useState(false);
+
   const handleRequestCompleteOrder = async () => {
-    // Logic for request complete order
     if (!workContext?.orderId || !activeConversationId) return;
+    if (completingOrder) return; // prevent double-click
+    setCompletingOrder(true);
     try {
       await requestCompleteOrder(activeConversationId, workContext.orderId);
-      toast.info("Đã gửi yêu cầu hoàn thành...");
+      // Toast is handled by WorkActionSent listener — no duplicate here
     } catch (e) {
       console.error("RequestCompleteOrder failed", e);
-      toast.error("Gửi yêu cầu thất bại");
+      toast.error("Failed to send completion request");
+      setCompletingOrder(false);
     }
   };
   const handleRespondWorkAction = async (accept) => {
@@ -1527,7 +1540,7 @@ const MessagingPage = () => {
     }
 
     // running: (now - startTime) + already accumulated minutes (if any)
-    const start = workSession.startTime ? new Date(workSession.startTime).getTime() : null;
+    const start = workSession.startTime ? new Date(workSession.startTime.endsWith?.('Z') ? workSession.startTime : workSession.startTime + 'Z').getTime() : null;
     if (!start) return Number(workSession.totalMinutes || 0) * 60;
 
     const base = Number(workSession.totalMinutes || 0) * 60;
@@ -1733,6 +1746,7 @@ const MessagingPage = () => {
             onPauseWork={handlePauseWork} // ✅ Added
             onEndWork={handleEndWork} // ✅ Added
             onCompleteOrder={handleRequestCompleteOrder} // ✅ New handler
+            completingOrder={completingOrder} // ✅ Disable button while pending
             workSession={workSession}
             workContext={workContext} // ✅ Pass workContext to check orderId
             onResumeWork={handleResumeWork}

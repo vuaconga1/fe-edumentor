@@ -1,5 +1,5 @@
 import React from "react";
-import { FileIcon, ExternalLink } from "lucide-react";
+import { FileIcon, ExternalLink, Info } from "lucide-react";
 import { formatTime } from "../../utils/dateUtils";
 
 export default function MessageBubble({ message, isMine }) {
@@ -13,10 +13,26 @@ export default function MessageBubble({ message, isMine }) {
     // Backend trả về dạng string enum name
     if (rawType === 'Image') type = 2;
     else if (rawType === 'File') type = 1;
+    else if (rawType === 'System') type = 3;
     else if (rawType === 'Text') type = 0;
     else type = Number(rawType) || 0;
   } else {
     type = Number(rawType);
+  }
+
+  // System message (type=3): centered, special style
+  if (type === 3) {
+    const content = String(message?.content ?? "");
+    return (
+      <div className="flex justify-center py-1.5">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                        bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30
+                        text-xs text-blue-700 dark:text-blue-300 max-w-[85%] text-center">
+          <Info className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>{content}</span>
+        </div>
+      </div>
+    );
   }
   
   const content = String(message?.content ?? "");

@@ -78,6 +78,24 @@ const ReportsPage = () => {
     setIsConfirmOpen(true);
   };
 
+  // Direct action from detail modal (no double modal)
+  const handleDirectAction = async (action) => {
+    if (!selectedReport) return;
+    try {
+      const status = action === "resolve" ? "Resolved" : "Dismissed";
+      await adminApi.handleReport(selectedReport.id, { status, banUser: false });
+      const newStatus = action === "resolve" ? "resolved" : "dismissed";
+      setReports((prev) =>
+        prev.map((r) => (r.id === selectedReport.id ? { ...r, status: newStatus } : r))
+      );
+      setSelectedReport((prev) => (prev?.id === selectedReport.id ? { ...prev, status: newStatus } : prev));
+      setIsDetailOpen(false);
+    } catch (err) {
+      console.log("Handle report failed", err);
+      alert(err?.response?.data?.message || "Action failed.");
+    }
+  };
+
   const confirmActionHandler = async () => {
     if (!selectedReport || !confirmAction) return;
 
@@ -99,6 +117,23 @@ const ReportsPage = () => {
     } catch (err) {
       console.log("Handle report failed", err);
       alert(err?.response?.data?.message || "Action failed.");
+    }
+  };
+
+  // Refetch reports data
+  const refetchReports = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      const res = await adminApi.getReports({ pageNumber: 1, pageSize: 50, status: filterStatus });
+      const data = res?.data?.data ?? res?.data;
+      const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+      setReports(list);
+    } catch (err) {
+      console.log("Failed to fetch reports", err);
+      setError(err?.response?.data?.message || "Cannot load reports.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -165,7 +200,7 @@ const ReportsPage = () => {
           </button>
           
           <button
-            onClick={() => window.location.reload()}
+            onClick={refetchReports}
             className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
             title="Refresh"
           >
@@ -243,7 +278,9 @@ const ReportsPage = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return '—';
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -419,23 +456,62 @@ const ReportsPage = () => {
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reported User</p>
                 <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.reportedUser?.fullName || selectedReport.reportedUserName || '-'}</p>
+                {(selectedReport.reportedUser?.email || selectedReport.reportedUserEmail) && (
+                  <p className="text-xs text-neutral-500">{selectedReport.reportedUser?.email || selectedReport.reportedUserEmail}</p>
+                )}
+                {selectedReport.reportedUser?.totalReports > 0 && (
+                  <p className="text-xs text-red-500 mt-1">{selectedReport.reportedUser.totalReports} total report(s)</p>
+                )}
               </div>
               <div>
                 <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reported By</p>
                 <p className="text-neutral-900 dark:text-white">{selectedReport.reporter?.fullName || selectedReport.reporterName || '-'}</p>
+                {(selectedReport.reporter?.email || selectedReport.reporterEmail) && (
+                  <p className="text-xs text-neutral-500">{selectedReport.reporter?.email || selectedReport.reporterEmail}</p>
+                )}
               </div>
             </div>
+
+            {/* Order Info */}
+            {(selectedReport.order || selectedReport.orderId) && (
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2">Related Order</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs text-neutral-500">Order ID</p>
+                    <p className="font-medium text-neutral-900 dark:text-white">#{selectedReport.order?.id || selectedReport.orderId}</p>
+                  </div>
+                  {(selectedReport.order?.title || selectedReport.orderTitle) && (
+                    <div>
+                      <p className="text-xs text-neutral-500">Title</p>
+                      <p className="font-medium text-neutral-900 dark:text-white">{selectedReport.order?.title || selectedReport.orderTitle}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Handler Info */}
+            {selectedReport.handlerName && (
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2">Handled By</p>
+                <p className="font-medium text-neutral-900 dark:text-white">{selectedReport.handlerName}</p>
+                {selectedReport.handlerNote && (
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{selectedReport.handlerNote}</p>
+                )}
+              </div>
+            )}
 
             {['pending', 'open', 'investigating'].includes(selectedReport.status?.toLowerCase()) && (
               <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
                 <button
-                  onClick={() => { setIsDetailOpen(false); handleAction(selectedReport, 'resolve'); }}
+                  onClick={() => handleDirectAction('resolve')}
                   className="flex-1 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   Mark as Resolved
                 </button>
                 <button
-                  onClick={() => { setIsDetailOpen(false); handleAction(selectedReport, 'dismiss'); }}
+                  onClick={() => handleDirectAction('dismiss')}
                   className="flex-1 py-2 text-sm font-medium bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
                 >
                   Dismiss Report

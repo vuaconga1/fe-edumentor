@@ -22,6 +22,8 @@ export default function ProposalsPage() {
     const [keyword, setKeyword] = useState("");
     const [apiError, setApiError] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState(null);
+    const [detailOpen, setDetailOpen] = useState(false);
 
     const fetchProposals = async () => {
         setLoading(true);
@@ -29,7 +31,11 @@ export default function ProposalsPage() {
         try {
             const res = await adminApi.getProposals({ pageNumber, pageSize, status, keyword });
             const data = res?.data?.data ?? res?.data;
-            setProposals(data?.items ?? []);
+            const items = (data?.items ?? []).map(item => ({
+                ...item,
+                status: item.statusDisplay || item.status,
+            }));
+            setProposals(items);
             setTotalCount(data?.totalCount ?? 0);
         } catch (err) {
             setApiError(err?.response?.data?.message || "Failed to load proposals");
@@ -65,7 +71,7 @@ export default function ProposalsPage() {
     };
 
     const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount || 0) + "đ";
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
 
     return (
@@ -179,14 +185,8 @@ export default function ProposalsPage() {
                                                     <ActionButton
                                                         icon={<HiEye className="w-4 h-4" />}
                                                         tooltip="View Detail"
-                                                        onClick={() => {}}
+                                                        onClick={() => { setSelectedProposal(p); setDetailOpen(true); }}
                                                         variant="info"
-                                                    />
-                                                    <ActionButton
-                                                        icon={<HiTrash className="w-4 h-4" />}
-                                                        tooltip="Delete Proposal"
-                                                        onClick={() => onDelete(p.id)}
-                                                        variant="danger"
                                                     />
                                                 </div>
                                             </td>
@@ -206,6 +206,55 @@ export default function ProposalsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Detail Modal */}
+            {detailOpen && selectedProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+                    <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="px-4 sm:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                            <h3 className="font-bold text-neutral-900 dark:text-white">Proposal #{selectedProposal.id}</h3>
+                            <button onClick={() => setDetailOpen(false)} className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                                <HiX className="w-5 h-5 text-neutral-500" />
+                            </button>
+                        </div>
+                        <div className="p-4 sm:p-5 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Mentor</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedProposal.mentorName || "—"}</p>
+                                    {selectedProposal.mentorEmail && <p className="text-xs text-neutral-500">{selectedProposal.mentorEmail}</p>}
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Student</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedProposal.studentName || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Request</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedProposal.requestTitle || `Request #${selectedProposal.requestId}`}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Price</p>
+                                    <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(selectedProposal.price)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Status</p>
+                                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedProposal.status)}`}>{selectedProposal.statusDisplay || selectedProposal.status}</span>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Created At</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedProposal.createdAt)}</p>
+                                </div>
+                            </div>
+                            {selectedProposal.message && (
+                                <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Message</p>
+                                    <p className="text-neutral-900 dark:text-white whitespace-pre-wrap">{selectedProposal.message}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

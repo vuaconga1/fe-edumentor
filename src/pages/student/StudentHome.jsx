@@ -1,10 +1,13 @@
 // src/pages/student/StudentHome.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import orderApi from "../../api/orderApi";
 import requestApi from "../../api/requestApi";
 import walletApi from "../../api/walletApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import { startChatHub, on, isConnected } from "../../signalr/chatHub";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 const StudentHome = () => {
   const navigate = useNavigate();
@@ -26,7 +29,8 @@ const StudentHome = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const utc = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -48,40 +52,56 @@ const StudentHome = () => {
     return styles[s] || "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400";
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [ordersRes, requestsRes, walletRes, proposalsRes] = await Promise.all([
-          orderApi.getMyOrdersStudent({ pageNumber: 1, pageSize: 5 }),
-          requestApi.getMyRequests(1, 5),
-          walletApi.getWallet(),
-          requestApi.getReceivedProposals().catch(() => ({ data: { data: [] } })),
-        ]);
+  const fetchData = useCallback(async (showLoader = true) => {
+    if (showLoader) setLoading(true);
+    try {
+      const [ordersRes, requestsRes, walletRes, proposalsRes] = await Promise.all([
+        orderApi.getMyOrdersStudent({ pageNumber: 1, pageSize: 5 }),
+        requestApi.getMyRequests(1, 5),
+        walletApi.getWallet(),
+        requestApi.getReceivedProposals().catch(() => ({ data: { data: [] } })),
+      ]);
 
-        const orders = ordersRes?.data?.data?.items || [];
-        const requests = requestsRes?.data?.data?.items || [];
-        const wallet = walletRes?.data?.data;
-        const proposals = proposalsRes?.data?.data?.items || proposalsRes?.data?.data || [];
+      const orders = ordersRes?.data?.data?.items || [];
+      const requests = requestsRes?.data?.data?.items || [];
+      const wallet = walletRes?.data?.data;
+      const proposals = proposalsRes?.data?.data?.items || proposalsRes?.data?.data || [];
 
-        setRecentOrders(orders);
-        setRecentRequests(requests);
-        setReceivedProposals(Array.isArray(proposals) ? proposals : []);
-        setStats({
-          totalOrders: ordersRes?.data?.data?.totalCount || orders.length,
-          pendingRequests: requests.filter(r => r.status === "Open").length,
-          walletBalance: wallet?.balance || 0,
-          pendingProposals: (Array.isArray(proposals) ? proposals : []).filter(p => p.status === "Pending" || p.status === "Open").length,
-        });
-      } catch (err) {
-        console.log("Failed to load dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+      setRecentOrders(orders);
+      setRecentRequests(requests);
+      setReceivedProposals(Array.isArray(proposals) ? proposals : []);
+      setStats({
+        totalOrders: ordersRes?.data?.data?.totalCount || orders.length,
+        pendingRequests: requests.filter(r => r.status === "Open").length,
+        walletBalance: wallet?.balance || 0,
+        pendingProposals: (Array.isArray(proposals) ? proposals : []).filter(p => p.status === "Pending" || p.status === "Open").length,
+      });
+    } catch (err) {
+      console.log("Failed to load dashboard data:", err);
+    } finally {
+      if (showLoader) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Real-time: refresh stats when a new notification comes in (e.g. new proposal)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    if (!isConnected()) {
+      startChatHub(API_BASE, token).catch(() => {});
+    }
+    const cleanup = on('NewNotification', (payload) => {
+      const type = payload?.notification?.type;
+      if (type === 'NewProposal' || type === 'ProposalAccepted' || type === 'ProposalRejected' || type === 'RequestCreated') {
+        fetchData(false);
+      }
+    });
+    return cleanup;
+  }, [fetchData]);
 
   if (loading) {
     return (

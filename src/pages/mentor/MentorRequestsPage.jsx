@@ -11,9 +11,13 @@ import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const REQUEST_STATUS = {
   Open: { label: "Pending", style: "text-amber-600 dark:text-amber-400" },
+  Matched: { label: "Matched", style: "text-blue-600 dark:text-blue-400" },
   Accepted: { label: "Accepted", style: "text-green-600 dark:text-green-400" },
+  InOrder: { label: "In Progress", style: "text-green-600 dark:text-green-400" },
   Rejected: { label: "Rejected", style: "text-red-500 dark:text-red-400" },
   Closed: { label: "Closed", style: "text-neutral-500 dark:text-neutral-400" },
+  Cancelled: { label: "Cancelled", style: "text-neutral-500 dark:text-neutral-400" },
+  Deleted: { label: "Cancelled", style: "text-neutral-500 dark:text-neutral-400" },
 };
 
 const PROPOSAL_STATUS = {
@@ -26,8 +30,10 @@ const PROPOSAL_STATUS = {
 const requestFilterConfig = {
   all: { label: "All" },
   open: { label: "Pending" },
-  accepted: { label: "Accepted" },
+  matched: { label: "Matched" },
+  accepted: { label: "In Progress" },
   rejected: { label: "Rejected" },
+  cancelled: { label: "Cancelled" },
   closed: { label: "Closed" },
 };
 
@@ -41,7 +47,8 @@ const proposalFilterConfig = {
 
 const formatDate = (d) => {
   if (!d) return "-";
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const utc = d.endsWith('Z') ? d : d + 'Z';
+  return new Date(utc).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 };
 
 const formatCurrency = (amount) => {
@@ -51,10 +58,13 @@ const formatCurrency = (amount) => {
 
 const normalizeRequestStatus = (statusDisplay) => {
   const s = String(statusDisplay || "").toLowerCase();
-  if (s.includes("open") || s.includes("pending")) return "open";
-  if (s.includes("accept")) return "accepted";
-  if (s.includes("reject")) return "rejected";
-  if (s.includes("close")) return "closed";
+  if (s.includes("cancel") || s.includes("delete")) return "cancelled";
+  if (s.includes("inorder") || s.includes("in order") || s === "4") return "accepted";
+  if (s.includes("matched") || s === "3") return "matched";
+  if (s.includes("open") || s.includes("pending") || s === "0") return "open";
+  if (s.includes("accept") || s === "1") return "accepted";
+  if (s.includes("reject") || s === "2") return "rejected";
+  if (s.includes("close") || s === "5") return "closed";
   return "open";
 };
 
@@ -552,7 +562,7 @@ const MentorRequestsPage = () => {
                             <span className={`text-xs font-medium ${cfg.style}`}>{cfg.label}</span>
                           </div>
                           <div className="col-span-3 flex items-center justify-end gap-2">
-                            {(statusText === "Open" || statusText === 0) && (
+                            {(statusText === "Open" || statusText === 0 || statusText === "Matched" || statusText === 3) && (
                               <>
                                 <button
                                   onClick={() => handleAcceptRequest(req.id)}
@@ -570,7 +580,7 @@ const MentorRequestsPage = () => {
                                 </button>
                               </>
                             )}
-                            {(statusText === "Accepted" || statusText === 1) && (
+                            {(statusText === "InOrder" || statusText === "Accepted" || statusText === 4 || statusText === 1) && (
                               <button
                                 onClick={() => handleGoToChat(req.conversationId)}
                                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
@@ -603,7 +613,7 @@ const MentorRequestsPage = () => {
                                 <span>{formatDate(req.createdAt)}</span>
                               </div>
                               <div className="flex items-center gap-2 mt-3">
-                                {(statusText === "Open" || statusText === 0) && (
+                                {(statusText === "Open" || statusText === 0 || statusText === "Matched" || statusText === 3) && (
                                   <>
                                     <button
                                       onClick={() => handleAcceptRequest(req.id)}
@@ -621,7 +631,7 @@ const MentorRequestsPage = () => {
                                     </button>
                                   </>
                                 )}
-                                {(statusText === "Accepted" || statusText === 1) && (
+                                {(statusText === "InOrder" || statusText === "Accepted" || statusText === 4 || statusText === 1) && (
                                   <button
                                     onClick={() => handleGoToChat(req.conversationId)}
                                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"

@@ -20,6 +20,8 @@ export default function RequestsPage() {
     const [status, setStatus] = useState("all");
     const [keyword, setKeyword] = useState("");
     const [apiError, setApiError] = useState("");
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [detailOpen, setDetailOpen] = useState(false);
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -27,7 +29,11 @@ export default function RequestsPage() {
         try {
             const res = await adminApi.getRequests({ pageNumber, pageSize, status, keyword });
             const data = res?.data?.data ?? res?.data;
-            setRequests(data?.items ?? []);
+            const items = (data?.items ?? []).map(item => ({
+                ...item,
+                status: item.statusDisplay || item.status,
+            }));
+            setRequests(items);
             setTotalCount(data?.totalCount ?? 0);
         } catch (err) {
             setApiError(err?.response?.data?.message || "Failed to load requests");
@@ -62,7 +68,7 @@ export default function RequestsPage() {
     };
 
     const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount || 0) + "đ";
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
     const [showFilters, setShowFilters] = useState(false);
     const hasActiveFilters = keyword || status !== "all";
@@ -174,14 +180,8 @@ export default function RequestsPage() {
                                                     <ActionButton
                                                         icon={<HiEye className="w-4 h-4" />}
                                                         tooltip="View Detail"
-                                                        onClick={() => {}}
+                                                        onClick={() => { setSelectedRequest(r); setDetailOpen(true); }}
                                                         variant="info"
-                                                    />
-                                                    <ActionButton
-                                                        icon={<HiTrash className="w-4 h-4" />}
-                                                        tooltip="Delete Request"
-                                                        onClick={() => onDelete(r.id)}
-                                                        variant="danger"
                                                     />
                                                 </div>
                                             </td>
@@ -201,6 +201,63 @@ export default function RequestsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Detail Modal */}
+            {detailOpen && selectedRequest && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+                    <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="px-4 sm:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                            <h3 className="font-bold text-neutral-900 dark:text-white">Request #{selectedRequest.id}</h3>
+                            <button onClick={() => setDetailOpen(false)} className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                                <HiX className="w-5 h-5 text-neutral-500" />
+                            </button>
+                        </div>
+                        <div className="p-4 sm:p-5 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="sm:col-span-2">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Title</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedRequest.title || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Student</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedRequest.studentName || "—"}</p>
+                                    {selectedRequest.studentEmail && <p className="text-xs text-neutral-500">{selectedRequest.studentEmail}</p>}
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Category</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedRequest.categoryName || "—"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Budget</p>
+                                    <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(selectedRequest.expectedBudget)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Status</p>
+                                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedRequest.status)}`}>{selectedRequest.statusDisplay || selectedRequest.status}</span>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Proposals</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedRequest.proposalCount ?? 0}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Orders</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedRequest.orderCount ?? 0}</p>
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Created At</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedRequest.createdAt)}</p>
+                                </div>
+                            </div>
+                            {selectedRequest.description && (
+                                <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Description</p>
+                                    <p className="text-neutral-900 dark:text-white whitespace-pre-wrap">{selectedRequest.description}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

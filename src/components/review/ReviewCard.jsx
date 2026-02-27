@@ -6,7 +6,8 @@ const ReviewCard = ({ review, onReport }) => {
   
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    return new Date(dateString).toLocaleDateString('en-GB', {
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
@@ -14,7 +15,7 @@ const ReviewCard = ({ review, onReport }) => {
   };
 
   return (
-    <div className="relative p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-neutral-800/30 transition-colors group">
+    <div className={`relative p-4 sm:p-5 hover:bg-gray-50 dark:hover:bg-neutral-800/30 transition-colors group ${onReport ? 'pr-12 sm:pr-14' : ''}`}>
       
       {/* Flag Icon - Report button */}
       {onReport && (
