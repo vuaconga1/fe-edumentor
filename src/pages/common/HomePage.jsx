@@ -48,16 +48,26 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Partners Section */}
+      {/* Stats Section */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
-          <p className="text-center text-gray-500 mb-8">Chúng tôi đã hợp tác với các công ty hàng đầu</p>
-          <div className="flex justify-around items-center flex-wrap gap-8 opacity-60">
-            <div className="text-gray-400 font-bold text-xl">UPS</div>
-            <div className="text-gray-400 font-bold text-xl">FedEx</div>
-            <div className="text-gray-400 font-bold text-xl">DHL</div>
-            <div className="text-gray-400 font-bold text-xl">Amazon</div>
-            <div className="text-gray-400 font-bold text-xl">Maersk</div>
+          <div className="flex justify-around items-center flex-wrap gap-8 text-center">
+            <div>
+              <div className="text-3xl font-bold text-blue-600">1000+</div>
+              <div className="text-gray-500 text-sm mt-1">Học viên</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-blue-600">200+</div>
+              <div className="text-gray-500 text-sm mt-1">Mentor</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-blue-600">50+</div>
+              <div className="text-gray-500 text-sm mt-1">Lĩnh vực</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-blue-600">98%</div>
+              <div className="text-gray-500 text-sm mt-1">Hài lòng</div>
+            </div>
           </div>
         </div>
       </section>
@@ -174,15 +184,15 @@ const HomePage = () => {
               ))}
             </div>
             <blockquote className="text-gray-700 text-lg italic mb-6">
-              "Chúng tôi đã sử dụng dịch vụ từ năm ngoái. Hàng hóa của chúng tôi đến trong tình trạng hoàn hảo. Qua trình giao hàng trong suốt với trình diễn tâm lý mạnh, và thật giao nhận rất chuyên nghiệp."
+              "EduMentor đã giúp tôi kết nối với những mentor giỏi nhất trong lĩnh vực lập trình. Nhờ sự hướng dẫn tận tình, tôi đã tự tin hơn rất nhiều và tìm được công việc mơ ước chỉ sau 3 tháng."
             </blockquote>
             <div className="flex items-center justify-center gap-3">
               <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                JC
+                MT
               </div>
               <div className="text-left">
-                <div className="font-bold">Jane Cooper</div>
-                <div className="text-sm text-gray-500">CEO, Workcation</div>
+                <div className="font-bold">Minh Thư</div>
+                <div className="text-sm text-gray-500">Sinh viên CNTT</div>
               </div>
             </div>
           </div>
@@ -238,19 +248,11 @@ const HomePage = () => {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-8 border-t text-center text-gray-500 text-sm">
-          © 2025 MentorConnect. All rights reserved.
+          © {new Date().getFullYear()} EduMentor. All rights reserved.
         </div>
       </footer>
 
-      {/* Test Links - Development Only */}
-      <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded-lg p-4 border border-gray-200">
-        <div className="text-xs font-bold mb-2 text-gray-700">Test Routes:</div>
-        <div className="flex flex-col gap-1 text-xs">
-          <Link to="/admin" className="text-blue-600 hover:underline">Admin Dashboard</Link>
-          <Link to="/mentor" className="text-blue-600 hover:underline">Mentor Dashboard</Link>
-          <Link to="/student" className="text-blue-600 hover:underline">Student Dashboard</Link>
-        </div>
-      </div>
+
     </div>
   );
 };

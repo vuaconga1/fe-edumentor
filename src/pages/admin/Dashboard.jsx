@@ -1,60 +1,70 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   HiUsers,
   HiAcademicCap,
   HiUserGroup,
   HiCurrencyDollar,
-  HiArrowUp,
-  HiArrowDown,
 } from "react-icons/hi";
 
-import transactionsData from "../../mock/transactions.json";
-import reportsData from "../../mock/reports.json";
 import adminApi from "../../api/adminApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const Dashboard = () => {
-  // ✅ thêm state dashboard
+  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
-
-  // ✅ state users phải nằm trong component
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-
-  // ===== fetch dashboard stats =====
-  // ===== fetch dashboard stats =====
-  const [dashboardLoading, setDashboardLoading] = useState(true);
-  const [dashboardError, setDashboardError] = useState("");
+  const [pendingApplications, setPendingApplications] = useState([]);
+  const [loadingApplications, setLoadingApplications] = useState(true);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(true);
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchData() {
       try {
         setLoadingUsers(true);
+        setLoadingApplications(true);
+        setLoadingTransactions(true);
 
-        // lấy nhiều một chút để đủ tính mentor/student/recent
-        const res = await adminApi.getUsers({ pageNumber: 1, pageSize: 200 });
+        const [usersRes, appsRes, txRes, dashRes] = await Promise.all([
+          adminApi.getUsers({ pageNumber: 1, pageSize: 200 }),
+          adminApi.getMentorApplications({ pageNumber: 1, pageSize: 5, status: "Pending" }),
+          adminApi.getTransactions({ pageNumber: 1, pageSize: 5 }),
+          adminApi.getDashboard().catch(() => null),
+        ]);
 
-        const data = res?.data?.data ?? res?.data;
-
-        // backend thường trả { items: [...] }
-        const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
+        // Users
+        const userData = usersRes?.data?.data ?? usersRes?.data;
+        const list = Array.isArray(userData?.items) ? userData.items : (Array.isArray(userData) ? userData : []);
         setUsers(list);
+
+        // Pending applications
+        const appsData = appsRes?.data?.data ?? appsRes?.data;
+        const appsList = Array.isArray(appsData?.items) ? appsData.items : (Array.isArray(appsData) ? appsData : []);
+        setPendingApplications(appsList);
+
+        // Transactions
+        const txData = txRes?.data?.data ?? txRes?.data;
+        const txList = Array.isArray(txData?.items) ? txData.items : (Array.isArray(txData) ? txData : []);
+        setRecentTransactions(txList);
+
+        // Dashboard stats
+        if (dashRes?.data?.data) setDashboardData(dashRes.data.data);
+
       } catch (err) {
-        console.log("Failed to fetch users", err);
-        setUsers([]);
+        console.log("Failed to fetch dashboard data", err);
       } finally {
         setLoadingUsers(false);
+        setLoadingApplications(false);
+        setLoadingTransactions(false);
       }
     }
 
-    fetchUsers();
+    fetchData();
   }, []);
 
-
-  // ====== TÍNH STATS TỪ USERS THẬT ======
-  const totalUsers = users.length;
-
-  // ====== TÍNH STATS TỪ USERS THẬT ======
+  // ====== STATS ======
   const normalizeRole = (role) => {
     if (role === null || role === undefined) return "";
     const r = String(role).toLowerCase();
@@ -64,77 +74,30 @@ const Dashboard = () => {
     return r;
   };
 
-  const mentors = users.filter(
-    (u) => normalizeRole(u.role) === "mentor"
-  ).length;
+  const totalUsers = dashboardData?.totalUsers ?? users.length;
+  const mentors = dashboardData?.totalMentors ?? users.filter((u) => normalizeRole(u.role) === "mentor").length;
+  const students = dashboardData?.totalStudents ?? users.filter((u) => normalizeRole(u.role) === "student").length;
+  const totalRevenue = dashboardData?.totalRevenue || 0;
+  const pendingAppsCount = dashboardData?.pendingApplications ?? pendingApplications.length;
 
-  const students = users.filter(
-    (u) => normalizeRole(u.role) === "student"
-  ).length;
-
-
-  // ====== MOCK TRANSACTIONS/REPORTS giữ nguyên ======
-  const totalRevenue = transactionsData
-    .filter((t) => t.type === "deposit" && t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const pendingReports = reportsData.filter((r) => r.status === "pending").length;
-
-  const activeUsers = users.filter((u) => u.isActive).length;
-
-
-  // ====== RECENT USERS: sort theo joined/createdAt rồi lấy 5 ======
   const recentUsers = useMemo(() => {
     const toTime = (u) => {
-      // ưu tiên field ngày: joined -> createdAt -> created_at
       const d = u.joined || u.createdAt || u.created_at;
       const t = d ? new Date(d).getTime() : 0;
       return Number.isFinite(t) ? t : 0;
     };
-
     return [...users].sort((a, b) => toTime(b) - toTime(a)).slice(0, 5);
   }, [users]);
 
-  const recentTransactions = transactionsData.slice(0, 5);
-
-  const totalUsersFromApi = dashboardData?.totalUsers;
-  const revenueFromApi = dashboardData?.totalRevenue;
-
-  // mentors/students vẫn lấy từ users list như mày đang làm (vì dashboard api không trả)
   const stats = [
-    {
-      label: "Total Users",
-      value: totalUsersFromApi ?? totalUsers,   // <- ưu tiên API, fallback users.length
-      change: "+12%",
-      trend: "up",
-      icon: HiUsers,
-    },
-    {
-      label: "Mentors",
-      value: mentors, // <- giữ nguyên như UI cũ
-      change: "+8%",
-      trend: "up",
-      icon: HiAcademicCap,
-    },
-    {
-      label: "Students",
-      value: students, // <- giữ nguyên như UI cũ
-      change: "+15%",
-      trend: "up",
-      icon: HiUserGroup,
-    },
-    {
-      label: "Revenue",
-      value: `${(((revenueFromApi ?? totalRevenue) || 0) / 1000000).toFixed(1)}M`,
-      change: "+22%",
-      trend: "up",
-      icon: HiCurrencyDollar,
-    },
+    { label: "Total Users", value: totalUsers, icon: HiUsers, onClick: () => navigate("/admin/users") },
+    { label: "Mentors", value: mentors, icon: HiAcademicCap, onClick: () => navigate("/admin/users") },
+    { label: "Students", value: students, icon: HiUserGroup, onClick: () => navigate("/admin/users") },
+    { label: "Revenue", value: `${((totalRevenue || 0) / 1000000).toFixed(1)}M đ`, icon: HiCurrencyDollar, onClick: () => navigate("/admin/transactions") },
   ];
 
-
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat("vi-VN").format(amount) + "đ";
+    new Intl.NumberFormat("vi-VN").format(amount) + " đ";
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -145,25 +108,22 @@ const Dashboard = () => {
     });
   };
 
-  const getStatusColor = (status) => {
+  const getStatusStyle = (status) => {
     const s = String(status).toLowerCase();
-    const colors = {
-      active:
-        "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400",
-      inactive:
-        "text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400",
-      pending:
-        "text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400",
-      suspended:
-        "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
-      completed:
-        "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400",
-      failed: "text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400",
+    const styles = {
+      active: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      inactive: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
+      pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      approved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      failed: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
     };
-    return colors[s] || colors.inactive;
+    return styles[s] || styles.inactive;
   };
 
   const getTransactionTypeColor = (type) => {
+    const t = String(type).toLowerCase();
     const colors = {
       deposit: "text-emerald-600",
       withdraw: "text-red-600",
@@ -171,23 +131,40 @@ const Dashboard = () => {
       earning: "text-emerald-600",
       refund: "text-amber-600",
     };
-    return colors[type] || "text-neutral-600";
+    return colors[t] || "text-neutral-600";
   };
+
+  const isLoading = loadingUsers && loadingApplications;
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-neutral-200 dark:bg-neutral-700 rounded w-48"></div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 bg-neutral-200 dark:bg-neutral-700 rounded-xl"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-neutral-200 dark:bg-neutral-700 rounded-xl"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-neutral-200 dark:bg-neutral-700 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
-
-      {dashboardError && (
-        <div className="p-4 text-sm text-red-500">
-          {dashboardError}
-        </div>
-      )}
-
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
           Dashboard
         </h1>
-        <p className="text-neutral-500 dark:text-neutral-400 text-sm">
+        <p className="text-neutral-500 dark:text-neutral-400 mt-1">
           Overview of platform metrics and activity
         </p>
       </div>
@@ -197,15 +174,15 @@ const Dashboard = () => {
         {stats.map((stat, idx) => (
           <div
             key={idx}
-            className="p-5 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800"
+            className="p-5 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+            onClick={stat.onClick}
           >
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400">
                   {stat.label}
                 </p>
-                {/* ✅ render đúng value của từng card */}
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white mt-1">
+                <p className="text-2xl font-semibold text-neutral-900 dark:text-white mt-1">
                   {stat.value}
                 </p>
               </div>
@@ -213,51 +190,98 @@ const Dashboard = () => {
                 <stat.icon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
               </div>
             </div>
-
-            <div className="flex items-center gap-1 mt-3">
-              {stat.trend === "up" ? (
-                <HiArrowUp className="w-4 h-4 text-emerald-500" />
-              ) : (
-                <HiArrowDown className="w-4 h-4 text-red-500" />
-              )}
-              <span
-                className={`text-sm font-medium ${stat.trend === "up" ? "text-emerald-500" : "text-red-500"
-                  }`}
-              >
-                {stat.change}
-              </span>
-              <span className="text-sm text-neutral-500 ml-1">
-                vs last month
-              </span>
-            </div>
           </div>
         ))}
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
-          {/* ✅ activeUsers thật */}
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white">
-            {activeUsers}
-          </p>
-          <p className="text-sm text-neutral-500">Active Users</p>
-
+        <div
+          className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/admin/users")}
+        >
+          <p className="text-3xl font-semibold text-neutral-900 dark:text-white">{totalUsers}</p>
+          <p className="text-sm text-neutral-500 mt-1">Total Users</p>
         </div>
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
-          {/* mock pendingReports */}
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white">
-            {dashboardData?.reportsCount ?? 0}
-          </p>
-          <p className="text-sm text-neutral-500">Pending Reports</p>
-
+        <div
+          className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/admin/mentor-applications")}
+        >
+          <p className="text-3xl font-semibold text-amber-600 dark:text-amber-400">{pendingAppsCount}</p>
+          <p className="text-sm text-neutral-500 mt-1">Pending Applications</p>
         </div>
-        <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center">
-          {/* mock pendingTransactions */}
-          <p className="text-3xl font-bold text-neutral-900 dark:text-white">
-            {transactionsData.filter((t) => t.status === "pending").length}
-          </p>
-          <p className="text-sm text-neutral-500">Pending Transactions</p>
+        <div
+          className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 text-center cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/admin/reports")}
+        >
+          <p className="text-3xl font-semibold text-neutral-900 dark:text-white">{dashboardData?.reportsCount ?? 0}</p>
+          <p className="text-sm text-neutral-500 mt-1">Pending Reports</p>
+        </div>
+      </div>
+
+      {/* Pending Mentor Applications */}
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="font-semibold text-neutral-900 dark:text-white">
+            Pending Mentor Applications
+          </h2>
+          <button
+            onClick={() => navigate("/admin/mentor-applications")}
+            className="text-sm text-blue-600 hover:text-blue-700"
+          >
+            View all
+          </button>
+        </div>
+        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          {loadingApplications ? (
+            <div className="px-5 py-8 text-center text-sm text-neutral-500">Loading...</div>
+          ) : pendingApplications.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              No pending applications
+            </div>
+          ) : (
+            pendingApplications.slice(0, 5).map((app) => (
+              <div
+                key={app.userId || app.id}
+                className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
+                onClick={() => navigate("/admin/mentor-applications")}
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={
+                      normalizeAvatarUrl(app.avatarUrl) ||
+                      buildDefaultAvatarUrl({ id: app.userId, email: app.email, fullName: app.fullName })
+                    }
+                    alt={app.fullName || app.email}
+                    className="w-9 h-9 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = buildDefaultAvatarUrl({
+                        id: app.userId, email: app.email, fullName: app.fullName
+                      });
+                    }}
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      {app.fullName || "(no name)"}
+                    </p>
+                    <p className="text-xs text-neutral-500">{app.email}</p>
+                  </div>
+                </div>
+                <div className="text-right flex items-center gap-3">
+                  {app.aiScore != null && (
+                    <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
+                      AI: {app.aiScore}
+                    </span>
+                  )}
+                  <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusStyle("pending")}`}>
+                    Pending
+                  </span>
+                  <p className="text-xs text-neutral-500">{formatDate(app.appliedAt || app.createdAt)}</p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -265,43 +289,39 @@ const Dashboard = () => {
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Users */}
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
             <h2 className="font-semibold text-neutral-900 dark:text-white">
               Recent Users
             </h2>
+            <button
+              onClick={() => navigate("/admin/users")}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              View all
+            </button>
           </div>
 
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
             {loadingUsers ? (
-              <div className="px-5 py-6 text-sm text-neutral-500">Loading...</div>
+              <div className="px-5 py-8 text-center text-sm text-neutral-500">Loading...</div>
             ) : users.length === 0 ? (
-              <div className="px-5 py-6 text-sm text-neutral-500">No users</div>
+              <div className="px-5 py-8 text-center text-sm text-neutral-500">No users</div>
             ) : (
               recentUsers.map((user) => (
-
-                <div key={user.id} className="flex items-center justify-between px-5 py-3">
+                <div key={user.id} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                   <div className="flex items-center gap-3">
                     <img
                       src={
                         normalizeAvatarUrl(user.avatarUrl) ||
-                        buildDefaultAvatarUrl({
-                          id: user.id,
-                          email: user.email,
-                          fullName: user.fullName
-                        })
+                        buildDefaultAvatarUrl({ id: user.id, email: user.email, fullName: user.fullName })
                       }
                       alt={user.fullName || user.email}
                       className="w-9 h-9 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.onerror = null;
-                        e.currentTarget.src = buildDefaultAvatarUrl({
-                          id: user.id,
-                          email: user.email,
-                          fullName: user.fullName
-                        });
+                        e.currentTarget.src = buildDefaultAvatarUrl({ id: user.id, email: user.email, fullName: user.fullName });
                       }}
                     />
-
                     <div>
                       <p className="text-sm font-medium text-neutral-900 dark:text-white">
                         {user.fullName || "(no name)"}
@@ -309,73 +329,62 @@ const Dashboard = () => {
                       <p className="text-xs text-neutral-500">{user.email}</p>
                     </div>
                   </div>
-
                   <div className="text-right">
-                    <span
-                      className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${user.isActive ? getStatusColor("active") : getStatusColor("inactive")
-                        }`}
-                    >
-                      {user.isActive ? "active" : "inactive"}
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${user.isActive ? getStatusStyle("active") : getStatusStyle("inactive")}`}>
+                      {user.isActive ? "Active" : "Inactive"}
                     </span>
                     <p className="text-xs text-neutral-500 mt-1">{formatDate(user.createdAt)}</p>
                   </div>
                 </div>
               ))
             )}
-
           </div>
-
-          <a
-            href="/admin/users"
-            className="block text-center py-3 text-sm text-blue-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-800"
-          >
-            View All Users
-          </a>
         </div>
 
         {/* Recent Transactions */}
         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
             <h2 className="font-semibold text-neutral-900 dark:text-white">
               Recent Transactions
             </h2>
+            <button
+              onClick={() => navigate("/admin/transactions")}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              View all
+            </button>
           </div>
           <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-            {recentTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="flex items-center justify-between px-5 py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                    {tx.userName}
-                  </p>
-                  <p className="text-xs text-neutral-500 capitalize">
-                    {tx.type} • {tx.method}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-medium ${getTransactionTypeColor(tx.type)}`}>
-                    {tx.type === "withdraw" || tx.type === "payment" ? "-" : "+"}
-                    {formatCurrency(tx.amount)}
-                  </p>
-                  <span
-                    className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(
-                      tx.status
-                    )}`}
-                  >
-                    {tx.status}
-                  </span>
-                </div>
+            {loadingTransactions ? (
+              <div className="px-5 py-8 text-center text-sm text-neutral-500">Loading...</div>
+            ) : recentTransactions.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                No transactions yet
               </div>
-            ))}
+            ) : (
+              recentTransactions.slice(0, 5).map((tx) => (
+                <div key={tx.id} className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                  <div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                      {tx.userName || tx.userFullName || "User"}
+                    </p>
+                    <p className="text-xs text-neutral-500 capitalize">
+                      {tx.type} {tx.method ? `• ${tx.method}` : ""} • {formatDate(tx.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`text-sm font-medium ${getTransactionTypeColor(tx.type)}`}>
+                      {String(tx.type).toLowerCase() === "withdraw" || String(tx.type).toLowerCase() === "payment" ? "-" : "+"}
+                      {formatCurrency(tx.amount)}
+                    </p>
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusStyle(tx.status)}`}>
+                      {tx.status}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <a
-            href="/admin/transactions"
-            className="block text-center py-3 text-sm text-blue-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-800"
-          >
-            View All Transactions
-          </a>
         </div>
       </div>
     </div>

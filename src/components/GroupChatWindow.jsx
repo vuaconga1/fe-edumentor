@@ -85,12 +85,12 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
             setNewMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
-            toast.error('Không thể gửi tin nhắn');
+            toast.error('Failed to send message');
         }
     };
 
     if (loading) {
-        return <div className="p-4">Đang tải...</div>;
+        return <div className="p-4">Loading...</div>;
     }
 
     return (
@@ -101,7 +101,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                     <h2 className="font-bold text-lg">{group?.name}</h2>
                     <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Users size={14} />
-                        <span>{group?.memberCount} thành viên</span>
+                        <span>{group?.memberCount} members</span>
                     </div>
                 </div>
                 {onClose && (
@@ -134,7 +134,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                 {showImagePicker && (
                     <div className="absolute bottom-full left-0 right-0 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 shadow-lg p-4 z-10">
                         <div className="flex justify-between items-center mb-3">
-                            <h3 className="font-semibold text-neutral-900 dark:text-white">Gửi ảnh</h3>
+                            <h3 className="font-semibold text-neutral-900 dark:text-white">Send image</h3>
                             <button
                                 onClick={() => {
                                     setShowImagePicker(false);
@@ -162,7 +162,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                                 className="w-full py-8 border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
                             >
                                 <ImageIcon className="w-8 h-8 mx-auto mb-2 text-neutral-400" />
-                                <p className="text-sm text-neutral-600 dark:text-neutral-400">Click để chọn ảnh</p>
+                                <p className="text-sm text-neutral-600 dark:text-neutral-400">Click to select image</p>
                             </button>
                         ) : (
                             <div className="space-y-3">
@@ -182,7 +182,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                                     type="text"
                                     value={imageCaption}
                                     onChange={(e) => setImageCaption(e.target.value)}
-                                    placeholder="Thêm chú thích (không bắt buộc)..."
+                                    placeholder="Add caption (optional)..."
                                     className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700"
                                 />
                                 <button
@@ -197,7 +197,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                                     }}
                                     className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                 >
-                                    Gửi ảnh
+                                    Send image
                                 </button>
                             </div>
                         )}
@@ -217,7 +217,7 @@ export default function GroupChatWindow({ groupId, onClose, onSendImage, current
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        placeholder="Nhập tin nhắn..."
+                        placeholder="Type a message..."
                         className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-neutral-800 dark:border-neutral-700"
                     />
                     <button

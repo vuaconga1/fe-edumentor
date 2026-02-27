@@ -23,7 +23,7 @@ const useScrollAnimation = () => {
 const TermsPage = () => {
   const [heroRef, heroVisible] = useScrollAnimation();
   const [activeSection, setActiveSection] = useState(null);
-  const lastUpdated = 'January 1, 2026';
+  const lastUpdated = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const sections = [
     {

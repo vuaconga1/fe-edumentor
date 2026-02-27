@@ -36,7 +36,7 @@ const FAQPage = () => {
     },
     {
       q: 'Is EduMentor free to use?',
-      a: 'We offer a free Starter plan that lets you browse mentor profiles and access community features. For one-on-one mentoring sessions, you can choose from our affordable pricing plans starting at $19 per session, or subscribe to our Pro plan for better value.'
+      a: 'We offer a free Starter plan that lets you browse mentor profiles and access community features. For one-on-one mentoring sessions, pricing is set by each mentor based on their expertise and experience. You can deposit funds into your wallet and pay per session.'
     },
     {
       q: 'How are mentors verified?',
@@ -56,7 +56,7 @@ const FAQPage = () => {
     },
     {
       q: 'What payment methods do you accept?',
-      a: 'We accept all major credit cards (Visa, MasterCard, American Express), PayPal, and bank transfers. All payments are processed securely through our trusted payment partners.'
+      a: 'We accept MoMo, VNPay, and Bank Transfer (VietQR). All payments are processed securely through our wallet system with escrow protection.'
     },
     {
       q: 'What if I\'m not satisfied with a session?',

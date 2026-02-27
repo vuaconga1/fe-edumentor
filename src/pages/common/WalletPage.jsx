@@ -50,16 +50,22 @@ const WalletPage = () => {
   };
 
   const getTransactionIcon = (type) => {
-    switch (String(type).toLowerCase()) {
+    const typeMap = {
+      0: "topup", 1: "withdraw", 2: "escrowhold", 3: "escrowrelease",
+      4: "escrowrefund", 5: "servicefee", 6: "adjustment"
+    };
+    const t = String(type).toLowerCase();
+    const normalized = typeMap[type] || typeMap[t] || t;
+    switch (normalized) {
       case "topup":
         return ArrowDownLeft;
       case "payment":
-        return ArrowUpRight;
-      case "escrow_hold":
-      case "escrow":
-        return Lock;
       case "withdraw":
         return ArrowUpRight;
+      case "escrowhold":
+      case "escrowrelease":
+      case "escrowrefund":
+        return Lock;
       default:
         return Clock;
     }
@@ -93,23 +99,45 @@ const WalletPage = () => {
   useEffect(() => {
     loadWallet();
   }, []);
+  // Normalize transaction type — backend may return int enum or string
+  const normalizeType = (type) => {
+    const typeMap = {
+      0: "topup", 1: "withdraw", 2: "escrowhold", 3: "escrowrelease",
+      4: "escrowrefund", 5: "servicefee", 6: "adjustment",
+      "topup": "topup", "withdraw": "withdraw",
+      "escrowhold": "escrowhold", "escrow_hold": "escrowhold",
+      "escrowrelease": "escrowrelease", "escrow_release": "escrowrelease",
+      "escrowrefund": "escrowrefund", "escrow_refund": "escrowrefund",
+      "servicefee": "servicefee", "service_fee": "servicefee",
+      "adjustment": "adjustment", "payment": "payment",
+    };
+    const key = String(type).toLowerCase().replace(/\s/g, "");
+    return typeMap[key] || typeMap[type] || key;
+  };
+
+  const isDebitType = (type) => {
+    const t = normalizeType(type);
+    return ["withdraw", "payment", "escrowhold", "servicefee"].includes(t);
+  };
 
   const filteredTransactions =
     activeFilter === "all"
       ? transactions
-      : transactions.filter(
-        (t) =>
-          String(t.type || "")
-            .toLowerCase()
-            .replace(" ", "_") === activeFilter
-      );
+      : transactions.filter((t) => {
+        const nt = normalizeType(t.type);
+        if (activeFilter === "topup") return nt === "topup";
+        if (activeFilter === "withdraw") return nt === "withdraw";
+        if (activeFilter === "payment") return nt === "payment";
+        if (activeFilter === "escrow") return nt.startsWith("escrow");
+        return false;
+      });
 
   const filters = [
     { id: "all", label: "All" },
     { id: "topup", label: "Deposits" },
     { id: "payment", label: "Payments" },
     { id: "withdraw", label: "Withdrawals" },
-    { id: "escrow_hold", label: "Escrow" },
+    { id: "escrow", label: "Escrow" },
   ];
 
   if (loading) {
@@ -300,6 +328,33 @@ const WalletPage = () => {
               filteredTransactions.map((tx) => {
                 const Icon = getTransactionIcon(tx.type);
                 const amount = tx.amount ?? 0;
+                const isDebit = isDebitType(tx.type);
+
+                // Normalize status: backend returns int (0=Pending,1=Success,2=Failed) or string
+                const rawStatus = tx.status ?? tx.statusDisplay ?? "";
+                const statusStr = String(rawStatus).toLowerCase();
+                const isSuccess = statusStr === "1" || statusStr === "success";
+                const isPending = statusStr === "0" || statusStr === "pending";
+                const isFailed = statusStr === "2" || statusStr === "failed";
+
+                // Color logic: green only for successful credit, red for debit, gray for pending/failed
+                let amountColor = "text-green-600 dark:text-green-400";
+                let iconBg = "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400";
+                let prefix = "+";
+
+                if (isDebit && isSuccess) {
+                  amountColor = "text-red-600 dark:text-red-400";
+                  iconBg = "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400";
+                  prefix = "-";
+                } else if (isPending) {
+                  amountColor = "text-amber-500 dark:text-amber-400";
+                  iconBg = "bg-amber-50 dark:bg-amber-900/30 text-amber-500 dark:text-amber-400";
+                  prefix = isDebit ? "-" : "+";
+                } else if (isFailed) {
+                  amountColor = "text-neutral-400 dark:text-neutral-500 line-through";
+                  iconBg = "bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500";
+                  prefix = isDebit ? "-" : "+";
+                }
 
                 return (
                   <button
@@ -308,27 +363,34 @@ const WalletPage = () => {
                     className="w-full flex items-center justify-between p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-left transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
                         <Icon size={18} />
                       </div>
                       <div>
                         <p className="font-medium text-sm text-neutral-900 dark:text-white">
-                          {tx.title || tx.type}
+                          {tx.description || tx.title || tx.type}
                         </p>
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {formatTime(tx.createdAt || tx.time)}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {formatTime(tx.createdAt || tx.time)}
+                          </span>
+                          {isPending && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded">
+                              Pending
+                            </span>
+                          )}
+                          {isFailed && (
+                            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 rounded">
+                              Failed
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <p
-                        className={`font-semibold text-sm ${amount > 0
-                          ? "text-blue-600 dark:text-blue-400"
-                          : "text-neutral-900 dark:text-white"
-                          }`}
-                      >
-                        {amount > 0 ? "+" : "-"}
+                      <p className={`font-semibold text-sm ${amountColor}`}>
+                        {prefix}
                         {formatCurrency(Math.abs(amount))}
                       </p>
                       <ChevronRight size={16} className="text-neutral-400 dark:text-neutral-500" />

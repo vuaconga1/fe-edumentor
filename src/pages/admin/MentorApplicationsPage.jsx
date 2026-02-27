@@ -28,6 +28,7 @@ export default function MentorApplicationsPage() {
     const [rejectOpen, setRejectOpen] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
     const [processing, setProcessing] = useState(false);
+    const [reEvaluating, setReEvaluating] = useState(false);
 
     // History/Log states
     const [historyOpen, setHistoryOpen] = useState(false);
@@ -65,9 +66,17 @@ export default function MentorApplicationsPage() {
         fetchApplications();
     }, [pageNumber, status]);
 
-    const openDetail = (app) => {
-        setSelectedApp(app);
+    const openDetail = async (app) => {
+        setSelectedApp(app); // show immediately with list data
         setDetailOpen(true);
+        // Then fetch full detail (with AI analysis fields)
+        try {
+            const res = await adminApi.getMentorApplicationDetail(app.userId);
+            const detail = res?.data?.data ?? res?.data;
+            if (detail) setSelectedApp(detail);
+        } catch (err) {
+            console.error("Failed to load application detail:", err);
+        }
     };
 
     const handleApprove = async (userId) => {
@@ -91,6 +100,27 @@ export default function MentorApplicationsPage() {
         setSelectedApp(app);
         setRejectReason("");
         setRejectOpen(true);
+    };
+
+    const handleReEvaluate = async (userId) => {
+        const ok = window.confirm("Run AI analysis on this application? This will use Gemini API quota.");
+        if (!ok) return;
+
+        setReEvaluating(true);
+        setApiError("");
+        try {
+            const res = await adminApi.reEvaluateMentorApplication(userId);
+            const updatedApp = res?.data?.data;
+            if (updatedApp) {
+                setSelectedApp(updatedApp);
+            }
+            await fetchApplications();
+            alert(res?.data?.message || "AI re-evaluation completed!");
+        } catch (err) {
+            setApiError(err?.response?.data?.message || "Failed to re-evaluate application");
+        } finally {
+            setReEvaluating(false);
+        }
     };
 
     // History functions
@@ -131,7 +161,8 @@ export default function MentorApplicationsPage() {
             1: "Approved",
             2: "Rejected",
             3: "Auto Approved",
-            4: "Auto Rejected"
+            4: "Auto Rejected",
+            5: "AI Re-evaluated"
         };
         return labels[action] ?? action;
     };
@@ -142,7 +173,8 @@ export default function MentorApplicationsPage() {
             1: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
             2: "text-red-600 bg-red-50 dark:bg-red-900/20",
             3: "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
-            4: "text-red-600 bg-red-50 dark:bg-red-900/20"
+            4: "text-red-600 bg-red-50 dark:bg-red-900/20",
+            5: "text-purple-600 bg-purple-50 dark:bg-purple-900/20"
         };
         return colors[action] ?? colors[0];
     };
@@ -482,10 +514,10 @@ export default function MentorApplicationsPage() {
             {/* Detail Modal */}
             {detailOpen && selectedApp && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-                    <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800 shadow-xl max-h-[90vh] overflow-y-auto">
                         <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-                            <h3 className="font-bold text-neutral-900 dark:text-white">Application Details</h3>
-                            <button onClick={() => setDetailOpen(false)} className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                            <h3 className="font-semibold text-neutral-900 dark:text-white">Application Details</h3>
+                            <button onClick={() => setDetailOpen(false)} className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
                                 <HiX className="w-5 h-5 text-neutral-500" />
                             </button>
                         </div>
@@ -533,7 +565,7 @@ export default function MentorApplicationsPage() {
                                     <p className="text-xs text-neutral-500 mb-2">Categories</p>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedApp.categories.map((cat, idx) => (
-                                            <span key={idx} className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full">
+                                            <span key={idx} className="px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 rounded-md">
                                                 {cat.name || cat}
                                             </span>
                                         ))}
@@ -547,7 +579,7 @@ export default function MentorApplicationsPage() {
                                     <p className="text-xs text-neutral-500 mb-2">Hashtags / Skills</p>
                                     <div className="flex flex-wrap gap-2">
                                         {selectedApp.hashtags.map((tag, idx) => (
-                                            <span key={idx} className="px-3 py-1 text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full">
+                                            <span key={idx} className="px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 rounded-md">
                                                 #{tag.name || tag}
                                             </span>
                                         ))}
@@ -601,10 +633,7 @@ export default function MentorApplicationsPage() {
                             {selectedApp.isAiReviewed && (
                                 <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                                        </svg>
-                                        <h4 className="font-semibold text-neutral-900 dark:text-white">🤖 AI Analysis</h4>
+                                        <h4 className="text-sm font-semibold text-neutral-900 dark:text-white">AI Analysis</h4>
                                         {selectedApp.aiModelVersion && (
                                             <span className="text-xs text-neutral-400">({selectedApp.aiModelVersion})</span>
                                         )}
@@ -612,22 +641,22 @@ export default function MentorApplicationsPage() {
 
                                     {/* Confidence Score */}
                                     {selectedApp.aiConfidenceScore != null && (
-                                        <div className="mb-4">
+                                        <div className="mb-3">
                                             <div className="flex items-center justify-between mb-1">
                                                 <span className="text-xs text-neutral-500">Confidence Score</span>
-                                                <span className={`text-sm font-bold ${
+                                                <span className={`text-sm font-semibold ${
                                                     selectedApp.aiConfidenceScore >= 80 ? 'text-emerald-600' :
-                                                    selectedApp.aiConfidenceScore >= 40 ? 'text-amber-600' :
+                                                    selectedApp.aiConfidenceScore >= 50 ? 'text-amber-600' :
                                                     'text-red-600'
                                                 }`}>
                                                     {selectedApp.aiConfidenceScore}%
                                                 </span>
                                             </div>
-                                            <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2.5">
+                                            <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
                                                 <div 
-                                                    className={`h-2.5 rounded-full transition-all ${
+                                                    className={`h-2 rounded-full transition-all ${
                                                         selectedApp.aiConfidenceScore >= 80 ? 'bg-emerald-500' :
-                                                        selectedApp.aiConfidenceScore >= 40 ? 'bg-amber-500' :
+                                                        selectedApp.aiConfidenceScore >= 50 ? 'bg-amber-500' :
                                                         'bg-red-500'
                                                     }`}
                                                     style={{ width: `${selectedApp.aiConfidenceScore}%` }}
@@ -638,41 +667,38 @@ export default function MentorApplicationsPage() {
 
                                     {/* Recommended Action */}
                                     {selectedApp.aiRecommendedAction && (
-                                        <div className="mb-4">
-                                            <span className="text-xs text-neutral-500 block mb-1">AI Recommendation</span>
-                                            <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
+                                        <div className="mb-3">
+                                            <span className="text-xs text-neutral-500 block mb-1">Recommendation</span>
+                                            <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
                                                 selectedApp.aiRecommendedAction === 'AUTO_APPROVE' 
-                                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
                                                 selectedApp.aiRecommendedAction === 'AUTO_REJECT'
-                                                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                    ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                                                    'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                             }`}>
-                                                {selectedApp.aiRecommendedAction === 'AUTO_APPROVE' ? '✓ Auto Approved' :
-                                                 selectedApp.aiRecommendedAction === 'AUTO_REJECT' ? '✗ Auto Rejected' :
-                                                 '⏳ Manual Review Required'}
+                                                {selectedApp.aiRecommendedAction === 'AUTO_APPROVE' ? 'Auto Approve' :
+                                                 selectedApp.aiRecommendedAction === 'AUTO_REJECT' ? 'Auto Reject' :
+                                                 'Manual Review'}
                                             </span>
                                         </div>
                                     )}
 
                                     {/* AI Reasoning */}
                                     {selectedApp.aiReasoning && (
-                                        <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                                            <p className="text-xs text-purple-600 dark:text-purple-400 font-medium mb-1">AI Reasoning</p>
-                                            <p className="text-sm text-purple-800 dark:text-purple-300">{selectedApp.aiReasoning}</p>
+                                        <div className="mb-3 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                                            <p className="text-xs text-neutral-500 mb-1">Reasoning</p>
+                                            <p className="text-sm text-neutral-700 dark:text-neutral-300">{selectedApp.aiReasoning}</p>
                                         </div>
                                     )}
 
                                     {/* Key Points */}
                                     {selectedApp.aiKeyPoints && selectedApp.aiKeyPoints.length > 0 && (
-                                        <div className="mb-4">
-                                            <p className="text-xs text-neutral-500 mb-2">✅ Key Strengths</p>
+                                        <div className="mb-3">
+                                            <p className="text-xs text-neutral-500 mb-1.5">Strengths</p>
                                             <ul className="space-y-1">
                                                 {selectedApp.aiKeyPoints.map((point, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
-                                                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <span>{point}</span>
+                                                    <li key={idx} className="text-sm text-neutral-700 dark:text-neutral-300 pl-3 border-l-2 border-emerald-400">
+                                                        {point}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -681,15 +707,12 @@ export default function MentorApplicationsPage() {
 
                                     {/* Red Flags */}
                                     {selectedApp.aiRedFlags && selectedApp.aiRedFlags.length > 0 && (
-                                        <div className="mb-4">
-                                            <p className="text-xs text-neutral-500 mb-2">⚠️ Concerns / Red Flags</p>
+                                        <div className="mb-3">
+                                            <p className="text-xs text-neutral-500 mb-1.5">Concerns</p>
                                             <ul className="space-y-1">
                                                 {selectedApp.aiRedFlags.map((flag, idx) => (
-                                                    <li key={idx} className="flex items-start gap-2 text-sm text-red-700 dark:text-red-400">
-                                                        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <span>{flag}</span>
+                                                    <li key={idx} className="text-sm text-neutral-700 dark:text-neutral-300 pl-3 border-l-2 border-red-400">
+                                                        {flag}
                                                     </li>
                                                 ))}
                                             </ul>
@@ -699,23 +722,43 @@ export default function MentorApplicationsPage() {
                             )}
                         </div>
 
-                        {(selectedApp.approvalStatus === "Pending" || selectedApp.approvalStatus === 0) && (
-                            <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex justify-end gap-3">
+                        {/* Action buttons section */}
+                        <div className="px-5 py-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-wrap justify-end gap-3">
+                            {/* Re-evaluate with AI — always available */}
+                            <button
+                                onClick={() => handleReEvaluate(selectedApp.userId)}
+                                disabled={reEvaluating || processing}
+                                className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {reEvaluating ? (
+                                    <>
+                                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                                        Analyzing...
+                                    </>
+                                ) : (
+                                    "Re-evaluate with AI"
+                                )}
+                            </button>
+
+                            {/* Approve/Reject — only for Pending */}
+                            {(selectedApp.approvalStatus === "Pending" || selectedApp.approvalStatus === 0) && (
+                                <>
                                 <button
                                     onClick={() => openReject(selectedApp)}
-                                    className="px-4 py-2 rounded-xl border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 hover:bg-red-50"
+                                    className="px-4 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm font-medium"
                                 >
                                     Reject
                                 </button>
                                 <button
                                     onClick={() => handleApprove(selectedApp.userId)}
                                     disabled={processing}
-                                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-50"
+                                    className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium disabled:opacity-50"
                                 >
                                     {processing ? "Processing..." : "Approve"}
                                 </button>
-                            </div>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

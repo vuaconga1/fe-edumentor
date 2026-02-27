@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, MoreVertical, UserPlus, UserCheck, Flag, Send, FileText, Download } from 'lucide-react';
 import CommentSection from './CommentSection';
 import SendProposalModal from './SendProposalModal';
+import ReportPostModal from './ReportPostModal';
 import { getRoleName } from '../../utils/userRole';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl, normalizeFileUrl } from '../../utils/avatar';
 import { useAuth } from '../../context/AuthContext';
@@ -32,6 +33,7 @@ const PostCard = ({ post, onRefresh }) => {
   const [showComments, setShowComments] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [hasPendingProposal, setHasPendingProposal] = useState(false);
   const [checkingProposal, setCheckingProposal] = useState(false);
@@ -219,9 +221,17 @@ const PostCard = ({ post, onRefresh }) => {
           {isMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-neutral-900 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-800 z-20 animate-in fade-in zoom-in duration-100 origin-top-right overflow-hidden">
               <div className="py-1">
-                <button className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2">
-                  <Flag size={16} /> Report
-                </button>
+                {!isOwnPost && (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsReportModalOpen(true);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2"
+                  >
+                    <Flag size={16} /> Report
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -376,6 +386,13 @@ const PostCard = ({ post, onRefresh }) => {
         postTitle={title}
         authorName={author.name}
         postId={id}
+      />
+
+      {/* Report Post Modal */}
+      <ReportPostModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        post={post}
       />
     </div>
   );

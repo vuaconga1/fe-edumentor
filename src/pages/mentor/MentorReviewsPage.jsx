@@ -115,39 +115,37 @@ const MentorReviewsPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
-        <p className="text-neutral-500 dark:text-neutral-400">Loading reviews...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center">
+        <p className="text-gray-500 dark:text-neutral-400">Loading reviews...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-4 md:p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-600 dark:text-red-400">
-            {error}
-          </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-neutral-950 px-4 py-5 sm:px-6 sm:py-6">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-600 dark:text-red-400">
+          {error}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-950">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 space-y-5">
         {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
             My Reviews
           </h1>
-          <p className="text-neutral-500 dark:text-neutral-400">
+          <p className="text-gray-500 text-sm mt-0.5">
             See what students say about your mentoring
           </p>
         </div>
 
         {/* Review Summary */}
-        <div className="mb-8">
+        <div>
           <ReviewSummary
             averageRating={summary.averageRating}
             totalReviews={summary.totalReviews}
@@ -156,19 +154,21 @@ const MentorReviewsPage = () => {
         </div>
 
         {/* Reviews List */}
-        <div>
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-4">
-            Student Reviews ({reviews.length})
-          </h2>
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-neutral-800">
+            <h2 className="font-medium text-gray-800 dark:text-white">
+              Student Reviews ({reviews.length})
+            </h2>
+          </div>
 
           {reviews.length === 0 ? (
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-12 text-center">
-              <p className="text-neutral-500 dark:text-neutral-400">
+            <div className="p-8 sm:p-12 text-center">
+              <p className="text-gray-500 dark:text-neutral-400">
                 No reviews yet. Complete some mentoring sessions to receive reviews!
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="divide-y divide-gray-100 dark:divide-neutral-800">
               {reviews.map((review) => (
                 <ReviewCard
                   key={review.id}

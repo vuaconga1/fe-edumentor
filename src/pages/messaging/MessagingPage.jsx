@@ -10,25 +10,27 @@ import axiosClient from "../../api/axios";
 import { jwtDecode } from "jwt-decode";
 import { toast } from "react-toastify";
 import WorkActionConfirmModal from "../../components/messaging/WorkActionConfirmModal";
+import { refreshUnseenCount } from "../../hooks/useUnseenMessages";
 
 import {
   startChatHub,
+  stopChatHub,
   joinConversation,
   leaveConversation,
-  getOnlineUsers, // ✅ existing
+  getOnlineUsers,
   on,
   sendMessage as hubSendMessage,
-  markAsRead, // ✅ mark messages as read
+  markAsRead, 
   requestStartWork,
   requestPauseWork,
   requestEndWork,
-  requestCompleteOrder, // ✅ Added
+  requestCompleteOrder,
   respondWorkAction,
   joinGroupRoom,
   leaveGroupRoom,
   sendGroupMessage as hubSendGroupMessage,
-  markGroupAsRead, // ✅ mark group messages as read
-  isConnected, // ✅ Added
+  markGroupAsRead,
+  isConnected,
 } from "../../signalr/chatHub";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -120,9 +122,9 @@ const MessagingPage = () => {
           
           let formattedLastMessage = lastMsg;
           if (isImageUrl) {
-            formattedLastMessage = "📷 Ảnh";
+            formattedLastMessage = "Image";
           } else if (isFileUrl && !isImageUrl) {
-            formattedLastMessage = "📄 File";
+            formattedLastMessage = "File";
           }
           
           console.log(`[MessagingPage] Conversation ${c.id} unreadCount from API:`, c.unreadCount);
@@ -134,7 +136,7 @@ const MessagingPage = () => {
         });
         setConversations(conversations);
         
-        // ❌ KHÔNG join tất cả conversations ở đây vì server JoinConversation
+        // KHÔNG join tất cả conversations ở đây vì server JoinConversation
         // sẽ gọi MarkMessagesAsReadAsync → đánh dấu TẤT CẢ tin nhắn đã đọc.
         // Chỉ join khi user click vào conversation cụ thể (trong useEffect activeConversationId).
       } catch (e) {
@@ -177,6 +179,7 @@ const MessagingPage = () => {
     // ✅ Gọi markAsRead trên server để đánh dấu tin nhắn đã đọc
     try {
       markAsRead(id);
+      refreshUnseenCount(); // Update sidebar badge
     } catch (e) {
       console.error("markAsRead failed:", e);
     }
@@ -216,6 +219,7 @@ const MessagingPage = () => {
     // ✅ Gọi markGroupAsRead trên server để cập nhật LastReadAt
     try {
       markGroupAsRead(id);
+      refreshUnseenCount(); // Update sidebar badge
     } catch (e) {
       console.error("markGroupAsRead failed:", e);
     }
@@ -439,7 +443,7 @@ const MessagingPage = () => {
       // Message will be added via ReceiveGroupMessage event
     } catch (e) {
       console.error("Send group message failed", e);
-      toast.error("Không thể gửi tin nhắn");
+      toast.error("Failed to send message");
     }
   };
 
@@ -482,7 +486,7 @@ const MessagingPage = () => {
       setGroupMessages((prev) => [...prev, tempMessage]);
 
       // Optimistic update for groups list
-      const displayMessage = isImage ? "📷 Ảnh" : "📄 File";
+      const displayMessage = isImage ? "Image" : "File";
       setGroups((prev) => {
         const list = Array.isArray(prev) ? prev : [];
         return list.map((g) => {
@@ -537,7 +541,7 @@ const MessagingPage = () => {
       }
     } catch (error) {
       console.error("Send group file failed:", error);
-      toast.error(isImage ? "Không thể gửi ảnh" : "Không thể gửi file");
+      toast.error(isImage ? "Failed to send image" : "Failed to send file");
       
       // Remove temp message on error
       setGroupMessages((prev) => prev.filter((msg) => msg.id !== tempId));
@@ -560,20 +564,22 @@ const MessagingPage = () => {
 
     hubStartedRef.current = true;
 
-    // ✅ Fix StrictMode: dùng array + cancelled flag thay vì let variables
-    // Vì async function có thể chưa xong khi cleanup chạy → let variables vẫn undefined
+    // Store cleanup functions (not called in StrictMode to preserve listeners)
     const cleanupFns = [];
-    let cancelled = false;
+
+    // Handle browser/tab close and navigation to set user offline
+    const handlePageHide = () => {
+      stopChatHub().catch(() => {});
+    };
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handlePageHide);
 
     (async () => {
       try {
         await startChatHub(BASE_URL, token);
         
-        // ✅ Nếu effect đã bị cleanup (StrictMode), không đăng ký listeners
-        if (cancelled) {
-          hubStartedRef.current = false;
-          return;
-        }
+        // ✅ Nếu effect đã bị cleanup (StrictMode), vẫn tiếp tục đăng ký listeners
+        // vì hubStartedRef.current = true sẽ ngăn mount thứ hai chạy lại
         
         // Verify connection is actually ready before setting hubReady
         if (isConnected()) {
@@ -634,9 +640,9 @@ const MessagingPage = () => {
           // Format display message for preview - C# enum: Image=2, File=1
           let displayMessage = msg.content;
           if (type === 2) {
-            displayMessage = "📷 Ảnh";
+            displayMessage = "Image";
           } else if (type === 1) {
-            displayMessage = "📄 File";
+            displayMessage = "File";
           }
 
           // Tính toán bên ngoài setConversations (pure updater cho StrictMode)
@@ -665,7 +671,7 @@ const MessagingPage = () => {
                   ...c,
                   lastMessage: displayMessage,
                   lastMessageAt: msg.createdAt,
-                  lastMessageSenderName: isMine ? "Bạn" : msg.senderName || c.name,
+                  lastMessageSenderName: isMine ? "You" : msg.senderName || c.name,
                   unreadCount: newUnreadCount
                 };
               }
@@ -683,7 +689,13 @@ const MessagingPage = () => {
           });
 
           // only append to messages if current opened conversation
-          if (cid !== Number(activeConversationIdRef.current)) return;
+          if (cid !== Number(activeConversationIdRef.current)) {
+            // Refresh sidebar badge when new message arrives for inactive conversation
+            if (!mapped.isOwn) {
+              refreshUnseenCount();
+            }
+            return;
+          }
 
           setMessages((prev) => {
             const list = Array.isArray(prev) ? prev : [];
@@ -770,9 +782,9 @@ const MessagingPage = () => {
 
           let displayMessage = msg.content;
           if (messageType === 2) {
-            displayMessage = "📷 Ảnh";
+            displayMessage = "Image";
           } else if (messageType === 1) {
-            displayMessage = "📄 File";
+            displayMessage = "File";
           }
           
           // Tính toán bên ngoài setGroups (pure updater cho StrictMode)
@@ -799,7 +811,7 @@ const MessagingPage = () => {
                 return {
                   ...g,
                   lastMessage: displayMessage,
-                  lastMessageSender: isMine ? "Bạn" : msg.senderName,
+                  lastMessageSender: isMine ? "You" : msg.senderName,
                   lastMessageAt: msg.createdAt,
                   unreadCount: newUnreadCount
                 };
@@ -818,7 +830,13 @@ const MessagingPage = () => {
           });
           
           // Only append to messages if current opened group
-          if (gid !== Number(activeGroupIdRef.current)) return;
+          if (gid !== Number(activeGroupIdRef.current)) {
+            // Refresh sidebar badge when new message arrives for inactive group
+            if (!isMine) {
+              refreshUnseenCount();
+            }
+            return;
+          }
 
           // Convert relative URL to absolute for images/files
           const content = String(msg.content ?? "");
@@ -985,7 +1003,7 @@ const MessagingPage = () => {
           if (snapshot) setWorkSession({ ...snapshot });
 
           pendingSnapshotRef.current = null;
-          toast.error("Yêu cầu đã bị từ chối.");
+          toast.error("The request has been rejected.");
         }));
 
         // ===== WORK: Order Completed =====
@@ -1053,7 +1071,7 @@ const MessagingPage = () => {
             ? (rawType === 'Image' ? 2 : rawType === 'File' ? 1 : Number(rawType) || 0)
             : Number(rawType ?? 0);
           let displayMessage = msg?.content;
-          if (type === 2) displayMessage = "📷 Ảnh";
+          if (type === 2) displayMessage = "📷 Image";
           else if (type === 1) displayMessage = "📄 File";
 
           setConversations((prev) => {
@@ -1088,9 +1106,12 @@ const MessagingPage = () => {
     })();
 
     return () => {
-      cancelled = true;
-      cleanupFns.forEach(fn => fn?.());
-      hubStartedRef.current = false;
+      // Don't cleanup listeners - they need to persist for the hub to work
+      // Only remove window event listeners to prevent memory leaks
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handlePageHide);
+      // Don't stop hub in React cleanup - only stop via pagehide event
+      // This prevents StrictMode from disconnecting the hub
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
@@ -1159,6 +1180,7 @@ const MessagingPage = () => {
         // ✅ Gọi markAsRead để đảm bảo server đánh dấu đã đọc
         try {
           await markAsRead(activeConversationId);
+          refreshUnseenCount(); // Update sidebar badge
         } catch (e) {
           console.error("markAsRead after join failed:", e);
         }

@@ -97,16 +97,16 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 <DollarSign size={24} />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Đề xuất chi phí
+                Propose Cost
               </h3>
               <p className="text-sm text-neutral-500">
-                Nhập mức giá bạn muốn đề xuất cho mentor
+                Enter the price you want to propose to the mentor
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Mức giá (VND)
+                Price (VND)
               </label>
               <input
                 type="number"
@@ -114,7 +114,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, price: e.target.value })
                 }
-                placeholder="Ví dụ: 500,000"
+                placeholder="e.g., 500,000"
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none text-lg font-semibold"
                 autoFocus
               />
@@ -122,14 +122,14 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Ghi chú
+                Notes
               </label>
               <textarea
                 value={formData.desc}
                 onChange={(e) =>
                   setFormData({ ...formData, desc: e.target.value })
                 }
-                placeholder="Mô tả công việc..."
+                placeholder="Describe the work..."
                 rows={3}
                 className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-orange-500 focus:outline-none resize-none"
               />
@@ -145,17 +145,17 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                 <Calendar size={24} />
               </div>
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Đặt lịch hẹn
+                Schedule Meeting
               </h3>
               <p className="text-sm text-neutral-500">
-                Chọn thời gian phù hợp để trao đổi
+                Choose a suitable time for discussion
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  Ngày
+                  Date
                 </label>
                 <input
                   type="date"
@@ -167,7 +167,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                  Giờ
+                  Time
                 </label>
                 <input
                   type="time"
@@ -181,7 +181,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
 
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Nội dung buổi hẹn
+                Meeting Content
               </label>
               <input
                 type="text"
@@ -200,7 +200,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
           <div className="space-y-4">
             <div className="text-center mb-4">
               <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                Gửi hình ảnh hoặc file
+                Send image or file
               </h3>
             </div>
 
@@ -221,13 +221,13 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                     <UploadCloud size={32} />
                   </div>
                   <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Nhấn để tải file lên
+                    Click to upload file
                   </p>
                   <p className="text-xs text-neutral-400 mt-1">
-                    hoặc kéo thả vào đây
+                    or drag and drop here
                   </p>
                   <p className="text-[11px] text-neutral-400 mt-3">
-                    Ảnh (PNG/JPG/GIF) hoặc File (PDF/DOC/XLS)
+                    Image (PNG/JPG/GIF) or File (PDF/DOC/XLS)
                   </p>
                 </>
               ) : (
@@ -261,7 +261,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                         }}
                         className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700"
                       >
-                        Đổi ảnh
+                        Change
                       </button>
                       <button
                         type="button"
@@ -271,7 +271,7 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
                         }}
                         className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
                       >
-                        Xóa
+                        Remove
                       </button>
                     </div>
                   </div>
@@ -299,11 +299,11 @@ const ActionModals = ({ isOpen, onClose, type, onSubmit }) => {
             </div>
             <div>
               <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
-                Bắt đầu phiên làm việc?
+                Start work session?
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 px-4">
-                Hệ thống sẽ bắt đầu tính giờ làm việc. Hãy đảm bảo bạn đã trao
-                đổi kỹ với Mentor.
+                The system will start tracking work time. Make sure you have
+                discussed thoroughly with the Mentor.
               </p>
             </div>
           </div>

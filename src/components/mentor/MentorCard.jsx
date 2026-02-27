@@ -3,19 +3,18 @@ import { Star, Clock, Users, ChevronRight, MessageCircle } from 'lucide-react';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
 
 const MentorCard = ({ mentor }) => {
-  // Mock data if no prop is provided for demo
   const {
     id,
-    name = "John Doe",
-    title = "Senior Frontend Engineer @ Google",
+    name = "Unknown Mentor",
+    title = "",
     avatarUrl,
-    skills = ["React", "Node.js", "System Design"],
-    rating = 4.9,
-    reviews = 120,
-    price = 500000,
-    isOnline = true,
-    experience = "8 years",
-    totalSessions = 245
+    skills = [],
+    rating = 0,
+    reviews = 0,
+    price = 0,
+    isOnline = false,
+    experience = "",
+    totalSessions = 0
   } = mentor || {};
 
   // Normalize avatar URL or build default
@@ -80,7 +79,7 @@ const MentorCard = ({ mentor }) => {
         <div>
           <span className="block text-xs text-neutral-400">Hourly Rate</span>
           <span className="text-lg font-bold text-neutral-900 dark:text-white">
-            {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price / 24000)}
+            {price > 0 ? new Intl.NumberFormat('vi-VN').format(price) + ' VND' : 'Contact'}
           </span>
         </div>
         

@@ -53,9 +53,9 @@ const WorkSessionPinnedBar = ({
       <div className="flex items-center justify-between max-w-4xl mx-auto">
         <div className="flex items-center gap-3">
           <div className="text-sm font-medium">
-            {isRunning && "⏱️ Đang làm việc"}
-            {isPaused && "⏸️ Đã tạm dừng"}
-            {isPending && "⏳ Chờ xác nhận..."}
+            {isRunning && "⏱️ Working"}
+            {isPaused && "⏸️ Paused"}
+            {isPending && "⏳ Waiting for confirmation..."}
           </div>
           <div className="text-lg font-mono font-bold">
             {formatDuration(elapsedSeconds)}
@@ -72,7 +72,7 @@ const WorkSessionPinnedBar = ({
                          text-sm font-medium"
             >
               <Pause className="w-4 h-4" />
-              Tạm dừng
+              Pause
             </button>
           )}
 
@@ -85,7 +85,7 @@ const WorkSessionPinnedBar = ({
                          text-sm font-medium"
             >
               <Square className="w-4 h-4" />
-              Kết thúc
+              End
             </button>
           )}
         </div>

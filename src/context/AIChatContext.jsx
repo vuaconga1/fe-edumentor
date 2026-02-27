@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useRef } from 'react';
 import aiChatApi from '../api/aiChatApi';
 
 const AIChatContext = createContext(null);
@@ -10,6 +10,7 @@ export function AIChatProvider({ children }) {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const sendingRef = useRef(false); // Guard against double-sends
 
   // Open chat window
   const openChat = useCallback(() => {
@@ -30,7 +31,8 @@ export function AIChatProvider({ children }) {
 
   // Send a message
   const sendMessage = useCallback(async (content) => {
-    if (!content.trim() || isLoading) return;
+    if (!content.trim() || sendingRef.current) return;
+    sendingRef.current = true;
 
     setIsLoading(true);
     setError(null);
@@ -60,13 +62,14 @@ export function AIChatProvider({ children }) {
       });
     } catch (err) {
       console.error('Error sending message:', err);
-      setError('Không thể gửi tin nhắn. Vui lòng thử lại.');
+      setError('Failed to send message. Please try again.');
       // Remove temp message on error
       setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id));
     } finally {
       setIsLoading(false);
+      sendingRef.current = false;
     }
-  }, [currentSessionId, isLoading]);
+  }, [currentSessionId]);
 
   // Start a new chat session
   const newChat = useCallback(() => {
@@ -95,7 +98,7 @@ export function AIChatProvider({ children }) {
       setCurrentSessionId(sessionId);
     } catch (err) {
       console.error('Error loading session:', err);
-      setError('Không thể tải lịch sử chat.');
+      setError('Failed to load chat history.');
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +115,7 @@ export function AIChatProvider({ children }) {
       }
     } catch (err) {
       console.error('Error deleting session:', err);
-      setError('Không thể xóa cuộc hội thoại.');
+      setError('Failed to delete conversation.');
     }
   }, [currentSessionId, newChat]);
 

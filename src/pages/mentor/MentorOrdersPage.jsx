@@ -183,15 +183,15 @@ const MentorOrdersPage = () => {
   }, [orders]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-4 md:p-6 lg:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-950">
+      <div className="px-4 py-5 sm:px-6 sm:py-6 space-y-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 dark:text-white">
               Order History
             </h1>
-            <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-1">
+            <p className="text-gray-500 text-sm mt-0.5">
               View and manage your mentoring sessions
             </p>
           </div>
@@ -200,18 +200,18 @@ const MentorOrdersPage = () => {
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors min-w-[160px] justify-between"
+              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg text-sm font-medium text-gray-700 dark:text-neutral-300 hover:border-gray-300 dark:hover:border-neutral-700 transition-colors w-full sm:w-auto sm:min-w-[150px] justify-between"
             >
               <span>{statusConfig[filterStatus]?.label}</span>
               <HiChevronDown
-                className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${
+                className={`w-4 h-4 text-gray-500 dark:text-neutral-400 transition-transform duration-200 ${
                   isDropdownOpen ? "rotate-180" : ""
                 }`}
               />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-lg z-20 overflow-hidden">
+              <div className="absolute right-0 left-0 sm:left-auto top-full mt-1 sm:w-44 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-lg shadow-lg z-20 overflow-hidden">
                 {Object.keys(statusConfig).map((key) => (
                   <button
                     key={key}
@@ -219,10 +219,10 @@ const MentorOrdersPage = () => {
                       setFilterStatus(key);
                       setIsDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                       filterStatus === key
-                        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        ? "bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-white font-medium"
+                        : "text-gray-600 dark:text-neutral-400 hover:bg-gray-50 dark:hover:bg-neutral-800"
                     }`}
                   >
                     {statusConfig[key].label}
@@ -235,48 +235,48 @@ const MentorOrdersPage = () => {
 
         {/* Loading / Error */}
         {loading && (
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4 text-sm text-neutral-500">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-4 text-sm text-gray-500">
             Loading orders...
           </div>
         )}
         {!loading && loadError && (
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border-red-800 p-4 text-sm text-red-600">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-red-800 p-4 text-sm text-red-600">
             {loadError}
           </div>
         )}
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-            <p className="text-xs text-neutral-500 mb-1">Total Orders</p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-white">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-3 sm:p-4">
+            <p className="text-xs text-gray-500 mb-1">Total Orders</p>
+            <p className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
               {orders.length}
             </p>
           </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-            <p className="text-xs text-neutral-500 mb-1">Completed</p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-white">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-3 sm:p-4">
+            <p className="text-xs text-gray-500 mb-1">Completed</p>
+            <p className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
               {totalCompleted}
             </p>
           </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-            <p className="text-xs text-neutral-500 mb-1">Pending</p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-white">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-3 sm:p-4">
+            <p className="text-xs text-gray-500 mb-1">Pending</p>
+            <p className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
               {totalPending}
             </p>
           </div>
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
-            <p className="text-xs text-neutral-500 mb-1">Total Earned</p>
-            <p className="text-xl font-bold text-neutral-900 dark:text-white">
+          <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-3 sm:p-4">
+            <p className="text-xs text-gray-500 mb-1">Total Earned</p>
+            <p className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
               {formatCurrency(totalEarned)}đ
             </p>
           </div>
         </div>
 
         {/* Order List */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden">
           {/* Table Header - Desktop */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800 text-xs font-medium text-neutral-500 uppercase tracking-wide">
+          <div className="hidden lg:grid grid-cols-12 gap-4 px-4 py-3 bg-gray-50 dark:bg-neutral-800/50 border-b border-gray-200 dark:border-neutral-800 text-xs font-medium text-gray-500 uppercase tracking-wide">
             <div className="col-span-4">Student / Service</div>
             <div className="col-span-2">Date</div>
             <div className="col-span-2">Duration</div>
@@ -284,85 +284,125 @@ const MentorOrdersPage = () => {
             <div className="col-span-2 text-right">Status</div>
           </div>
 
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <div className="divide-y divide-gray-100 dark:divide-neutral-800">
             {!loading && filteredOrders.length > 0 ? (
               filteredOrders.map((order) => {
                 return (
                   <div
                     key={order.id}
                     onClick={() => handleOpenDetail(order)}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-3 md:gap-4 p-4 md:px-5 md:py-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/30 transition-colors cursor-pointer group"
+                    className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-neutral-800/30 transition-colors cursor-pointer"
                   >
-                    {/* Student & Service */}
-                    <div className="col-span-1 md:col-span-4 flex items-center gap-3">
-                      <img
-                        src={order.student.avatar}
-                        alt={order.student.name}
-                        className="w-10 h-10 rounded-full object-cover border-2 border-neutral-100 dark:border-neutral-800"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
-                          {order.student.name}
-                        </p>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                          {order.service}
-                        </p>
+                    {/* Desktop Layout */}
+                    <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
+                      {/* Student Info */}
+                      <div className="col-span-4 flex items-center gap-3">
+                        <img
+                          src={order.student.avatar}
+                          alt={order.student.name}
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = buildDefaultAvatarUrl({
+                              id: order.student.id,
+                              fullName: order.student.name
+                            });
+                          }}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 dark:text-white truncate text-sm">
+                            {order.student.name}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {order.service}
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Date */}
-                    <div className="col-span-1 md:col-span-2 flex items-center">
-                      <div>
-                        <p className="md:hidden text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                          Date
-                        </p>
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                      {/* Date */}
+                      <div className="col-span-2">
+                        <span className="text-sm text-gray-600 dark:text-neutral-400">
                           {formatDate(order.date)}
-                        </p>
+                        </span>
                       </div>
-                    </div>
 
-                    {/* Duration */}
-                    <div className="col-span-1 md:col-span-2 flex items-center">
-                      <div>
-                        <p className="md:hidden text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                          Duration
-                        </p>
-                        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                      {/* Duration */}
+                      <div className="col-span-2">
+                        <span className="text-sm text-gray-600 dark:text-neutral-400">
                           {order.duration}
-                        </p>
+                        </span>
                       </div>
-                    </div>
 
-                    {/* Amount */}
-                    <div className="col-span-1 md:col-span-2 flex items-center">
-                      <div>
-                        <p className="md:hidden text-xs text-neutral-500 dark:text-neutral-400 mb-0.5">
-                          Amount
-                        </p>
-                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {/* Amount */}
+                      <div className="col-span-2">
+                        <span className="text-sm font-medium text-gray-800 dark:text-white">
                           {formatCurrency(order.total)}đ
-                        </p>
+                        </span>
+                      </div>
+
+                      {/* Status */}
+                      <div className="col-span-2 flex items-center justify-end">
+                        <span className={`text-sm font-medium ${getStatusStyle(order.statusKey)}`}>
+                          {getStatusLabel(order.statusDisplay, order.statusKey)}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Status */}
-                    <div className="col-span-1 md:col-span-2 flex items-center md:justify-end">
-                      <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${getStatusStyle(
-                          order.statusKey
-                        )}`}
-                      >
-                        {getStatusLabel(order.statusDisplay, order.statusKey)}
-                      </span>
+                    {/* Mobile & Tablet Layout */}
+                    <div className="lg:hidden space-y-3">
+                      {/* Top row: Avatar + Info + Status */}
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={order.student.avatar}
+                          alt={order.student.name}
+                          className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = buildDefaultAvatarUrl({
+                              id: order.student.id,
+                              fullName: order.student.name
+                            });
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-medium text-gray-800 dark:text-white text-sm truncate">
+                                {order.student.name}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate mt-0.5">
+                                {order.service}
+                              </p>
+                            </div>
+                            <span className={`text-xs font-medium whitespace-nowrap ${getStatusStyle(order.statusKey)}`}>
+                              {getStatusLabel(order.statusDisplay, order.statusKey)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Bottom row: Details + Amount */}
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs text-gray-500 space-x-2">
+                          <span>{formatDate(order.date)}</span>
+                          <span>•</span>
+                          <span>{order.duration}</span>
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 dark:text-white">
+                          {formatCurrency(order.total)}đ
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
               })
-            ) : !loading && filteredOrders.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-neutral-500 dark:text-neutral-400">
+            ) : !loading ? (
+              <div className="flex flex-col items-center justify-center py-12 px-4">
+                <p className="text-gray-500 dark:text-neutral-400 mb-1 text-center">
                   No orders found
+                </p>
+                <p className="text-sm text-gray-400 text-center">
+                  Try changing the filter to see other orders
                 </p>
               </div>
             ) : null}
