@@ -12,22 +12,22 @@ function ChatMessage({ message }) {
       <div className={`
         flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
         ${isUser 
-          ? 'bg-indigo-600 text-white' 
-          : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300'}
+          ? 'bg-blue-600 text-white' 
+          : 'bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-neutral-300'}
       `}>
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
       
       {/* Message Bubble */}
       <div className={`
-        max-w-[75%] px-4 py-2.5 rounded-2xl
+        max-w-[75%] px-3.5 py-2.5 rounded-lg
         ${isUser 
-          ? 'bg-indigo-600 text-white rounded-br-md' 
-          : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-bl-md'}
+          ? 'bg-blue-600 text-white' 
+          : 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-neutral-100'}
       `}>
         <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
-        <p className={`text-xs mt-1 ${isUser ? 'text-indigo-200' : 'text-neutral-400'}`}>
-          {new Date(message.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+        <p className={`text-xs mt-1 ${isUser ? 'text-blue-200' : 'text-gray-400 dark:text-neutral-500'}`}>
+          {new Date(message.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
     </div>
@@ -38,10 +38,10 @@ function ChatMessage({ message }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
+      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gray-100 dark:bg-neutral-700 text-gray-500 dark:text-neutral-300">
         <Bot className="w-4 h-4" />
       </div>
-      <div className="bg-neutral-100 dark:bg-neutral-800 px-4 py-3 rounded-2xl rounded-bl-md">
+      <div className="bg-gray-100 dark:bg-neutral-800 px-3.5 py-3 rounded-lg">
         <div className="flex gap-1">
           <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -93,17 +93,17 @@ function ChatInput({ onSend, disabled }) {
         value={input}
         onChange={handleInput}
         onKeyDown={handleKeyDown}
-        placeholder="Nhập tin nhắn..."
+        placeholder="Type a message..."
         disabled={disabled}
         rows={1}
         className="
           flex-1 resize-none
-          px-4 py-2.5 rounded-xl
-          bg-neutral-100 dark:bg-neutral-800
-          text-neutral-900 dark:text-neutral-100
-          placeholder-neutral-400 dark:placeholder-neutral-500
-          border border-neutral-200 dark:border-neutral-700
-          focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400
+          px-3 py-2.5 rounded-lg
+          bg-white dark:bg-neutral-800
+          text-gray-900 dark:text-neutral-100
+          placeholder-gray-400 dark:placeholder-neutral-500
+          border border-gray-200 dark:border-neutral-700
+          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           disabled:opacity-50
           text-sm
         "
@@ -113,9 +113,8 @@ function ChatInput({ onSend, disabled }) {
         type="submit"
         disabled={!input.trim() || disabled}
         className="
-          p-2.5 rounded-xl
-          bg-indigo-600 hover:bg-indigo-700
-          dark:bg-indigo-500 dark:hover:bg-indigo-600
+          p-2.5 rounded-lg
+          bg-blue-600 hover:bg-blue-700
           text-white
           disabled:opacity-50 disabled:cursor-not-allowed
           transition-colors
@@ -141,10 +140,10 @@ function HistoryDropdown({ isOpen, onClose, sessions, onSelect, onDelete, curren
       <div className="fixed inset-0 z-10" onClick={onClose} />
       
       {/* Dropdown */}
-      <div className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-y-auto z-20 bg-white dark:bg-neutral-800 rounded-xl shadow-xl border border-neutral-200 dark:border-neutral-700">
+      <div className="absolute top-full right-0 mt-2 w-72 max-h-80 overflow-y-auto z-20 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-gray-200 dark:border-neutral-700">
         {sessions.length === 0 ? (
-          <div className="p-4 text-center text-neutral-500 dark:text-neutral-400 text-sm">
-            Chưa có lịch sử chat
+          <div className="p-4 text-center text-gray-500 dark:text-neutral-400 text-sm">
+            No chat history yet
           </div>
         ) : (
           <div className="py-2">
@@ -152,8 +151,8 @@ function HistoryDropdown({ isOpen, onClose, sessions, onSelect, onDelete, curren
               <div
                 key={session.sessionId}
                 className={`
-                  flex items-center gap-2 px-3 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer
-                  ${currentSessionId === session.sessionId ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''}
+                  flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer
+                  ${currentSessionId === session.sessionId ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
                 `}
               >
                 <div 
@@ -163,11 +162,11 @@ function HistoryDropdown({ isOpen, onClose, sessions, onSelect, onDelete, curren
                     onClose();
                   }}
                 >
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100 truncate">
-                    {session.firstMessage || 'Cuộc hội thoại mới'}
+                  <p className="text-sm font-medium text-gray-800 dark:text-neutral-100 truncate">
+                    {session.firstMessage || 'New conversation'}
                   </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {new Date(session.lastMessageAt).toLocaleDateString('vi-VN')} · {session.messageCount} tin nhắn
+                  <p className="text-xs text-gray-500 dark:text-neutral-400">
+                    {new Date(session.lastMessageAt).toLocaleDateString()} · {session.messageCount} messages
                   </p>
                 </div>
                 <button
@@ -175,7 +174,7 @@ function HistoryDropdown({ isOpen, onClose, sessions, onSelect, onDelete, curren
                     e.stopPropagation();
                     onDelete(session.sessionId);
                   }}
-                  className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -230,35 +229,36 @@ export default function ChatWindow() {
         w-[360px] md:w-[400px]
         h-[500px] md:h-[550px]
         bg-white dark:bg-neutral-900
-        rounded-2xl
-        shadow-2xl
+        rounded-lg
+        shadow-xl
         flex flex-col
         animate-slide-up
-        border border-neutral-200 dark:border-neutral-700
+        border border-gray-200 dark:border-neutral-800
       ">
         {/* Header */}
         <div className="
           flex items-center justify-between
           px-4 py-3
-          bg-gradient-to-r from-indigo-600 to-blue-600
-          rounded-t-2xl
+          bg-white dark:bg-neutral-900
+          border-b border-gray-200 dark:border-neutral-800
+          rounded-t-lg
         ">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <Bot className="w-6 h-6 text-white" />
+            <div className="w-9 h-9 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h3 className="font-semibold text-white">AI Assistant</h3>
-              <p className="text-xs text-indigo-200">MentorEdu Chatbot</p>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
+              <p className="text-xs text-gray-500 dark:text-neutral-400">MentorEdu Chatbot</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {/* New Chat Button */}
             <button
               onClick={newChat}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-              title="Cuộc hội thoại mới"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
+              title="New conversation"
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -267,8 +267,8 @@ export default function ChatWindow() {
             <div className="relative">
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className={`p-2 rounded-lg transition-colors ${showHistory ? 'text-white bg-white/20' : 'text-white/80 hover:text-white hover:bg-white/10'}`}
-                title="Lịch sử chat"
+                className={`p-2 rounded-md transition-colors ${showHistory ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
+                title="Chat history"
               >
                 <History className="w-5 h-5" />
               </button>
@@ -286,7 +286,7 @@ export default function ChatWindow() {
             {/* Close Button */}
             <button
               onClick={closeChat}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -297,14 +297,14 @@ export default function ChatWindow() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-20 h-20 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-4">
-                <Bot className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
+              <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center mb-3">
+                <Bot className="w-8 h-8 text-blue-600 dark:text-blue-400" />
               </div>
-              <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 mb-2">
-                Xin chào! Tôi là AI Assistant
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100 mb-1">
+                Hi! I'm AI Assistant
               </h4>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-xs">
-                Tôi có thể giúp bạn tìm hiểu về nền tảng MentorEdu, tìm mentor phù hợp, hoặc trả lời các câu hỏi khác.
+              <p className="text-xs text-gray-500 dark:text-neutral-400 max-w-xs">
+                I can help you learn about MentorEdu, find the right mentor, or answer other questions.
               </p>
             </div>
           ) : (
@@ -320,22 +320,22 @@ export default function ChatWindow() {
 
         {/* Error Message */}
         {error && (
-          <div className="mx-4 mb-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="mx-4 mb-2 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
             <button 
               onClick={() => setError(null)}
               className="text-xs text-red-500 hover:underline mt-1"
             >
-              Đóng
+              Dismiss
             </button>
           </div>
         )}
 
         {/* Input Area */}
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-700">
+        <div className="p-3 border-t border-gray-200 dark:border-neutral-800">
           <ChatInput onSend={sendMessage} disabled={isLoading} />
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-2 text-center">
-            Nhấn Enter để gửi, Shift+Enter để xuống dòng
+          <p className="text-xs text-gray-400 dark:text-neutral-500 mt-2 text-center">
+            Press Enter to send, Shift+Enter for new line
           </p>
         </div>
       </div>

@@ -26,7 +26,33 @@ const walletApi = {
   withdraw(payload) {
     return axiosClient.post("/api/Wallet/withdraw", payload);
   },
+
+  // GET /api/Wallet/topup/check/:transactionRef
+  checkTransactionStatus(transactionRef) {
+    return axiosClient.get(`/api/Wallet/topup/check/${transactionRef}`);
+  },
+
+  // GET /api/Wallet/vnpay/return?...params - Verify VNPay payment on backend
+  verifyVnpayPayment(queryString) {
+    return axiosClient.get(`/api/Wallet/vnpay/return${queryString}`);
+  },
+
+  // ============ ADMIN: Bank Transfer Management ============
+
+  // GET /api/Wallet/bank-transfer/pending
+  getPendingBankTransfers(params = {}) {
+    return axiosClient.get("/api/Wallet/bank-transfer/pending", { params });
+  },
+
+  // POST /api/Wallet/bank-transfer/confirm/:transactionRef
+  confirmBankTransfer(transactionRef) {
+    return axiosClient.post(`/api/Wallet/bank-transfer/confirm/${transactionRef}`);
+  },
+
+  // POST /api/Wallet/bank-transfer/reject/:transactionRef
+  rejectBankTransfer(transactionRef) {
+    return axiosClient.post(`/api/Wallet/bank-transfer/reject/${transactionRef}`);
+  },
 };
 
 export default walletApi;
-    

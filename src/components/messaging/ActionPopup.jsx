@@ -19,27 +19,6 @@ const ActionPopup = ({ isOpen, onClose, onAction, hideWorkActions = false }) => 
       desc: 'Upload images or files',
       icon: Image,
       isWorkAction: false,
-    },
-    {
-      id: 'deal-price',
-      label: 'Proposal',
-      desc: 'Create a cost proposal',
-      icon: DollarSign,
-      isWorkAction: true,
-    },
-    {
-      id: 'complete-order',
-      label: 'Hoàn thành đơn hàng',
-      desc: 'Yêu cầu hoàn thành đơn hàng',
-      icon: Play,
-      isWorkAction: true,
-    },
-    {
-      id: 'schedule',
-      label: 'Schedule Meeting',
-      desc: 'Set up a meeting time',
-      icon: Calendar,
-      isWorkAction: true,
     }
   ];
 

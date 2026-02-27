@@ -2,10 +2,10 @@ import React from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 
 const actionLabels = {
-  start: "Bắt đầu",
-  pause: "Tạm dừng",
-  end: "Kết thúc",
-  complete: "Hoàn thành đơn hàng", // ✅ Added
+  start: "Start",
+  pause: "Pause",
+  end: "End",
+  complete: "Complete Order",
 };
 
 const normalizeActionType = (actionType) =>
@@ -15,7 +15,7 @@ const WorkActionConfirmModal = ({ isOpen, actionType, onAccept, onReject }) => {
   if (!isOpen) return null;
 
   const normalizedType = normalizeActionType(actionType);
-  const label = actionLabels[normalizedType] || "Xác nhận";
+  const label = actionLabels[normalizedType] || "Confirm";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -25,11 +25,11 @@ const WorkActionConfirmModal = ({ isOpen, actionType, onAccept, onReject }) => {
             <CheckCircle2 size={28} />
           </div>
           <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-            {label} phiên làm việc?
+            {label} work session?
           </h3>
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Người còn lại đang yêu cầu {label.toLowerCase()} phiên làm việc. Bạn
-            có đồng ý không?
+            The other person is requesting to {label.toLowerCase()} the work session.
+            Do you agree?
           </p>
         </div>
 
@@ -41,7 +41,7 @@ const WorkActionConfirmModal = ({ isOpen, actionType, onAccept, onReject }) => {
           >
             <span className="inline-flex items-center justify-center gap-2">
               <XCircle size={18} />
-              Từ chối
+              Decline
             </span>
           </button>
           <button
@@ -51,7 +51,7 @@ const WorkActionConfirmModal = ({ isOpen, actionType, onAccept, onReject }) => {
           >
             <span className="inline-flex items-center justify-center gap-2">
               <CheckCircle2 size={18} />
-              Đồng ý
+              Accept
             </span>
           </button>
         </div>

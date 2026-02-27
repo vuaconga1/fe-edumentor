@@ -1,302 +1,303 @@
-import React, { useEffect, useMemo, useState } from "react";
-import {
-  HiAcademicCap,
-  HiCalendar,
-  HiClock,
-  HiTrendingUp,
-  HiUserGroup,
-  HiChat,
-  HiStar,
-  HiArrowRight,
-} from "react-icons/hi";
-import { Link, useNavigate } from "react-router-dom";
-import studentApi from "../../api/studentApi";
-import BecomeMentorBanner from "../../components/mentor/BecomeMentorBanner";
-import ApplyMentorModal from "../../components/mentor/ApplyMentorModal";
+// src/pages/student/StudentHome.jsx
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import orderApi from "../../api/orderApi";
+import requestApi from "../../api/requestApi";
+import walletApi from "../../api/walletApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 
 const StudentHome = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-
-  const [studentName, setStudentName] = useState("Student");
-
-  // overview numbers
-  const [overview, setOverview] = useState({
-    sessionsCount: 0,
-    mentorsCount: 0,
-    learningHours: 0,
-    avgRating: 0,
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    pendingRequests: 0,
+    walletBalance: 0,
+    pendingProposals: 0,
   });
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentRequests, setRecentRequests] = useState([]);
+  const [receivedProposals, setReceivedProposals] = useState([]);
 
-  const [upcomingSessions, setUpcomingSessions] = useState([]);
-  const [recommendedMentors, setRecommendedMentors] = useState([]);
+  const formatCurrency = (amount) => {
+    if (!amount) return "0";
+    return new Intl.NumberFormat("vi-VN").format(amount);
+  };
 
-  const stats = useMemo(() => {
-    return [
-      { label: "Sessions", value: overview.sessionsCount, icon: HiAcademicCap, change: "" },
-      { label: "Mentors", value: overview.mentorsCount, icon: HiUserGroup, change: "" },
-      { label: "Hours", value: overview.learningHours, icon: HiClock, change: "" },
-      { label: "Avg Rating", value: overview.avgRating, icon: HiStar, change: overview.avgRating >= 4.5 ? "Excellent" : "" },
-    ];
-  }, [overview]);
+  const formatDate = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getStatusStyle = (status) => {
+    const s = String(status);
+    const styles = {
+      Open: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      Accepted: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      Rejected: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+      Closed: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400",
+      Pending: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      InProgress: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      Completed: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+      Cancelled: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    };
+    return styles[s] || "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400";
+  };
 
   useEffect(() => {
-    let mounted = true;
-
-    async function fetchAll() {
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        setLoading(true);
-        setError("");
-
-        // Ưu tiên: backend có endpoint dashboard tổng hợp
-        const [profileRes] = await Promise.allSettled([
-          studentApi.getProfile()
+        const [ordersRes, requestsRes, walletRes, proposalsRes] = await Promise.all([
+          orderApi.getMyOrdersStudent({ pageNumber: 1, pageSize: 5 }),
+          requestApi.getMyRequests(1, 5),
+          walletApi.getWallet(),
+          requestApi.getReceivedProposals().catch(() => ({ data: { data: [] } })),
         ]);
 
-        if (profileRes.status === "fulfilled") {
-          const p = profileRes.value?.data?.data ?? profileRes.value?.data;
-          setStudentName(p?.fullName || p?.name || "Student");
-        }
+        const orders = ordersRes?.data?.data?.items || [];
+        const requests = requestsRes?.data?.data?.items || [];
+        const wallet = walletRes?.data?.data;
+        const proposals = proposalsRes?.data?.data?.items || proposalsRes?.data?.data || [];
 
-        // giữ overview + sessions + mentors = mock
-        setLoading(false);
-        return;
-
-
-        if (!mounted) return;
-
-        // profile
-        if (profileRes.status === "fulfilled") {
-          const p = profileRes.value?.data?.data ?? profileRes.value?.data;
-          setStudentName(p?.fullName || p?.name || "Student");
-        }
-
-        // dashboard overview (nếu có)
-        if (dashRes.status === "fulfilled") {
-          const d = dashRes.value?.data?.data ?? dashRes.value?.data;
-          setOverview({
-            sessionsCount: d?.sessionsCount ?? d?.totalSessions ?? 0,
-            mentorsCount: d?.mentorsCount ?? d?.totalMentors ?? 0,
-            learningHours: d?.learningHours ?? d?.totalHours ?? 0,
-            avgRating: d?.avgRating ?? d?.ratingAverage ?? 0,
-          });
-        }
-
-        // upcoming sessions
-        if (sessionsRes.status === "fulfilled") {
-          const s = sessionsRes.value?.data?.data ?? sessionsRes.value?.data;
-          const list = Array.isArray(s?.items) ? s.items : (Array.isArray(s) ? s : []);
-          setUpcomingSessions(list);
-        }
-
-        // recommended mentors
-        if (mentorsRes.status === "fulfilled") {
-          const m = mentorsRes.value?.data?.data ?? mentorsRes.value?.data;
-          const list = Array.isArray(m?.items) ? m.items : (Array.isArray(m) ? m : []);
-          setRecommendedMentors(list);
-        }
-      } catch (e) {
-        console.log("Student dashboard fetch failed", e);
-        if (mounted) setError("Student dashboard fetch failed");
+        setRecentOrders(orders);
+        setRecentRequests(requests);
+        setReceivedProposals(Array.isArray(proposals) ? proposals : []);
+        setStats({
+          totalOrders: ordersRes?.data?.data?.totalCount || orders.length,
+          pendingRequests: requests.filter(r => r.status === "Open").length,
+          walletBalance: wallet?.balance || 0,
+          pendingProposals: (Array.isArray(proposals) ? proposals : []).filter(p => p.status === "Pending" || p.status === "Open").length,
+        });
+      } catch (err) {
+        console.log("Failed to load dashboard data:", err);
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
-    }
-
-    fetchAll();
-    return () => {
-      mounted = false;
     };
+
+    fetchData();
   }, []);
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white">
-            👋 Hello, {studentName}
-          </h1>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">
-            Welcome back! Continue your learning journey.
-          </p>
+  if (loading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-neutral-200 dark:bg-neutral-700 rounded w-48"></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-24 bg-neutral-200 dark:bg-neutral-700 rounded-xl"></div>
+            ))}
+          </div>
+          <div className="h-64 bg-neutral-200 dark:bg-neutral-700 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
 
-          {error && (
-            <p className="mt-2 text-sm text-red-500">{error}</p>
-          )}
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">Dashboard</h1>
+        <p className="text-neutral-500 dark:text-neutral-400 mt-1">Welcome back! Here's your overview.</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div 
+          className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/student/orders")}
+        >
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Total Orders</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{stats.totalOrders}</p>
         </div>
 
-        <Link
-          to="/student/find-mentor"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-xl hover:shadow-primary-600/30 hover:scale-105"
+        <div 
+          className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/student/my-requests")}
         >
-          Find Mentor
-          <HiArrowRight />
-        </Link>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Pending Requests</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{stats.pendingRequests}</p>
+        </div>
+
+        <div 
+          className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/student/community")}
+        >
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Pending Proposals</p>
+          <p className="text-2xl font-semibold text-amber-600 dark:text-amber-400">{stats.pendingProposals}</p>
+        </div>
+
+        <div 
+          className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 cursor-pointer hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors"
+          onClick={() => navigate("/student/wallet")}
+        >
+          <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Wallet Balance</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{formatCurrency(stats.walletBalance)} đ</p>
+        </div>
       </div>
 
-      <BecomeMentorBanner onTryIt={() => setIsApplyModalOpen(true)} />
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <div
-            key={index}
-            className="bg-white dark:bg-neutral-900 p-5 rounded-2xl border border-neutral-200 dark:border-neutral-800 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-lg transition-all duration-300 group cursor-default"
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="p-2.5 bg-primary-50 dark:bg-primary-900/30 rounded-xl group-hover:bg-primary-100 dark:group-hover:bg-primary-900/50 group-hover:scale-110 transition-all duration-300">
-                <stat.icon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-              </div>
-              <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 px-2 py-1 rounded-lg">
-                {loading ? "..." : (stat.change || "")}
-              </span>
-            </div>
-            <div className="text-2xl font-bold text-neutral-900 dark:text-white mb-1">
-              {loading ? "—" : stat.value}
-            </div>
-            <div className="text-sm text-neutral-500 dark:text-neutral-400">
-              {stat.label}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Upcoming Sessions */}
-        <div className="lg:col-span-2 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <HiCalendar className="text-primary-600 dark:text-primary-400" />
-              Upcoming Sessions
-            </h2>
-            <Link
-              to="/student/orders"
-              className="text-sm font-medium text-primary-600 dark:text-primary-400 hover:underline"
+      {/* Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Orders */}
+        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+            <h2 className="font-semibold text-neutral-900 dark:text-white">Recent Orders</h2>
+            <button 
+              onClick={() => navigate("/student/orders")}
+              className="text-sm text-blue-600 hover:text-blue-700"
             >
               View all
-            </Link>
+            </button>
           </div>
-
-          <div className="space-y-4">
-            {(loading ? [] : upcomingSessions).map((session, index) => (
-              <div
-                key={session.id ?? index}
-                className="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-300 group cursor-pointer"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <img
-                  src={normalizeAvatarUrl(session.avatar || session.mentorAvatar) || buildDefaultAvatarUrl({ id: session.mentorId, fullName: session.mentor || session.mentorName })}
-                  alt={session.mentor || session.mentorName || "Mentor"}
-                  className="w-12 h-12 rounded-xl object-cover border-2 border-white dark:border-neutral-700 shadow-sm group-hover:scale-105 transition-transform"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = buildDefaultAvatarUrl({ id: session.mentorId, fullName: session.mentor || session.mentorName });
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-neutral-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                    {session.topic || session.subject || "Session"}
-                  </h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    with {session.mentor || session.mentorName || "Mentor"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold text-neutral-900 dark:text-white">
-                    {session.dateLabel || session.date || "—"}
-                  </div>
-                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {session.time || session.timeRange || "—"}
-                  </div>
-                </div>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {recentOrders.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                No orders yet
               </div>
-            ))}
-
-            {!loading && upcomingSessions.length === 0 && (
-              <div className="text-sm text-neutral-500">No upcoming sessions.</div>
+            ) : (
+              recentOrders.slice(0, 4).map(order => (
+                <div key={order.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={normalizeAvatarUrl(order.mentorAvatar) || buildDefaultAvatarUrl({ fullName: order.mentorName })}
+                      alt=""
+                      className="w-9 h-9 rounded-full object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{order.mentorName || "Mentor"}</p>
+                      <p className="text-xs text-neutral-500">{formatDate(order.createdAt)}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusStyle(order.status)}`}>
+                        {order.status}
+                      </span>
+                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(order.totalPrice)} đ</p>
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>
 
-        {/* Recommended Mentors */}
-        <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <HiTrendingUp className="text-primary-600 dark:text-primary-400" />
-              Recommended for you
-            </h2>
+        {/* Recent Requests */}
+        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+            <h2 className="font-semibold text-neutral-900 dark:text-white">Recent Requests</h2>
+            <button 
+              onClick={() => navigate("/student/my-requests")}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              View all
+            </button>
           </div>
-
-          <div className="space-y-4">
-            {(loading ? [] : recommendedMentors).map((mentor) => (
-              <div
-                key={mentor.id}
-                className="p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all duration-300 group cursor-pointer"
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <img
-                    src={normalizeAvatarUrl(mentor.avatar || mentor.avatarUrl) || buildDefaultAvatarUrl({ id: mentor.id, fullName: mentor.name || mentor.fullName })}
-                    alt={mentor.name || mentor.fullName || "Mentor"}
-                    className="w-10 h-10 rounded-xl object-cover group-hover:scale-105 transition-transform"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = buildDefaultAvatarUrl({ id: mentor.id, fullName: mentor.name || mentor.fullName });
-                    }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white truncate group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                      {mentor.name || mentor.fullName}
-                    </h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate">
-                      {mentor.title || mentor.headline || ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 text-sm">
-                    <HiStar className="text-yellow-500" />
-                    <span className="font-medium text-neutral-900 dark:text-white">
-                      {mentor.rating ?? mentor.avgRating ?? "-"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5">
-                  {(mentor.skills || mentor.tags || []).map((skill, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {recentRequests.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                No requests yet
               </div>
-            ))}
-
-            {!loading && recommendedMentors.length === 0 && (
-              <div className="text-sm text-neutral-500">No recommended mentors.</div>
+            ) : (
+              recentRequests.slice(0, 4).map(request => (
+                <div key={request.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{request.title}</p>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        To: {request.mentorName || "Mentor"} • {formatDate(request.createdAt)}
+                      </p>
+                    </div>
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full whitespace-nowrap ${getStatusStyle(request.status)}`}>
+                      {request.status === "Open" ? "Pending" : request.status}
+                    </span>
+                  </div>
+                </div>
+              ))
             )}
           </div>
-
-          <Link
-            to="/student/find-mentor"
-            className="mt-4 w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-neutral-200 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 rounded-xl hover:border-primary-300 hover:text-primary-600 dark:hover:border-primary-600 dark:hover:text-primary-400 transition-all duration-300"
-          >
-            Explore more
-            <HiArrowRight />
-          </Link>
         </div>
       </div>
 
+      {/* Received Proposals */}
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+          <h2 className="font-semibold text-neutral-900 dark:text-white">Received Proposals</h2>
+          <button 
+            onClick={() => navigate("/student/community")}
+            className="text-sm text-blue-600 hover:text-blue-700"
+          >
+            View all
+          </button>
+        </div>
+        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          {receivedProposals.length === 0 ? (
+            <div className="px-5 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400">
+              No proposals received yet. Post in the community to get proposals from mentors!
+            </div>
+          ) : (
+            receivedProposals.slice(0, 5).map(proposal => (
+              <div key={proposal.id} className="px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={normalizeAvatarUrl(proposal.mentorAvatar || proposal.proposerAvatar) || buildDefaultAvatarUrl({ fullName: proposal.mentorName || proposal.proposerName })}
+                    alt=""
+                    className="w-9 h-9 rounded-full object-cover"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                      {proposal.mentorName || proposal.proposerName || "Mentor"}
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-0.5 truncate">
+                      {proposal.message || proposal.content || "No message"}
+                    </p>
+                    <p className="text-xs text-neutral-400 mt-0.5">
+                      {proposal.postTitle ? `Post: ${proposal.postTitle}` : ""} {proposal.postTitle ? "•" : ""} {formatDate(proposal.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusStyle(proposal.status)}`}>
+                      {proposal.status}
+                    </span>
+                    {proposal.price != null && (
+                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(proposal.price)} đ</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
-      <ApplyMentorModal
-        isOpen={isApplyModalOpen}
-        onClose={() => setIsApplyModalOpen(false)}
-        onSuccess={() => navigate("/student/profile")}
-      />
+      {/* Quick Actions */}
+      <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5">
+        <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Quick Actions</h2>
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => navigate("/student/find-mentor")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            Find a Mentor
+          </button>
+          <button
+            onClick={() => navigate("/student/community")}
+            className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-sm"
+          >
+            Browse Community
+          </button>
+          <button
+            onClick={() => navigate("/student/wallet")}
+            className="px-4 py-2 border border-neutral-300 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-sm"
+          >
+            Top Up Wallet
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

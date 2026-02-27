@@ -40,9 +40,6 @@ export default function SidebarDrawer({ open, onClose, menu = [] }) {
               >
                 <div className="relative flex-shrink-0">
                   {Icon && <Icon className="w-5 h-5" />}
-                  {hasBadge && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm animate-pulse" />
-                  )}
                 </div>
                 <span className="flex-1">{item.label}</span>
                 {hasBadge && (

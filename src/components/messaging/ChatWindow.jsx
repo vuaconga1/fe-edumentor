@@ -81,7 +81,7 @@ export default function ChatWindow({
   // Empty state when no conversation selected
   if (!conversation) {
     return (
-      <div className="hidden md:flex flex-col h-full items-center justify-center bg-white dark:bg-neutral-950">
+      <div className="hidden md:flex flex-col h-full items-center justify-center bg-gray dark:bg-neutral-950">
         <div className="text-neutral-400 dark:text-neutral-500 text-center">
           <p className="text-lg font-medium">Select a conversation</p>
           <p className="text-sm mt-1">Choose from your conversations to start chatting</p>

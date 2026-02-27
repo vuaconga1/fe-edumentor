@@ -322,6 +322,10 @@ const adminApi = {
     return axiosClient.post(`/api/admin/mentor-applications/${userId}/reject`, { reason });
   },
 
+  reEvaluateMentorApplication(userId) {
+    return axiosClient.post(`/api/admin/mentor-applications/${userId}/re-evaluate`);
+  },
+
   // ============ MENTOR APPLICATION HISTORY ============
 
   // Get all application history with filters

@@ -12,7 +12,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
         e.preventDefault();
 
         if (!formData.name.trim()) {
-            toast.error('Vui lòng nhập tên nhóm');
+            toast.error('Please enter a group name');
             return;
         }
 
@@ -21,18 +21,18 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
             console.log('[CreateGroup] Sending request:', formData);
             const response = await groupApi.createGroup(formData);
             console.log('[CreateGroup] Response received:', response);
-            console.log('[CreateGroup] Response.success:', response.success);
-            console.log('[CreateGroup] Response.message:', response.message);
             console.log('[CreateGroup] Response.data:', response.data);
             
-            if (response.success) {
-              
-                onGroupCreated(response.data);
+            // Axios wraps the response in response.data
+            const apiResponse = response.data;
+            
+            if (apiResponse?.success) {
+                onGroupCreated(apiResponse.data);
                 setFormData({ name: '' });
                 onClose();
             } else {
-                console.error('[CreateGroup] Failed with message:', response.message);
-         
+                console.error('[CreateGroup] Failed with message:', apiResponse?.message);
+                toast.error(apiResponse?.message || 'Failed to create group');
             }
         } catch (error) {
             console.error('[CreateGroup] EXCEPTION occurred:', error);
@@ -40,7 +40,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
             console.error('[CreateGroup] Error.response.data:', JSON.stringify(error.response?.data, null, 2));
             console.error('[CreateGroup] Error.response.status:', error.response?.status);
 
-            const msg = error.response?.data?.message || 'Đã xảy ra lỗi khi tạo nhóm';
+            const msg = error.response?.data?.message || 'An error occurred while creating the group';
             toast.error(msg);
         } finally {
             setLoading(false);
@@ -53,7 +53,7 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Tạo nhóm chat mới</h2>
+                    <h2 className="text-xl font-bold">Create New Group Chat</h2>
                     <button
                         onClick={onClose}
                         className="text-gray-500 hover:text-gray-700"
@@ -65,14 +65,14 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label className="block text-sm font-medium mb-2">
-                            Tên nhóm <span className="text-red-500">*</span>
+                            Group Name <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="text"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nhập tên nhóm"
+                            placeholder="Enter group name"
                             maxLength={100}
                         />
                     </div>
@@ -84,14 +84,14 @@ export default function CreateGroupModal({ isOpen, onClose, onGroupCreated }) {
                             className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-50"
                             disabled={loading}
                         >
-                            Hủy
+                            Cancel
                         </button>
                         <button
                             type="submit"
                             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                             disabled={loading}
                         >
-                            {loading ? 'Đang tạo...' : 'Tạo nhóm'}
+                            {loading ? 'Creating...' : 'Create Group'}
                         </button>
                     </div>
                 </form>

@@ -4,7 +4,6 @@ import { Link, useLocation } from "react-router-dom";
 export default function SidebarItem({ icon: Icon, label, href, collapsed, onClick, badge }) {
   const location = useLocation();
   const isActive = location.pathname === href;
-  const hasBadge = badge && badge > 0;
   const showBadgeNumber = badge && badge > 0;
 
   return (
@@ -22,9 +21,6 @@ export default function SidebarItem({ icon: Icon, label, href, collapsed, onClic
     >
       <div className="relative flex-shrink-0">
         <Icon className={`w-5 h-5 transition-transform group-hover:scale-110 ${isActive ? 'text-primary-600 dark:text-primary-400' : ''}`} />
-        {hasBadge && (
-          <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full shadow-sm animate-pulse" />
-        )}
       </div>
       {!collapsed && (
         <>

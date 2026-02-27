@@ -102,18 +102,16 @@ export default function FloatingChatButton() {
         onClick={toggleChat}
         className="
           fixed bottom-6 right-6 z-50
-          w-14 h-14 rounded-full
-          bg-gradient-to-br from-indigo-600 to-blue-600
-          hover:from-indigo-700 hover:to-blue-700
-          dark:from-indigo-500 dark:to-blue-500
-          text-white shadow-2xl
+          w-12 h-12 rounded-full
+          bg-blue-600 hover:bg-blue-700
+          text-white shadow-lg
           flex items-center justify-center
           transition-all duration-200
           hover:scale-105
         "
         aria-label="Close AI Chat"
       >
-        <X className="w-6 h-6" />
+        <X className="w-5 h-5" />
       </button>
     );
   }
@@ -126,12 +124,9 @@ export default function FloatingChatButton() {
       onClick={handleClick}
       className={`
         fixed bottom-6 right-6 z-40
-        w-14 h-14 rounded-full
-        bg-gradient-to-br from-indigo-600 to-blue-600
-        hover:from-indigo-700 hover:to-blue-700
-        dark:from-indigo-500 dark:to-blue-500
-        dark:hover:from-indigo-600 dark:hover:to-blue-600
-        text-white shadow-2xl
+        w-12 h-12 rounded-full
+        bg-blue-600 hover:bg-blue-700
+        text-white shadow-lg
         flex items-center justify-center
         transition-all duration-200
         ${isDragging ? 'cursor-grabbing scale-110' : 'cursor-grab hover:scale-105'}
@@ -142,10 +137,7 @@ export default function FloatingChatButton() {
       }}
       aria-label="Open AI Chat"
     >
-      <MessageCircle className="w-6 h-6" />
-      
-      {/* Pulse animation */}
-      <span className="absolute w-full h-full rounded-full bg-indigo-400 dark:bg-indigo-300 animate-ping opacity-30" />
+      <MessageCircle className="w-5 h-5" />
     </button>
   );
 }

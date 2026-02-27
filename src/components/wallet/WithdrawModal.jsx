@@ -64,7 +64,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
         });
 
         setStep(3);
-        onSuccess?.();
+        // Don't call onSuccess here — it causes parent re-render and resets the modal
       } catch (e) {
         const msg = e?.response?.data?.message || e?.message || "Withdraw failed";
         setError(msg);
@@ -75,6 +75,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
   };
 
   const handleClose = () => {
+    const wasSuccess = step === 3;
     setStep(1);
     setAmount("");
     setBankInfo({ bankName: "", accountNumber: "", accountHolder: "" });
@@ -82,6 +83,10 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
     setError("");
     setShowBankDropdown(false);
     onClose?.();
+    // Refresh wallet data after closing success screen
+    if (wasSuccess) {
+      onSuccess?.();
+    }
   };
 
   const isValidAmount = amount && parseInt(amount) >= 50000 && parseInt(amount) <= currentBalance;
@@ -90,9 +95,9 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="relative bg-gradient-to-br from-emerald-600 to-emerald-700 px-6 py-5">
+        <div className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 px-6 py-5">
           <button onClick={handleClose} className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors">
             <X size={20} />
           </button>
@@ -103,12 +108,12 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">Withdraw Funds</h2>
-              <p className="text-emerald-100 text-sm">Transfer to your bank account</p>
+              <p className="text-blue-100 text-sm">Transfer to your bank account</p>
             </div>
           </div>
 
           <div className="mt-4 p-3 bg-white/10 rounded-xl">
-            <p className="text-emerald-100 text-xs">Available Balance</p>
+            <p className="text-blue-200 text-xs">Available Balance</p>
             <p className="text-white font-bold text-lg">{formatCurrency(currentBalance)} VND</p>
           </div>
 
@@ -117,9 +122,8 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
-                className={`h-1.5 rounded-full transition-all ${
-                  s === step ? "w-8 bg-white" : s < step ? "w-4 bg-white/60" : "w-4 bg-white/30"
-                }`}
+                className={`h-1.5 rounded-full transition-all ${s === step ? "w-8 bg-white" : s < step ? "w-4 bg-white/60" : "w-4 bg-white/30"
+                  }`}
               />
             ))}
           </div>
@@ -148,7 +152,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                     value={amount ? formatCurrency(parseInt(amount)) : ""}
                     onChange={handleAmountChange}
                     placeholder="0"
-                    className="w-full px-4 py-4 text-2xl font-bold text-center bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-4 text-2xl font-bold text-center bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 font-medium">
                     VND
@@ -160,7 +164,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                   </p>
                   <button
                     onClick={handleWithdrawAll}
-                    className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Withdraw All
                   </button>
@@ -173,11 +177,10 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                   <button
                     key={val}
                     onClick={() => { setAmount(val.toString()); setError(""); }}
-                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${
-                      amount === val.toString()
-                        ? "bg-emerald-600 text-white"
-                        : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                    }`}
+                    className={`py-3 px-2 rounded-xl text-sm font-medium transition-all ${amount === val.toString()
+                      ? "bg-blue-600 text-white"
+                      : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                      }`}
                   >
                     {formatCurrency(val)}
                   </button>
@@ -211,7 +214,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                   </span>
                   <ChevronDown size={18} className={`text-neutral-400 transition-transform ${showBankDropdown ? "rotate-180" : ""}`} />
                 </button>
-                
+
                 {showBankDropdown && (
                   <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-48 overflow-y-auto">
                     {banks.map((bank) => (
@@ -221,9 +224,8 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                           setBankInfo({ ...bankInfo, bankName: bank });
                           setShowBankDropdown(false);
                         }}
-                        className={`w-full px-4 py-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${
-                          bankInfo.bankName === bank ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600" : "text-neutral-700 dark:text-neutral-300"
-                        }`}
+                        className={`w-full px-4 py-3 text-left hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors ${bankInfo.bankName === bank ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600" : "text-neutral-700 dark:text-neutral-300"
+                          }`}
                       >
                         {bank}
                       </button>
@@ -242,7 +244,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                   value={bankInfo.accountNumber}
                   onChange={(e) => setBankInfo({ ...bankInfo, accountNumber: e.target.value.replace(/[^0-9]/g, "") })}
                   placeholder="Enter your account number"
-                  className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none font-mono"
+                  className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono"
                 />
               </div>
 
@@ -256,7 +258,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                   value={bankInfo.accountHolder}
                   onChange={(e) => setBankInfo({ ...bankInfo, accountHolder: e.target.value.toUpperCase() })}
                   placeholder="As shown on your bank account"
-                  className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none uppercase"
+                  className="w-full px-4 py-3 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none uppercase"
                 />
               </div>
 
@@ -272,7 +274,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-neutral-200 dark:border-neutral-700">
                   <span className="font-medium">You'll receive</span>
-                  <span className="font-bold text-emerald-600">{formatCurrency(parseInt(amount))} VND</span>
+                  <span className="font-bold text-blue-600">{formatCurrency(parseInt(amount))} VND</span>
                 </div>
               </div>
             </div>
@@ -281,14 +283,14 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
           {/* Step 3: Success */}
           {step === 3 && (
             <div className="text-center py-8">
-              <div className="w-20 h-20 mx-auto mb-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                <CheckCircle size={40} className="text-emerald-600" />
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-50 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+                <CheckCircle size={32} className="text-blue-600" />
               </div>
               <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-                Withdrawal Requested!
+                Withdrawal Successful
               </h3>
               <p className="text-neutral-500 mb-4">
-                {formatCurrency(parseInt(amount))} VND will be transferred to your bank account
+                {formatCurrency(parseInt(amount))} VND has been sent to your bank account
               </p>
               <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 text-left space-y-2">
                 <div className="flex justify-between text-sm">
@@ -301,12 +303,9 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-neutral-500">Status</span>
-                  <span className="font-medium text-amber-600">Processing</span>
+                  <span className="font-medium text-green-600">Completed</span>
                 </div>
               </div>
-              <p className="text-xs text-neutral-400 mt-4">
-                Typically takes 1-3 business days
-              </p>
             </div>
           )}
         </div>
@@ -316,7 +315,7 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
           {step < 3 ? (
             <>
               <button
-                onClick={step === 1 ? handleClose : () => setStep(1)}
+                onClick={step === 1 ? handleClose : () => setStep(step - 1)}
                 className="flex-1 py-3.5 rounded-xl font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
               >
                 {step === 1 ? "Cancel" : "Back"}
@@ -325,17 +324,24 @@ const WithdrawModal = ({ isOpen, onClose, onSuccess, currentBalance = 0 }) => {
               <button
                 onClick={handleContinue}
                 disabled={(step === 1 && !isValidAmount) || (step === 2 && (!bankInfo.bankName || !bankInfo.accountNumber || !bankInfo.accountHolder)) || isProcessing}
-                className={`flex-1 py-3.5 rounded-xl font-semibold text-white transition-all ${
-                  (step === 1 && !isValidAmount) || (step === 2 && (!bankInfo.bankName || !bankInfo.accountNumber || !bankInfo.accountHolder)) || isProcessing
-                    ? "bg-neutral-300 dark:bg-neutral-700 cursor-not-allowed"
-                    : "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98]"
-                }`}
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-white transition-all ${(step === 1 && !isValidAmount) || (step === 2 && (!bankInfo.bankName || !bankInfo.accountNumber || !bankInfo.accountHolder)) || isProcessing
+                  ? "bg-neutral-300 dark:bg-neutral-700 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 active:scale-[0.98]"
+                  }`}
               >
-                {isProcessing ? "Processing..." : step === 1 ? "Continue" : "Confirm Withdraw"}
+                {isProcessing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Processing...
+                  </span>
+                ) : step === 1 ? "Continue" : "Confirm Withdraw"}
               </button>
             </>
           ) : (
-            <button onClick={handleClose} className="w-full py-3.5 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors">
+            <button onClick={handleClose} className="w-full py-3.5 rounded-xl font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors">
               Done
             </button>
           )}

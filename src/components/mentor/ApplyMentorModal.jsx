@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { HiX, HiUpload, HiTrash, HiCheck, HiChevronDown, HiLightBulb, HiCheckCircle, HiExclamationCircle, HiXCircle } from "react-icons/hi";
+import { HiX, HiUpload, HiTrash, HiCheck, HiChevronDown } from "react-icons/hi";
 import axios from "axios";
 import mentorApi from "../../api/mentorApi";
 import axiosClient from "../../api/axios";
@@ -290,20 +290,20 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-lg shadow-xl max-h-[90vh] overflow-y-auto">
                 {/* Header */}
-                <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800">
-                    <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Apply to become a Mentor</h2>
+                <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Apply to become a Mentor</h2>
                     <button
                         onClick={onClose}
-                        className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+                        className="p-1.5 text-gray-400 hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
                     >
                         <HiX className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* content */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="p-5 space-y-5">
                     {error && (
                         <div className="p-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                             {error}
@@ -311,157 +311,59 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                     )}
 
                     {/* AI Evaluation Guidelines */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl overflow-hidden">
+                    <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg overflow-hidden">
                         <button
                             type="button"
                             onClick={() => setShowGuidelines(!showGuidelines)}
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-colors"
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-neutral-700/50 transition-colors"
                         >
-                            <div className="flex items-center gap-3">
-                                <HiLightBulb className="w-5 h-5 text-yellow-500" />
-                                <span className="font-semibold text-blue-900 dark:text-blue-100">
-                                    AI Evaluation Guidelines - How to get approved faster
-                                </span>
-                            </div>
-                            <HiChevronDown className={`w-5 h-5 text-blue-600 dark:text-blue-400 transition-transform duration-200 ${showGuidelines ? 'rotate-180' : ''}`} />
+                            <span className="text-sm font-medium text-gray-800 dark:text-neutral-200">
+                                AI Evaluation Guidelines
+                            </span>
+                            <HiChevronDown className={`w-4 h-4 text-gray-400 dark:text-neutral-500 transition-transform duration-200 ${showGuidelines ? 'rotate-180' : ''}`} />
                         </button>
                         
                         {showGuidelines && (
-                            <div className="px-4 py-4 space-y-4 border-t border-blue-200 dark:border-blue-800">
-                                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-                                    Your application will be automatically reviewed by AI. Here's how to increase your approval chances:
+                            <div className="px-4 pb-4 space-y-3 border-t border-gray-200 dark:border-neutral-700 pt-3">
+                                <p className="text-xs text-gray-500 dark:text-neutral-400">
+                                    Your application is reviewed by AI. Here's how scoring works:
                                 </p>
                                 
-                                {/* Score Legend */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    <div className="flex items-start gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                                        <HiCheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-xs font-bold text-green-900 dark:text-green-100">Score ≥ 80%</p>
-                                            <p className="text-xs text-green-700 dark:text-green-300">Auto-Approved</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
-                                        <HiExclamationCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-xs font-bold text-yellow-900 dark:text-yellow-100">Score 40-79%</p>
-                                            <p className="text-xs text-yellow-700 dark:text-yellow-300">Manual Review</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start gap-2 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                                        <HiXCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-xs font-bold text-red-900 dark:text-red-100">Score &lt; 40%</p>
-                                            <p className="text-xs text-red-700 dark:text-red-300">Auto-Rejected</p>
-                                        </div>
-                                    </div>
+                                {/* Score thresholds - simple inline */}
+                                <div className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+                                    <span className="text-gray-700 dark:text-neutral-300"><span className="font-medium text-green-600 dark:text-green-400">≥ 80%</span> Auto-Approved</span>
+                                    <span className="text-gray-700 dark:text-neutral-300"><span className="font-medium text-amber-600 dark:text-amber-400">40-79%</span> Manual Review</span>
+                                    <span className="text-gray-700 dark:text-neutral-300"><span className="font-medium text-red-500 dark:text-red-400">&lt; 40%</span> Auto-Rejected</span>
                                 </div>
 
                                 {/* Evaluation Criteria */}
-                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-3">
-                                    <h4 className="text-sm font-bold text-neutral-900 dark:text-white">AI evaluates 4 key areas (100 points total):</h4>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                                        <div className="flex items-start gap-2">
-                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
-                                            <div>
-                                                <p className="font-semibold text-neutral-900 dark:text-white">Experience Level</p>
-                                                <p className="text-neutral-600 dark:text-neutral-400">Years & relevance of experience</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
-                                            <div>
-                                                <p className="font-semibold text-neutral-900 dark:text-white">Introduction Quality</p>
-                                                <p className="text-neutral-600 dark:text-neutral-400">Clarity, professionalism, passion</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
-                                            <div>
-                                                <p className="font-semibold text-neutral-900 dark:text-white">Portfolio Quality</p>
-                                                <p className="text-neutral-600 dark:text-neutral-400">GitHub/LinkedIn/Website quality</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start gap-2">
-                                            <span className="font-bold text-blue-600 dark:text-blue-400 flex-shrink-0">25%</span>
-                                            <div>
-                                                <p className="font-semibold text-neutral-900 dark:text-white">Overall Fit</p>
-                                                <p className="text-neutral-600 dark:text-neutral-400">Alignment with mentor role</p>
-                                            </div>
-                                        </div>
+                                <div className="text-xs text-gray-600 dark:text-neutral-400">
+                                    <p className="font-medium text-gray-800 dark:text-neutral-200 mb-1.5">4 evaluation areas (25% each):</p>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                        <span>Experience Level</span>
+                                        <span>Introduction Quality</span>
+                                        <span>Portfolio Quality</span>
+                                        <span>Overall Fit</span>
                                     </div>
                                 </div>
 
                                 {/* Tips */}
-                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-2">
-                                    <h4 className="text-sm font-bold text-green-600 dark:text-green-400 flex items-center gap-2">
-                                        Tips for High Score (80%+):
-                                    </h4>
-                                    <ul className="text-xs space-y-1.5 text-neutral-700 dark:text-neutral-300">
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>3+ years experience</strong> in your field (5+ is ideal)</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>Introduction: 150-300 words</strong> - Highlight achievements, teaching passion, specific expertise</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>Active GitHub</strong> (10+ repos, contributions) or well-maintained LinkedIn profile</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>Professional certifications</strong> (AWS, Google Cloud, Microsoft, etc.) in <strong>PDF format</strong></span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>Quality CV</strong> - Professional format, clear structure (ATS-friendly)</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
-                                            <span><strong>Accurate categories & hashtags</strong> matching your expertise</span>
-                                        </li>
+                                <div className="text-xs text-gray-600 dark:text-neutral-400">
+                                    <p className="font-medium text-gray-800 dark:text-neutral-200 mb-1.5">Tips for a high score:</p>
+                                    <ul className="space-y-1 list-disc list-inside">
+                                        <li>3+ years experience in your field (5+ is ideal)</li>
+                                        <li>Introduction: 150-300 words highlighting achievements and teaching passion</li>
+                                        <li>Active GitHub (10+ repos) or well-maintained LinkedIn profile</li>
+                                        <li>Professional certifications in PDF format</li>
+                                        <li>Quality CV with clear structure</li>
+                                        <li>Accurate categories & hashtags matching your expertise</li>
                                     </ul>
                                 </div>
 
-                                {/* File Format Tips */}
-                                <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 space-y-2">
-                                    <h4 className="text-sm font-bold text-blue-600 dark:text-blue-400">Best File Formats for AI:</h4>
-                                    <div className="text-xs space-y-1.5 text-neutral-700 dark:text-neutral-300">
-                                        <p><strong className="text-green-600 dark:text-green-400">Recommended:</strong> PDF (best for AI reading), JPG/PNG (for scanned certificates)</p>
-                                        <p><strong className="text-yellow-600 dark:text-yellow-400">Acceptable:</strong> DOC/DOCX (less optimal)</p>
-                                        <p><strong className="text-red-600 dark:text-red-400">Avoid:</strong> Low-quality images, blurry scans, unrelated files</p>
-                                    </div>
-                                </div>
-
-                                {/* Red Flags */}
-                                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 space-y-2 border border-red-200 dark:border-red-800">
-                                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                                        Common Red Flags (Low Score):
-                                    </h4>
-                                    <ul className="text-xs space-y-1.5 text-red-700 dark:text-red-300">
-                                        <li className="flex items-start gap-2">
-                                            <span className="flex-shrink-0">✗</span>
-                                            <span>&lt; 1 year experience or unclear background</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="flex-shrink-0">✗</span>
-                                            <span>Very short introduction (1-2 sentences) or many grammar errors</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="flex-shrink-0">✗</span>
-                                            <span>Empty GitHub, broken links, or no real portfolio</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="flex-shrink-0">✗</span>
-                                            <span>Unrelated files, blurry scans, or no certifications</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="flex-shrink-0">✗</span>
-                                            <span>Inconsistent information (claim 10 years but empty portfolio)</span>
-                                        </li>
-                                    </ul>
+                                {/* File formats - compact */}
+                                <div className="text-xs text-gray-600 dark:text-neutral-400">
+                                    <p className="font-medium text-gray-800 dark:text-neutral-200 mb-1">File formats:</p>
+                                    <p>Best: PDF — Acceptable: JPG, PNG, DOC/DOCX — Avoid: blurry scans, unrelated files</p>
                                 </div>
                             </div>
                         )}
@@ -470,7 +372,7 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Specialization */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                                 Specialization <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -480,13 +382,13 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                 onChange={handleChange}
                                 required
                                 placeholder="e.g. Web Development, Data Science"
-                                className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                                className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
                             />
                         </div>
 
                         {/* Experience Years */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                                 Years of Experience <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -497,17 +399,17 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                 required
                                 min="0"
                                 max="50"
-                                className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                                className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
                             />
-                            <p className={`text-xs ${formData.experienceYears >= 3 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-neutral-500'}`}>
-                                {formData.experienceYears >= 3 ? 'Great! 3+ years increases approval chance' : '3+ years recommended for higher AI score'}
+                            <p className="text-xs text-gray-500 dark:text-neutral-500">
+                                {formData.experienceYears >= 3 ? '3+ years — good for approval' : '3+ years recommended'}
                             </p>
                         </div>
                     </div>
 
                     {/* Portfolio URL */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                             Portfolio / LinkedIn URL <span className="text-red-500">*</span>
                         </label>
                         <input
@@ -517,17 +419,17 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                             onChange={handleChange}
                             required
                             placeholder="https://..."
-                            className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white"
+                            className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white"
                         />
                     </div>
 
                     {/* Categories */}
                     <div className="space-y-2" ref={categoryDropdownRef}>
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                             Categories / Expertise Areas <span className="text-red-500">*</span>
                         </label>
-                        <p className="text-xs text-neutral-500 mb-2">
-                            Select the categories you can mentor in. Students will be matched based on these.
+                        <p className="text-xs text-gray-500 dark:text-neutral-500 mb-2">
+                            Select the categories you can mentor in (max 5).
                         </p>
                         {loadingData ? (
                             <div className="text-sm text-neutral-500">Loading categories...</div>
@@ -536,22 +438,22 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                 <button
                                     type="button"
                                     onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                                    className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between"
+                                    className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between"
                                 >
-                                    <span className="text-sm">
+                                    <span className="text-sm text-gray-700 dark:text-neutral-300">
                                         {formData.categoryIds.length === 0 
                                             ? "Select categories..." 
                                             : `${formData.categoryIds.length}/5 selected`}
                                     </span>
-                                    <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <HiChevronDown className={`w-4 h-4 text-gray-400 dark:text-neutral-500 transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 
                                 {categoryDropdownOpen && (
-                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                         {categories.map((cat) => (
                                             <label
                                                 key={cat.id}
-                                                className="flex items-center px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer"
+                                                className="flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer text-sm"
                                             >
                                                 <input
                                                     type="checkbox"
@@ -570,16 +472,16 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                         )}
                         {formData.categoryIds.length > 0 && (
                             <div className="space-y-2">
-                                <p className="text-xs text-blue-600 dark:text-blue-400">
+                                <p className="text-xs text-gray-500 dark:text-neutral-500">
                                     {formData.categoryIds.length}/5 categories selected
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {formData.categoryIds.map(catId => {
                                         const cat = categories.find(c => c.id === catId);
                                         return cat ? (
                                             <span
                                                 key={catId}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-neutral-300 rounded-md"
                                             >
                                                 {cat.name}
                                                 <button
@@ -599,19 +501,19 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
 
                     {/* Hashtags */}
                     <div className="space-y-2" ref={hashtagDropdownRef}>
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                             Hashtags / Specific Skills (Optional)
                         </label>
-                        <p className="text-xs text-neutral-500 mb-2">
+                        <p className="text-xs text-gray-500 dark:text-neutral-500 mb-2">
                             {formData.categoryIds.length > 0 
                                 ? "Select specific skills related to your chosen categories (max 5)."
-                                : "Please select categories first to see available hashtags."}
+                                : "Select categories first to see available hashtags."}
                         </p>
                         {loadingData ? (
                             <div className="text-sm text-neutral-500">Loading hashtags...</div>
                         ) : formData.categoryIds.length === 0 ? (
-                            <div className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-center">
-                                <p className="text-sm text-neutral-500">Select categories first</p>
+                            <div className="w-full px-3 py-2 bg-gray-50 dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-center">
+                                <p className="text-sm text-gray-400 dark:text-neutral-500">Select categories first</p>
                             </div>
                         ) : (
                             <div className="relative">
@@ -619,22 +521,22 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                     type="button"
                                     onClick={() => setHashtagDropdownOpen(!hashtagDropdownOpen)}
                                     disabled={availableHashtags.length === 0}
-                                    className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white text-left flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span className="text-sm">
+                                    <span className="text-sm text-gray-700 dark:text-neutral-300">
                                         {formData.hashtagIds.length === 0 
                                             ? "Select hashtags..." 
                                             : `${formData.hashtagIds.length}/5 selected`}
                                     </span>
-                                    <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${hashtagDropdownOpen ? 'rotate-180' : ''}`} />
+                                    <HiChevronDown className={`w-4 h-4 text-gray-400 dark:text-neutral-500 transition-transform duration-200 ${hashtagDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 
                                 {hashtagDropdownOpen && availableHashtags.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                         {availableHashtags.map((tag) => (
                                             <label
                                                 key={tag.id}
-                                                className={`flex items-center px-4 py-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer ${
+                                                className={`flex items-center px-3 py-2 hover:bg-gray-50 dark:hover:bg-neutral-700 cursor-pointer text-sm ${
                                                     formData.hashtagIds.length >= 5 && !formData.hashtagIds.includes(tag.id) 
                                                         ? 'opacity-50 cursor-not-allowed' 
                                                         : ''
@@ -658,16 +560,16 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                         )}
                         {formData.hashtagIds.length > 0 && (
                             <div className="space-y-2">
-                                <p className={`text-xs ${formData.hashtagIds.length >= 5 ? 'text-orange-600 font-medium' : 'text-blue-600 dark:text-blue-400'}`}>
-                                    {formData.hashtagIds.length}/5 hashtags selected {formData.hashtagIds.length >= 5 && "(Maximum reached)"}
+                                <p className="text-xs text-gray-500 dark:text-neutral-500">
+                                    {formData.hashtagIds.length}/5 hashtags selected {formData.hashtagIds.length >= 5 && "(max)"}
                                 </p>
-                                <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-wrap gap-1.5">
                                     {formData.hashtagIds.map(hashId => {
                                         const tag = hashtags.find(h => h.id === hashId);
                                         return tag ? (
                                             <span
                                                 key={hashId}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-full"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-gray-100 text-gray-700 dark:bg-neutral-800 dark:text-neutral-300 rounded-md"
                                             >
                                                 #{tag.name}
                                                 <button
@@ -687,33 +589,34 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
 
                     {/* Introduction */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            Introduction (min 50 chars, recommend 150-300 words) <span className="text-red-500">*</span>
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
+                            Introduction <span className="text-red-500">*</span>
                         </label>
+                        <p className="text-xs text-gray-500 dark:text-neutral-500">Min 50 characters. 150-300 words recommended for a higher score.</p>
                         <textarea
                             name="introduction"
                             value={formData.introduction}
                             onChange={handleChange}
                             required
                             rows={5}
-                            placeholder="Tell us about your experience, achievements, teaching philosophy, and why you want to mentor. Be specific and professional. Example: 'I'm a Senior Software Engineer with 7 years in full-stack development. I've mentored 50+ junior developers and published technical articles with 100k+ views...'"
-                            className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white resize-none"
+                            placeholder="Tell us about your experience, achievements, and why you want to mentor..."
+                            className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white resize-none"
                         />
-                        <p className={`text-xs text-right ${formData.introduction.length >= 150 ? 'text-green-600 dark:text-green-400 font-medium' : 'text-neutral-500'}`}>
-                            {formData.introduction.length} characters {formData.introduction.length >= 150 && '✓ Great length!'}
+                        <p className="text-xs text-right text-gray-400 dark:text-neutral-500">
+                            {formData.introduction.length} characters
                         </p>
                     </div>
 
                     {/* File Upload */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            Certifications / CV (Max 2 files, 20MB each) <span className="text-red-500">*</span>
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
+                            Certifications / CV <span className="text-red-500">*</span>
                         </label>
-                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                            Best formats: PDF (recommended), JPG/PNG for certificates. Upload professional certifications for higher AI score!
+                        <p className="text-xs text-gray-500 dark:text-neutral-500">
+                            Max 2 files, 20MB each. PDF recommended.
                         </p>
 
-                        <div className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-xl p-6 text-center hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer relative group">
+                        <div className="border border-dashed border-gray-300 dark:border-neutral-700 rounded-lg p-5 text-center hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer relative">
                             <input
                                 type="file"
                                 multiple
@@ -721,15 +624,13 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             />
-                            <div className="flex flex-col items-center gap-2">
-                                <div className="p-3 bg-primary-50 dark:bg-primary-900/20 rounded-full text-primary-600">
-                                    <HiUpload className="w-6 h-6" />
-                                </div>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                                    Click to upload or drag and drop
+                            <div className="flex flex-col items-center gap-1.5">
+                                <HiUpload className="w-5 h-5 text-gray-400 dark:text-neutral-500" />
+                                <p className="text-sm text-gray-600 dark:text-neutral-400">
+                                    Click to upload
                                 </p>
-                                <p className="text-xs text-neutral-500">
-                                    PDF (best), JPG, PNG, Word • Max 20MB per file
+                                <p className="text-xs text-gray-400 dark:text-neutral-500">
+                                    PDF, JPG, PNG, DOC/DOCX
                                 </p>
                             </div>
                         </div>
@@ -738,16 +639,14 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                         {files.length > 0 && (
                             <div className="space-y-2 mt-2">
                                 {files.map((file, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                                        <div className="flex items-center gap-3 overflow-hidden">
-                                            <div className="p-2 bg-white dark:bg-neutral-700 rounded-lg text-neutral-500">
-                                                <HiCheck className="w-4 h-4 text-emerald-500" />
-                                            </div>
+                                    <div key={index} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-neutral-800 rounded-lg border border-gray-200 dark:border-neutral-700">
+                                        <div className="flex items-center gap-2.5 overflow-hidden">
+                                            <HiCheck className="w-4 h-4 text-green-500 flex-shrink-0" />
                                             <div className="truncate">
-                                                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">
+                                                <p className="text-sm text-gray-800 dark:text-neutral-200 truncate">
                                                     {file.name}
                                                 </p>
-                                                <p className="text-xs text-neutral-500">
+                                                <p className="text-xs text-gray-400 dark:text-neutral-500">
                                                     {(file.size / 1024 / 1024).toFixed(2)} MB
                                                 </p>
                                             </div>
@@ -755,9 +654,9 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                                         <button
                                             type="button"
                                             onClick={() => removeFile(index)}
-                                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 text-neutral-400 hover:text-red-500 rounded-lg transition-colors"
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-md transition-colors"
                                         >
-                                            <HiTrash className="w-5 h-5" />
+                                            <HiTrash className="w-4 h-4" />
                                         </button>
                                     </div>
                                 ))}
@@ -767,7 +666,7 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
 
                     {/* Note */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        <label className="text-sm font-medium text-gray-700 dark:text-neutral-300">
                             Note for Reviewer (Optional)
                         </label>
                         <textarea
@@ -775,23 +674,24 @@ export default function ApplyMentorModal({ isOpen, onClose, onSuccess }) {
                             value={formData.applicationNote}
                             onChange={handleChange}
                             rows={2}
-                            className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 dark:text-white resize-none"
+                            placeholder="Any additional context..."
+                            className="w-full px-3 py-2 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:text-white resize-none"
                         />
                     </div>
 
                     {/* Footer */}
-                    <div className="sticky bottom-0 z-10 pt-4 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 flex justify-end gap-3">
+                    <div className="sticky bottom-0 z-10 pt-4 bg-white dark:bg-neutral-900 border-t border-gray-200 dark:border-neutral-800 flex justify-end gap-3">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 font-medium text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-xl transition-colors"
+                            className="px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-5 py-2.5 font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            className="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
                             {loading ? (
                                 <>

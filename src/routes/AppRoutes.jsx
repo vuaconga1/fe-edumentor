@@ -30,6 +30,7 @@ import WalletsPage from '../pages/admin/WalletsPage';
 import PostsPage from '../pages/admin/PostsPage';
 import CommentsPage from '../pages/admin/CommentsPage';
 import MentorApplicationsPage from '../pages/admin/MentorApplicationsPage';
+import BankTransfersPage from '../pages/admin/BankTransfersPage';
 import ForgotPassword from '../pages/auth/ForgotPassword';
 import ResetPassword from '../pages/auth/ResetPassword';
 import ChangePassword from '../pages/auth/ChangePassword';
@@ -41,6 +42,7 @@ import MessagingPage from '../pages/messaging/MessagingPage';
 import WalletPage from '../pages/common/WalletPage';
 import OrderHistoryPage from '../pages/student/OrderHistoryPage';
 import MentorReviewsPage from '../pages/mentor/MentorReviewsPage';
+import MentorHome from '../pages/mentor/MentorHome';
 import MentorProfilePage from '../pages/mentor/MentorProfilePage';
 import MentorRequestsPage from '../pages/mentor/MentorRequestsPage';
 import MentorOrdersPage from '../pages/mentor/MentorOrdersPage';
@@ -50,6 +52,7 @@ import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
 import MentorDetailPage from '../pages/student/MentorDetailPage';
 import MyRequestsPage from '../pages/student/MyRequestsPage';
 import JoinGroupPage from '../pages/JoinGroupPage';
+import PaymentCallback from '../pages/common/PaymentCallback';
 
 const AppRoutes = () => {
   return (
@@ -82,10 +85,12 @@ const AppRoutes = () => {
         <Route path="posts" element={<PostsPage />} />
         <Route path="comments" element={<CommentsPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="bank-transfers" element={<BankTransfersPage />} />
       </Route>
 
       {/* Mentor */}
       <Route path="/mentor" element={<MentorLayout />}>
+        <Route index element={<MentorHome />} />
         <Route path="community" element={<Community />} />
         <Route path="messaging" element={<MessagingPage />} />
         <Route path="wallet" element={<WalletPage />} />
@@ -114,6 +119,9 @@ const AppRoutes = () => {
 
       {/* Group Invite */}
       <Route path="/groups/join/:inviteCode" element={<JoinGroupPage />} />
+
+      {/* Payment Callback */}
+      <Route path="/payment/callback" element={<PaymentCallback />} />
 
       {/* Auth */}
       <Route path="/login" element={<Login />} />

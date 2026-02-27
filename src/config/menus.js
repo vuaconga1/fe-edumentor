@@ -15,8 +15,9 @@ import {
   HiUserAdd,
   HiCash,
   HiLink,
+  HiCreditCard,
 } from "react-icons/hi";
-import { HomeIcon, MessageCircle, UsersRound, Wallet, Star, Home, Search, History, FileText } from 'lucide-react';
+import { Home, MessageCircle, UsersRound, Wallet, Star, Search, History, FileText } from 'lucide-react';
 
 // ADMIN MENU
 export const ADMIN_MENU = [
@@ -31,6 +32,7 @@ export const ADMIN_MENU = [
   { label: "Proposals", icon: HiChat, href: "/admin/proposals" },
   { label: "Transactions", icon: HiCurrencyDollar, href: "/admin/transactions" },
   { label: "Wallets", icon: HiCash, href: "/admin/wallets" },
+  { label: "Bank Transfers", icon: HiCreditCard, href: "/admin/bank-transfers" },
   { label: "Reviews", icon: HiStar, href: "/admin/reviews" },
   { label: "Posts", icon: HiClipboard, href: "/admin/posts" },
   { label: "Comments", icon: HiChat, href: "/admin/comments" },
@@ -40,9 +42,9 @@ export const ADMIN_MENU = [
 
 // MENTOR MENU
 export const MENTOR_MENU = [
-  { label: "Home", href: "/mentor", icon: HomeIcon },
-  { label: "Requests", href: "/mentor/requests", icon: FileText },
-  { label: "Orders", href: "/mentor/orders", icon: History },
+  { label: "Home", href: "/mentor", icon: Home },
+  { label: "My Proposals", href: "/mentor/requests", icon: FileText },
+  { label: "Order History", href: "/mentor/orders", icon: History },
   { label: "Community", href: "/mentor/community", icon: UsersRound },
   { label: "Messaging", href: "/mentor/messaging", icon: MessageCircle },
   { label: "My Wallet", href: "/mentor/wallet", icon: Wallet },

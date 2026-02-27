@@ -62,7 +62,7 @@ const GroupList = ({ groups = [], activeGroupId, onSelectGroup, activeGroup, onR
         break;
       case "invite":
         if (!activeGroup) {
-          alert("Vui lòng chọn một nhóm trước khi mời thành viên");
+          alert("Please select a group before inviting members");
           return;
         }
         setIsInviteModalOpen(true);
