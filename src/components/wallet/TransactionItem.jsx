@@ -9,7 +9,9 @@ const TransactionItem = ({ transaction }) => {
   };
 
   const formatTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-GB', {
+    if (!dateString) return '';
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleString('en-GB', {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false
     });
   };

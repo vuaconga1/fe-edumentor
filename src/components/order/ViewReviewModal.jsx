@@ -104,7 +104,7 @@ const ViewReviewModal = ({ isOpen, onClose, order }) => {
               {/* Date */}
               {review.createdAt && (
                 <p className="text-center text-xs text-slate-400 mt-4">
-                  Reviewed on {new Date(review.createdAt).toLocaleDateString('en-GB', {
+                  Reviewed on {new Date(review.createdAt?.endsWith?.('Z') ? review.createdAt : review.createdAt + 'Z').toLocaleDateString('en-GB', {
                     day: '2-digit', month: 'short', year: 'numeric'
                   })}
                 </p>

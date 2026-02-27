@@ -39,7 +39,8 @@ const WalletPage = () => {
 
   const formatTime = (dateString) => {
     if (!dateString) return "—";
-    const date = new Date(dateString);
+    const utc = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(utc);
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
 

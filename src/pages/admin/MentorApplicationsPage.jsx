@@ -181,7 +181,8 @@ export default function MentorApplicationsPage() {
 
     const formatDateTime = (dateString) => {
         if (!dateString) return "—";
-        return new Date(dateString).toLocaleString("en-US", {
+        const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+        return new Date(utc).toLocaleString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
@@ -223,7 +224,7 @@ export default function MentorApplicationsPage() {
                 return nameA.localeCompare(nameB);
             }
             // Within same user, sort by creation date (newest first)
-            return new Date(b.createdAt) - new Date(a.createdAt);
+            return new Date(b.createdAt?.endsWith?.('Z') ? b.createdAt : b.createdAt + 'Z') - new Date(a.createdAt?.endsWith?.('Z') ? a.createdAt : a.createdAt + 'Z');
         });
         
         return sorted;
@@ -271,7 +272,8 @@ export default function MentorApplicationsPage() {
 
     const formatDate = (dateString) => {
         if (!dateString) return "—";
-        return new Date(dateString).toLocaleDateString("en-US", {
+        const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+        return new Date(utc).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",

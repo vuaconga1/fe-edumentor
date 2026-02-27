@@ -13,6 +13,8 @@ export default function ReviewsPage() {
     const [keyword, setKeyword] = useState("");
     const [filterRating, setFilterRating] = useState("all");
     const [apiError, setApiError] = useState("");
+    const [selectedReview, setSelectedReview] = useState(null);
+    const [detailOpen, setDetailOpen] = useState(false);
 
     const fetchReviews = async () => {
         setLoading(true);
@@ -45,10 +47,15 @@ export default function ReviewsPage() {
         }
     };
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
     const [showFilters, setShowFilters] = useState(false);
     const hasActiveFilters = keyword || filterRating !== "all";
+
+    // Client-side rating filter
+    const filteredReviews = filterRating !== "all"
+        ? reviews.filter(r => r.rating === parseInt(filterRating))
+        : reviews;
 
     const renderStars = (rating) => {
         return (
@@ -163,8 +170,8 @@ export default function ReviewsPage() {
                         </thead>
                         <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                             {loading ? <tr><td colSpan={7} className="px-5 py-10 text-center text-neutral-500">Loading...</td></tr>
-                                : reviews.length === 0 ? <tr><td colSpan={7} className="px-5 py-10 text-center text-neutral-500">No reviews</td></tr>
-                                    : reviews.map((r) => (
+                                : filteredReviews.length === 0 ? <tr><td colSpan={7} className="px-5 py-10 text-center text-neutral-500">No reviews</td></tr>
+                                    : filteredReviews.map((r) => (
                                         <tr key={r.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
                                             <td className="px-6 py-4 text-sm font-mono">#{r.id}</td>
                                             <td className="px-6 py-4 text-sm">{r.fromUserName || "—"}</td>
@@ -177,7 +184,7 @@ export default function ReviewsPage() {
                                                     <ActionButton
                                                         icon={<HiEye className="w-4 h-4" />}
                                                         tooltip="View Detail"
-                                                        onClick={() => {}}
+                                                        onClick={() => { setSelectedReview(r); setDetailOpen(true); }}
                                                         variant="info"
                                                     />
                                                     <ActionButton
@@ -204,6 +211,52 @@ export default function ReviewsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Detail Modal */}
+            {detailOpen && selectedReview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+                    <div className="w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="px-4 sm:px-5 py-4 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
+                            <h3 className="font-bold text-neutral-900 dark:text-white">Review #{selectedReview.id}</h3>
+                            <button onClick={() => setDetailOpen(false)} className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800">
+                                <HiX className="w-5 h-5 text-neutral-500" />
+                            </button>
+                        </div>
+                        <div className="p-4 sm:p-5 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">From</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedReview.fromUserName || "—"}</p>
+                                    {selectedReview.fromUserEmail && <p className="text-xs text-neutral-500">{selectedReview.fromUserEmail}</p>}
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">To</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedReview.toUserName || "—"}</p>
+                                    {selectedReview.toUserEmail && <p className="text-xs text-neutral-500">{selectedReview.toUserEmail}</p>}
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Order</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedReview.orderTitle || `Order #${selectedReview.orderId || "—"}`}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Rating</p>
+                                    {renderStars(selectedReview.rating)}
+                                </div>
+                                <div className="sm:col-span-2">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Created At</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedReview.createdAt)}</p>
+                                </div>
+                            </div>
+                            {selectedReview.comment && (
+                                <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Comment</p>
+                                    <p className="text-neutral-900 dark:text-white whitespace-pre-wrap">{selectedReview.comment}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

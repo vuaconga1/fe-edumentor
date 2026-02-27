@@ -5,7 +5,7 @@ const OrderDetailModal = ({ isOpen, onClose, order }) => {
   if (!isOpen || !order) return null;
 
   const formatCurrency = (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-  const formatDate = (dateStr) => new Date(dateStr).toLocaleString('vi-VN');
+  const formatDate = (dateStr) => dateStr ? new Date(dateStr.endsWith?.('Z') ? dateStr : dateStr + 'Z').toLocaleString('vi-VN') : '—';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in zoom-in duration-200">
@@ -25,15 +25,19 @@ const OrderDetailModal = ({ isOpen, onClose, order }) => {
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-6">
           
-          {/* Mentor Card */}
+          {/* Person Card – show mentor (student view) or student (mentor view) */}
+          {(order.mentor || order.student) && (
           <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
-             <img src={order.mentor.avatar} alt={order.mentor.name} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-slate-600 shadow-sm" />
+             <img src={(order.mentor ?? order.student)?.avatar} alt={(order.mentor ?? order.student)?.name} className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-slate-600 shadow-sm" />
              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Mentor</p>
-                <h4 className="font-bold text-slate-900 dark:text-white text-lg">{order.mentor.name}</h4>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{order.mentor.specialty}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{order.mentor ? 'Mentor' : 'Student'}</p>
+                <h4 className="font-bold text-slate-900 dark:text-white text-lg">{(order.mentor ?? order.student)?.name}</h4>
+                {(order.mentor ?? order.student)?.specialty && (
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{(order.mentor ?? order.student).specialty}</p>
+                )}
              </div>
           </div>
+          )}
 
           {/* Service Details */}
           <div>
@@ -66,14 +70,6 @@ const OrderDetailModal = ({ isOpen, onClose, order }) => {
                 <Receipt size={18} className="text-slate-400" />
                 Payment Summary
              </div>
-             <div className="flex justify-between items-center mb-2 text-sm">
-                <span className="text-slate-500">Subtotal</span>
-                <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(order.total)}</span>
-             </div>
-             <div className="flex justify-between items-center mb-4 text-sm">
-                <span className="text-slate-500">Discount</span>
-                <span className="text-emerald-600 font-medium">- 0đ</span>
-             </div>
              <div className="flex justify-between items-center pt-3 border-t border-slate-200 dark:border-slate-700">
                 <span className="font-bold text-slate-900 dark:text-white">Total</span>
                 <span className="font-bold text-xl text-blue-600">{formatCurrency(order.total)}</span>
@@ -81,11 +77,6 @@ const OrderDetailModal = ({ isOpen, onClose, order }) => {
           </div>
         </div>
 
-        <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-           <button onClick={onClose} className="w-full py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl hover:bg-slate-100 transition-colors shadow-sm">
-              Close
-           </button>
-        </div>
       </div>
     </div>
   );

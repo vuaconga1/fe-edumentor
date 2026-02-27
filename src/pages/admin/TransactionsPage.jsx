@@ -57,7 +57,14 @@ const TransactionsPage = () => {
           ? data
           : [];
 
-        if (mounted) setTransactions(list);
+        // Normalize enum numbers to display strings
+        const normalized = list.map(item => ({
+          ...item,
+          status: item.statusDisplay || item.status,
+          type: item.typeDisplay || item.type,
+        }));
+
+        if (mounted) setTransactions(normalized);
       } catch (err) {
         console.log("Failed to fetch transactions", err);
         if (mounted) {
@@ -114,7 +121,8 @@ const TransactionsPage = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "-";
-    const d = new Date(dateString);
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    const d = new Date(utc);
     if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleDateString("en-US", {
       month: "short",

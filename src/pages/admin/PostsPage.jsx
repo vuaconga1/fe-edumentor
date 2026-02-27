@@ -55,7 +55,7 @@ export default function PostsPage() {
         }
     };
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+    const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
     const [showFilters, setShowFilters] = useState(false);
     const hasActiveFilters = keyword || filterStatus !== "all";

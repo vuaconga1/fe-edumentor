@@ -50,6 +50,7 @@ import StudentProfilePage from '../pages/student/StudentProfilePage';
 import EditStudentProfilePage from '../pages/student/EditStudentProfilePage';
 import EditMentorProfilePage from '../pages/mentor/EditMentorProfilePage';
 import MentorDetailPage from '../pages/student/MentorDetailPage';
+import UserProfilePage from '../pages/common/UserProfilePage';
 import MyRequestsPage from '../pages/student/MyRequestsPage';
 import JoinGroupPage from '../pages/JoinGroupPage';
 import PaymentCallback from '../pages/common/PaymentCallback';
@@ -97,6 +98,8 @@ const AppRoutes = () => {
         <Route path="orders" element={<MentorOrdersPage />} />
         <Route path="reviews" element={<MentorReviewsPage />} />
         <Route path="requests" element={<MentorRequestsPage />} />
+        <Route path="mentor/:id" element={<MentorDetailPage />} />
+        <Route path="user/:id" element={<UserProfilePage />} />
         <Route path="profile" element={<MentorProfilePage />} />
         <Route path="profile/edit" element={<EditMentorProfilePage />} />
         <Route path="change-password" element={<ChangePassword />} />
@@ -109,6 +112,7 @@ const AppRoutes = () => {
         <Route path="profile/edit" element={<EditStudentProfilePage />} />
         <Route path="find-mentor" element={<FindMentorPage />} />
         <Route path="mentor/:id" element={<MentorDetailPage />} />
+        <Route path="user/:id" element={<UserProfilePage />} />
         <Route path="my-requests" element={<MyRequestsPage />} />
         <Route path="community" element={<Community />} />
         <Route path="messaging" element={<MessagingPage />} />

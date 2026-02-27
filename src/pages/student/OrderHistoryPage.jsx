@@ -15,7 +15,8 @@ const formatCurrency = (amount) =>
 
 const formatDate = (dateString) => {
   if (!dateString) return "-";
-  return new Date(dateString).toLocaleDateString("en-GB", {
+  const utc = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+  return new Date(utc).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",

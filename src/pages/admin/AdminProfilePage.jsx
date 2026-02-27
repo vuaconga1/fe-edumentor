@@ -14,7 +14,8 @@ const AdminProfilePage = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",

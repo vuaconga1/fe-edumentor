@@ -24,28 +24,16 @@ const SendProposalModal = ({ isOpen, onClose, onSubmit, postTitle, authorName, p
         if (!postId) return false;
         
         try {
-            let page = 1;
-            let totalPages = 1;
+            const res = await requestApi.getMyProposals();
+            const data = res?.data?.data;
+            // API returns a flat array, not paginated
+            const items = Array.isArray(data) ? data : (data?.items || []);
 
-            do {
-                const res = await requestApi.getMyProposals(page, 50);
-                const data = res?.data?.data;
-                const items = data?.items || [];
-                totalPages = data?.totalPages || 1;
-
-                const pending = items.some((proposal) => {
-                    const postIdMatch = proposal?.postId === postId || proposal?.communityPostId === postId;
-                    const statusCheck = isPendingStatus(proposal?.status);
-                    return postIdMatch && statusCheck;
-                });
-
-                if (pending) {
-                    return true;
-                }
-                page += 1;
-            } while (page <= totalPages && page <= 5);
-
-            return false;
+            return items.some((proposal) => {
+                const postIdMatch = proposal?.postId === postId || proposal?.communityPostId === postId;
+                const statusCheck = isPendingStatus(proposal?.status);
+                return postIdMatch && statusCheck;
+            });
         } catch (err) {
             console.error('Check existing proposal failed:', err);
             return false;
@@ -161,7 +149,7 @@ const SendProposalModal = ({ isOpen, onClose, onSubmit, postTitle, authorName, p
 
                     {hasPendingProposal && !checkingExisting && (
                         <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 text-sm">
-                            ⚠️ You already have a pending proposal for this post. Please wait for the student to respond.
+                            You already have a pending proposal for this post. Please wait for the student to respond.
                         </div>
                     )}
 

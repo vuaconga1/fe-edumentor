@@ -33,7 +33,12 @@ export default function OrdersPage() {
         try {
             const res = await adminApi.getOrders({ pageNumber, pageSize, status, keyword });
             const data = res?.data?.data ?? res?.data;
-            setOrders(data?.items ?? []);
+            const items = (data?.items ?? []).map(item => ({
+                ...item,
+                status: item.statusDisplay || item.status,
+                billingType: item.billingTypeDisplay || item.billingType,
+            }));
+            setOrders(items);
             setTotalCount(data?.totalCount ?? 0);
         } catch (err) {
             setApiError(err?.response?.data?.message || "Failed to load orders");
@@ -73,7 +78,8 @@ export default function OrdersPage() {
 
     const formatDate = (dateString) => {
         if (!dateString) return "—";
-        return new Date(dateString).toLocaleDateString("en-US", {
+        const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+        return new Date(utc).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",
@@ -288,32 +294,89 @@ export default function OrdersPage() {
                         <div className="p-4 sm:p-5 space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-xs text-neutral-500">Student</p>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Student</p>
                                     <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.studentName}</p>
+                                    {selectedOrder.studentEmail && <p className="text-xs text-neutral-500">{selectedOrder.studentEmail}</p>}
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Mentor</p>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Mentor</p>
                                     <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.mentorName}</p>
+                                    {selectedOrder.mentorEmail && <p className="text-xs text-neutral-500">{selectedOrder.mentorEmail}</p>}
+                                </div>
+                                {selectedOrder.requestTitle && (
+                                    <div className="sm:col-span-2">
+                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Request</p>
+                                        <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.requestTitle}</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Billing Type</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.billingTypeDisplay || selectedOrder.billingType || "—"}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Total Price</p>
-                                    <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(selectedOrder.totalPrice)}</p>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Agreed Price</p>
+                                    <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(selectedOrder.agreedPrice)}</p>
+                                </div>
+                                {selectedOrder.agreedHourlyRate > 0 && (
+                                    <div>
+                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Hourly Rate</p>
+                                        <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(selectedOrder.agreedHourlyRate)}/h</p>
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Total Price</p>
+                                    <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(selectedOrder.totalPrice)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Status</p>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Status</p>
                                     <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedOrder.status)}`}>
-                                        {selectedOrder.status}
+                                        {selectedOrder.statusDisplay || selectedOrder.status}
                                     </span>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Billing Type</p>
-                                    <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.billingType || "—"}</p>
-                                </div>
-                                <div>
-                                    <p className="text-xs text-neutral-500">Created At</p>
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Created At</p>
                                     <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedOrder.createdAt)}</p>
                                 </div>
+                                {selectedOrder.startedAt && (
+                                    <div>
+                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Started At</p>
+                                        <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedOrder.startedAt)}</p>
+                                    </div>
+                                )}
+                                {selectedOrder.completedAt && (
+                                    <div>
+                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Completed At</p>
+                                        <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedOrder.completedAt)}</p>
+                                    </div>
+                                )}
+                                {selectedOrder.cancelledAt && (
+                                    <div>
+                                        <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Cancelled At</p>
+                                        <p className="font-medium text-neutral-900 dark:text-white">{formatDate(selectedOrder.cancelledAt)}</p>
+                                    </div>
+                                )}
                             </div>
+                            {/* Escrow Info */}
+                            {selectedOrder.hasEscrow && (
+                                <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
+                                    <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2">Escrow</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-xs text-neutral-500">Amount</p>
+                                            <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(selectedOrder.escrowAmount)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs text-neutral-500">Status</p>
+                                            <p className="font-medium text-neutral-900 dark:text-white">{selectedOrder.escrowStatus || "—"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            {selectedOrder.reportCount > 0 && (
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                                    <p className="text-sm text-red-600 dark:text-red-400 font-medium">⚠ {selectedOrder.reportCount} report(s) on this order</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -6,14 +6,57 @@ import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
 const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
   if (!isOpen || !transaction) return null;
 
-  const { type, title, amount, time, status, details } = transaction;
+  // Normalize fields — backend returns type/status as int enums + display strings
+  const rawType = transaction.type;
+  const typeMap = {
+    0: 'topup', 1: 'withdraw', 2: 'escrow_hold', 3: 'escrow_release',
+    4: 'escrow_refund', 5: 'service_fee', 6: 'adjustment',
+    topup: 'topup', withdraw: 'withdraw', payment: 'payment',
+    escrowhold: 'escrow_hold', escrow_hold: 'escrow_hold',
+    escrowrelease: 'escrow_release', escrow_release: 'escrow_release',
+    escrowrefund: 'escrow_refund', escrow_refund: 'escrow_refund',
+    servicefee: 'service_fee', service_fee: 'service_fee',
+    adjustment: 'adjustment',
+  };
+  const type = typeMap[typeof rawType === 'string' ? rawType.toLowerCase().replace(/\s/g, '') : rawType] || String(rawType || '').toLowerCase();
+
+  const title = transaction.description || transaction.title || transaction.orderTitle || '';
+  const amount = transaction.amount ?? 0;
+  const time = transaction.createdAt || transaction.time || null;
+
+  // Normalize status: backend returns int (0=Pending, 1=Success, 2=Failed) or string
+  const rawStatus = transaction.status ?? transaction.statusDisplay ?? '';
+  const statusStr = String(rawStatus).toLowerCase();
+  const status = (statusStr === '1' || statusStr === 'success') ? 'completed'
+    : (statusStr === '0' || statusStr === 'pending') ? 'processing'
+    : (statusStr === '2' || statusStr === 'failed') ? 'failed'
+    : statusStr;
+
+  const details = transaction.details || {};
+
+  // Use backend's TypeDisplay if available, otherwise map ourselves
+  const typeDisplayMap = {
+    topup: 'Deposit',
+    withdraw: 'Withdrawal',
+    payment: 'Payment',
+    escrow_hold: 'Escrow Hold',
+    escrow_release: 'Payment Release',
+    escrow_refund: 'Refund',
+    service_fee: 'Service Fee',
+    adjustment: 'Adjustment',
+  };
+
+  // Use backend's isDebit logic
+  const isDebit = ['withdraw', 'escrow_hold', 'service_fee', 'payment'].includes(type);
 
   const formatCurrency = (val) => {
     return new Intl.NumberFormat('vi-VN').format(Math.abs(val));
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('en-GB', {
+    if (!dateString) return '—';
+    const utc = dateString.endsWith?.('Z') ? dateString : dateString + 'Z';
+    return new Date(utc).toLocaleString('en-GB', {
       weekday: 'long',
       day: '2-digit',
       month: 'long',
@@ -25,16 +68,13 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
   };
 
   const getTypeLabel = () => {
-    switch (type) {
-      case 'topup': return 'Deposit';
-      case 'payment': return 'Payment';
-      case 'escrow_hold': return 'Escrow Hold';
-      case 'withdraw': return 'Withdrawal';
-      default: return 'Transaction';
-    }
+    return transaction.typeDisplay || typeDisplayMap[type] || 'Transaction';
   };
 
   const getStatusLabel = () => {
+    if (transaction.statusDisplay && typeof transaction.statusDisplay === 'string') {
+      return transaction.statusDisplay;
+    }
     switch (status) {
       case 'completed': return 'Completed';
       case 'processing': return 'Processing';
@@ -62,12 +102,13 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
           {/* Amount Section */}
           <div className="text-center py-4">
             <p className="text-sm text-neutral-500 mb-1">{getTypeLabel()}</p>
-            <p className={`text-3xl font-bold ${amount > 0 ? 'text-blue-600' : 'text-neutral-900 dark:text-white'}`}>
-              {amount > 0 ? '+' : '-'}{formatCurrency(amount)} VND
+            <p className={`text-3xl font-bold ${isDebit ? 'text-red-600' : 'text-blue-600'}`}>
+              {isDebit ? '-' : '+'}{formatCurrency(amount)} VND
             </p>
             <p className={`text-sm mt-2 ${
               status === 'completed' ? 'text-green-600' : 
-              status === 'processing' ? 'text-amber-600' : 'text-neutral-500'
+              status === 'processing' ? 'text-amber-600' : 
+              status === 'failed' ? 'text-red-500' : 'text-neutral-500'
             }`}>
               {getStatusLabel()}
             </p>
@@ -92,12 +133,34 @@ const TransactionDetailModal = ({ isOpen, onClose, transaction }) => {
             </div>
 
             {/* Description */}
-            <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
-              <span className="text-sm text-neutral-500">Description</span>
-              <span className="text-sm font-medium text-neutral-900 dark:text-white text-right max-w-[200px]">
-                {title}
-              </span>
-            </div>
+            {title && (
+              <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-sm text-neutral-500">Description</span>
+                <span className="text-sm font-medium text-neutral-900 dark:text-white text-right max-w-[200px]">
+                  {title}
+                </span>
+              </div>
+            )}
+
+            {/* External Reference */}
+            {transaction.externalRef && (
+              <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-sm text-neutral-500">Reference</span>
+                <span className="text-sm font-medium text-neutral-900 dark:text-white font-mono text-right max-w-[200px] truncate">
+                  {transaction.externalRef}
+                </span>
+              </div>
+            )}
+
+            {/* Order ID */}
+            {transaction.orderId && (
+              <div className="flex justify-between py-2 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-sm text-neutral-500">Order</span>
+                <span className="text-sm font-medium text-neutral-900 dark:text-white">
+                  {transaction.orderTitle || `#${transaction.orderId}`}
+                </span>
+              </div>
+            )}
 
             {/* Payment Method */}
             {details?.paymentMethod && (

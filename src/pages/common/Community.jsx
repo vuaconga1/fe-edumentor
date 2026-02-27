@@ -246,8 +246,8 @@ const Community = () => {
         const latestPost = response.data?.data?.items?.[0];
 
         if (latestPost && posts.length > 0) {
-          const latestPostTime = new Date(latestPost.createdAt).getTime();
-          const currentFirstPostTime = new Date(posts[0].createdAt).getTime();
+          const latestPostTime = new Date(latestPost.createdAt?.endsWith?.('Z') ? latestPost.createdAt : latestPost.createdAt + 'Z').getTime();
+          const currentFirstPostTime = new Date(posts[0].createdAt?.endsWith?.('Z') ? posts[0].createdAt : posts[0].createdAt + 'Z').getTime();
 
           if (latestPostTime > currentFirstPostTime) {
             setHasNewPosts(true);

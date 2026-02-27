@@ -12,7 +12,7 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
     
     const code = inviteCode.trim();
     if (!code) {
-      toast.error('Vui lòng nhập mã mời');
+      toast.error('Please enter an invite code');
       return;
     }
 
@@ -22,16 +22,16 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
       console.log('[JoinGroup] Response:', res?.data);
       
       if (res?.data?.success) {
-        toast.success('Đã tham gia nhóm thành công!');
+        toast.success('Successfully joined the group!');
         onGroupJoined?.(res.data.data);
         setInviteCode('');
         onClose();
       } else {
-        toast.error(res?.data?.message || 'Không thể tham gia nhóm');
+        toast.error(res?.data?.message || 'Unable to join group');
       }
     } catch (e) {
       console.error('Join group failed', e);
-      const msg = e?.response?.data?.message || 'Mã mời không hợp lệ hoặc đã hết hạn';
+      const msg = e?.response?.data?.message || 'Invalid or expired invite code';
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
               <HiUserGroup className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              Tham gia nhóm
+              Join Group
             </h2>
           </div>
           <button
@@ -65,13 +65,13 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mã mời nhóm
+              Group Invite Code
             </label>
             <input
               type="text"
               value={inviteCode}
               onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-              placeholder="Nhập mã mời..."
+              placeholder="Enter invite code..."
               className="w-full px-4 py-3 rounded-lg bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 
                          font-mono text-lg tracking-wider text-center uppercase
                          focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -79,7 +79,7 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
               autoFocus
             />
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Nhập mã mời bạn nhận được từ admin nhóm
+              Enter the invite code you received from the group admin
             </p>
           </div>
 
@@ -91,7 +91,7 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
               className="flex-1 py-2.5 rounded-lg border border-neutral-300 dark:border-neutral-600 
                          text-gray-700 dark:text-gray-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
             >
-              Hủy
+              Cancel
             </button>
             <button
               type="submit"
@@ -102,10 +102,10 @@ export default function JoinGroupModal({ isOpen, onClose, onGroupJoined }) {
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang xử lý...
+                  Processing...
                 </span>
               ) : (
-                'Tham gia'
+                'Join'
               )}
             </button>
           </div>

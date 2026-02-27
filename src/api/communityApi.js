@@ -48,8 +48,10 @@ const communityApi = {
   },
 
   // Comments
-  getComments(postId) {
-    return axiosClient.get(`/api/Community/posts/${postId}/comments`);
+  getComments(postId, pageNumber = 1, pageSize = 10) {
+    return axiosClient.get(`/api/Community/posts/${postId}/comments`, {
+      params: { pageNumber, pageSize }
+    });
   },
 
   createComment(postId, payload) {

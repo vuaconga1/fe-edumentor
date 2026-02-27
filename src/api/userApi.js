@@ -7,6 +7,10 @@ const userApi = {
 
   create(data) {
     return axiosClient.post("/admin/users", data);
+  },
+
+  getById(userId) {
+    return axiosClient.get(`/api/User/${userId}`);
   }
 };
 

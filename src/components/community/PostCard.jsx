@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageCircle, MoreVertical, UserPlus, UserCheck, Flag, Send, FileText, Download } from 'lucide-react';
 import CommentSection from './CommentSection';
 import SendProposalModal from './SendProposalModal';
@@ -11,6 +12,7 @@ import requestApi from '../../api/requestApi';
 
 const PostCard = ({ post, onRefresh }) => {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const isMentor = currentUser?.role === 'Mentor' || currentUser?.role === 1;
 
   const {
@@ -85,29 +87,22 @@ const PostCard = ({ post, onRefresh }) => {
       
       setCheckingProposal(true);
       try {
-        let page = 1;
-        let totalPages = 1;
+        const res = await requestApi.getMyProposals();
+        const data = res?.data?.data;
+        // API returns a flat array, not paginated
+        const items = Array.isArray(data) ? data : (data?.items || []);
 
-        do {
-          const res = await requestApi.getMyProposals(page, 50);
-          const data = res?.data?.data;
-          const items = data?.items || [];
-          totalPages = data?.totalPages || 1;
+        const pending = items.some((proposal) => {
+          const postIdMatch = proposal?.postId === id || proposal?.communityPostId === id;
+          const isPending = proposal?.status === 0 || 
+                           proposal?.status === 'Pending' || 
+                           proposal?.statusDisplay === 'Pending';
+          return postIdMatch && isPending;
+        });
 
-          const pending = items.some((proposal) => {
-            const postIdMatch = proposal?.postId === id || proposal?.communityPostId === id;
-            const isPending = proposal?.status === 0 || 
-                             proposal?.status === 'Pending' || 
-                             proposal?.statusDisplay === 'Pending';
-            return postIdMatch && isPending;
-          });
-
-          if (pending) {
-            setHasPendingProposal(true);
-            break;
-          }
-          page += 1;
-        } while (page <= totalPages && page <= 5);
+        if (pending) {
+          setHasPendingProposal(true);
+        }
       } catch (err) {
         console.error('Check pending proposal failed:', err);
       } finally {
@@ -160,6 +155,16 @@ const PostCard = ({ post, onRefresh }) => {
   // Check if current user is the author
   const isOwnPost = currentUser?.id === author.id;
 
+  // Navigate to author's profile
+  const handleAuthorClick = () => {
+    if (!author.id || isOwnPost) return;
+    const basePath = isMentor ? '/mentor' : '/student';
+    navigate(`${basePath}/user/${author.id}`);
+  };
+
+  // Whether author name is clickable
+  const isClickable = !!author.id && !isOwnPost;
+
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 shadow-sm hover:shadow-lg transition-all duration-300">
 
@@ -169,7 +174,8 @@ const PostCard = ({ post, onRefresh }) => {
           <img
             src={normalizeAvatarUrl(author.avatarUrl || author.avatar) || buildDefaultAvatarUrl({ id: author.id, fullName: author.name })}
             alt={author.name}
-            className="w-10 h-10 rounded-full object-cover border-2 border-neutral-100 dark:border-neutral-700"
+            className={`w-10 h-10 rounded-full object-cover border-2 border-neutral-100 dark:border-neutral-700 ${isClickable ? 'cursor-pointer hover:ring-2 hover:ring-primary-400 transition-all' : ''}`}
+            onClick={isClickable ? handleAuthorClick : undefined}
             onError={(e) => {
               e.currentTarget.onerror = null;
               e.currentTarget.src = buildDefaultAvatarUrl({ id: author.id, fullName: author.name });
@@ -178,7 +184,10 @@ const PostCard = ({ post, onRefresh }) => {
 
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-neutral-900 dark:text-white text-sm">
+              <h3
+                className={`font-semibold text-neutral-900 dark:text-white text-sm ${isClickable ? 'cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors' : ''}`}
+                onClick={isClickable ? handleAuthorClick : undefined}
+              >
                 {author.name || "Unknown User"}
               </h3>
 

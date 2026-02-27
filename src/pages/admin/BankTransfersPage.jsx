@@ -80,7 +80,8 @@ const BankTransfersPage = () => {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
-    const d = new Date(dateStr);
+    const utc = dateStr.endsWith?.('Z') ? dateStr : dateStr + 'Z';
+    const d = new Date(utc);
     return d.toLocaleString("vi-VN", {
       day: "2-digit",
       month: "2-digit",
