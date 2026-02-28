@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ConversationList from "../../components/messaging/ConversationList";
 import GroupList from "../../components/messaging/GroupList";
 import ChatWindow from "../../components/messaging/ChatWindow";
@@ -53,6 +54,7 @@ const formatHMS = (totalSeconds) => {
 };
 
 const MessagingPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const workActionPopupRef = useRef(null);
   const [conversations, setConversations] = useState([]);
   const [groups, setGroups] = useState([]);
@@ -78,6 +80,8 @@ const MessagingPage = () => {
   const [workSession, setWorkSession] = useState(null);
   // workActionPopup: { requestId, actionType }  actionType: "start"|"pause"|"end"
   const [workActionPopup, setWorkActionPopup] = useState(null);
+  // Pending complete request from the other side (non-blocking, no modal)
+  const [pendingCompleteRequest, setPendingCompleteRequest] = useState(null);
 
   const activeConversationIdRef = useRef(null);
   const currentUserIdRef = useRef(null);
@@ -145,6 +149,26 @@ const MessagingPage = () => {
       }
     })();
   }, [hubReady]); // Depend on hubReady to join after hub connected
+
+  // ===== Auto-open conversation from URL param (e.g. from notification click) =====
+  const urlConversationHandled = useRef(false);
+  useEffect(() => {
+    if (urlConversationHandled.current) return;
+    const cid = searchParams.get("conversationId");
+    if (!cid || conversations.length === 0) return;
+    
+    const numCid = Number(cid);
+    const found = conversations.find(c => (c.conversationId ?? c.id) === numCid);
+    if (found) {
+      urlConversationHandled.current = true;
+      setActiveTab("conversations");
+      setActiveConversationId(numCid);
+      setActiveGroupId(null);
+      // Clean up URL param
+      searchParams.delete("conversationId");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [conversations, searchParams, setSearchParams]);
 
   // load groups
   useEffect(() => {
@@ -913,7 +937,18 @@ const MessagingPage = () => {
 
           if (!["start", "pause", "end", "complete"].includes(actionType)) return;
 
-          // ✅ store full payload (not only requestId)
+          // ✅ For "complete": don't show blocking modal, store separately
+          if (actionType === "complete") {
+            setPendingCompleteRequest({
+              requestId: rid,
+              actionType,
+              raw: payload,
+            });
+            toast.info("The other side has requested to complete the order. Click 'Complete Order' to confirm.", { toastId: "pending-complete" });
+            return;
+          }
+
+          // ✅ store full payload (not only requestId) — modal for start/pause/end only
           setWorkActionPopup({
             requestId: rid,
             actionType,
@@ -931,7 +966,7 @@ const MessagingPage = () => {
             end: "end session",
             complete: "complete order",
           }[String(payload.actionType).toLowerCase()] || payload.actionType;
-          toast.info(`Request to ${actionLabel} sent, waiting for confirmation...`);
+          toast.info(`Request to ${actionLabel} sent, waiting for confirmation...`, { toastId: `work-sent-${payload.actionType}` });
         }));
 
         // ===== WORK: group state pending (pause/end) =====
@@ -1010,7 +1045,8 @@ const MessagingPage = () => {
 
           pendingSnapshotRef.current = null;
           setCompletingOrder(false);
-          toast.error("The request has been rejected.");
+          setPendingCompleteRequest(null);
+          toast.error("The request has been rejected.", { toastId: "work-rejected" });
         }));
 
         // ===== WORK: Order Completed =====
@@ -1019,9 +1055,18 @@ const MessagingPage = () => {
           if (conversationId && conversationId !== Number(activeConversationIdRef.current)) return;
 
           setWorkSession(null); // Clear session if any
-          setWorkContext(prev => prev ? { ...prev, orderId: null } : prev); // Hide Complete Order button
+          // Update conversation's orderStatus so button hides immediately
+          setConversations(prev =>
+            (Array.isArray(prev) ? prev : []).map(c =>
+              (c.conversationId ?? c.id) === Number(activeConversationIdRef.current)
+                ? { ...c, orderStatus: "Completed" }
+                : c
+            )
+          );
           setCompletingOrder(false);
-          toast.success("Order has been completed successfully!");
+          setPendingCompleteRequest(null);
+          toast.dismiss("pending-complete"); // dismiss the pending toast if still visible
+          toast.success("Order has been completed successfully!", { toastId: "order-completed" });
           // Potentially refresh conversation to show status update
         }));
 
@@ -1136,6 +1181,8 @@ const MessagingPage = () => {
       setMessages([]);
       setWorkSession(null); // ✅ reset pinned when exit conversation (will reload when enter)
       setWorkActionPopup(null);
+      setPendingCompleteRequest(null);
+      setCompletingOrder(false);
       pendingSnapshotRef.current = null;
       return;
     }
@@ -1281,6 +1328,7 @@ const MessagingPage = () => {
 
     return {
       orderId: orderId ? Number(orderId) : null,
+      orderStatus: activeConversation?.orderStatus || null,
       mentorId,
       studentId,
       conversationId: activeConversationId ? Number(activeConversationId) : null,
@@ -1305,6 +1353,22 @@ const MessagingPage = () => {
         );
 
         const payload = res?.data?.data ?? res?.data;
+
+        // ✅ Check order status from summary — hide button if order completed/cancelled
+        const orderStatus = payload?.orderStatus;
+        if (orderStatus && ["Completed", "Cancelled"].includes(orderStatus)) {
+          // Update conversation's orderStatus so button hides
+          setConversations(prev =>
+            (Array.isArray(prev) ? prev : []).map(c =>
+              (c.conversationId ?? c.id) === activeConversationId
+                ? { ...c, orderStatus }
+                : c
+            )
+          );
+          if (isMounted) setWorkSession(null);
+          return;
+        }
+
         const active =
           payload?.activeSession || payload?.currentSession || payload?.session;
 
@@ -1493,6 +1557,23 @@ const MessagingPage = () => {
   const handleRequestCompleteOrder = async () => {
     if (!workContext?.orderId || !activeConversationId) return;
     if (completingOrder) return; // prevent double-click
+
+    // ✅ If the other side already requested complete, auto-accept their request
+    if (pendingCompleteRequest?.requestId) {
+      setCompletingOrder(true);
+      try {
+        await respondWorkAction(pendingCompleteRequest.requestId, true);
+        setPendingCompleteRequest(null);
+        toast.dismiss("pending-complete");
+        // OrderCompleted event will handle the rest (clear states, show success toast)
+      } catch (e) {
+        console.error("Auto-accept complete failed", e);
+        toast.error("Failed to confirm completion");
+        setCompletingOrder(false);
+      }
+      return;
+    }
+
     setCompletingOrder(true);
     try {
       await requestCompleteOrder(activeConversationId, workContext.orderId);
@@ -1747,6 +1828,7 @@ const MessagingPage = () => {
             onEndWork={handleEndWork} // ✅ Added
             onCompleteOrder={handleRequestCompleteOrder} // ✅ New handler
             completingOrder={completingOrder} // ✅ Disable button while pending
+            pendingCompleteRequest={pendingCompleteRequest} // ✅ Show indicator when other side requested
             workSession={workSession}
             workContext={workContext} // ✅ Pass workContext to check orderId
             onResumeWork={handleResumeWork}

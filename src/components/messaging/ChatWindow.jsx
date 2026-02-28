@@ -21,6 +21,7 @@ export default function ChatWindow({
   onEndWork,
   onCompleteOrder, // ✅ Added
   completingOrder = false, // disable button while pending
+  pendingCompleteRequest = null, // pending complete request from the other side
   onLoadMore,
   hasMore = false,
   loadingMore = false,
@@ -159,19 +160,21 @@ export default function ChatWindow({
             </div>
           </div>
 
-          {/* ✅ Complete Order button - show when there's an active order */}
+          {/* ✅ Complete Order button - show when there's an active order (not completed/cancelled) */}
           <div className="flex items-center gap-2">
-            {workContext?.orderId && (
+            {workContext?.orderId && !["Completed", "Cancelled"].includes(workContext?.orderStatus) && (
               <button
                 type="button"
                 onClick={onCompleteOrder}
                 disabled={completingOrder}
                 className={`h-9 px-3 rounded-lg text-white text-sm font-semibold transition-colors
                   ${completingOrder
-                    ? 'bg-blue-400 cursor-not-allowed opacity-70'
-                    : 'bg-blue-600 hover:bg-blue-700 active:opacity-90'}`}
+                    ? 'bg-green-400 cursor-not-allowed opacity-70'
+                    : pendingCompleteRequest
+                      ? 'bg-green-500 hover:bg-green-600 active:opacity-90 animate-pulse'
+                      : 'bg-green-600 hover:bg-green-700 active:opacity-90'}`}
               >
-                {completingOrder ? 'Waiting...' : 'Complete Order'}
+                {completingOrder ? 'Waiting...' : pendingCompleteRequest ? 'Confirm Complete' : 'Complete Order'}
               </button>
             )}
 
