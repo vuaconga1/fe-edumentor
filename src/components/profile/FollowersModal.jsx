@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
 import { X, Search, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const FollowersModal = ({ isOpen, onClose, followers = [], title = "Followers" }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   if (!isOpen) return null;
+
+  const basePath = user?.role === 'Mentor' || user?.role === 1 ? '/mentor' : '/student';
+
+  const handleUserClick = (followerId) => {
+    onClose();
+    navigate(`${basePath}/user/${followerId}`);
+  };
 
   // Filter followers based on search query
   const filteredFollowers = followers.filter((follower) =>
@@ -68,6 +79,7 @@ const FollowersModal = ({ isOpen, onClose, followers = [], title = "Followers" }
               {filteredFollowers.map((follower) => (
                 <div
                   key={follower.id}
+                  onClick={() => handleUserClick(follower.id)}
                   className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   <img

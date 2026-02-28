@@ -24,6 +24,10 @@ export default function CategoriesPage() {
   const [categoriesTree, setCategoriesTree] = useState([]);
   const [query, setQuery] = useState("");
 
+  // Pagination
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
+
   const [openModal, setOpenModal] = useState(false);
   const [mode, setMode] = useState("create"); // create | edit
   const [editingId, setEditingId] = useState(null);
@@ -74,6 +78,14 @@ export default function CategoriesPage() {
       return true;
     });
   }, [flatAll, query]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginatedCategories = filtered.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+
+  // Reset page when query changes
+  useEffect(() => {
+    setPageNumber(1);
+  }, [query]);
 
   // Category Filters Component (inline)
   const CategoryFilters = ({ query, setQuery, fetchCategories }) => {
@@ -255,7 +267,7 @@ export default function CategoriesPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((c) => (
+                paginatedCategories.map((c) => (
                   <tr key={c.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/40">
                     <td className="px-6 py-4">
                       <span className="text-xs font-mono text-neutral-500">#{c.id}</span>
@@ -292,6 +304,31 @@ export default function CategoriesPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-4 sm:px-5 py-3 sm:py-4 border-t border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-sm text-neutral-500 text-center sm:text-left">
+              Page {pageNumber} of {totalPages} ({filtered.length} total)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                disabled={pageNumber === 1}
+                onClick={() => setPageNumber((p) => p - 1)}
+                className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <button
+                disabled={pageNumber === totalPages}
+                onClick={() => setPageNumber((p) => p + 1)}
+                className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}

@@ -74,7 +74,7 @@ export default function OrdersPage() {
     };
 
     const formatCurrency = (amount) =>
-        new Intl.NumberFormat("vi-VN").format(amount || 0) + "đ";
+        new Intl.NumberFormat("vi-VN").format(amount || 0) + " VND";
 
     const formatDate = (dateString) => {
         if (!dateString) return "—";

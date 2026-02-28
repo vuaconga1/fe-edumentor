@@ -153,7 +153,7 @@ const MentorHome = () => {
           onClick={() => navigate("/mentor/wallet")}
         >
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Available Balance</p>
-          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{formatCurrency(stats.walletBalance)} đ</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{formatCurrency(stats.walletBalance)} VND</p>
         </div>
 
         <div 
@@ -161,7 +161,7 @@ const MentorHome = () => {
           onClick={() => navigate("/mentor/wallet")}
         >
           <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">In Escrow</p>
-          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{formatCurrency(stats.escrowBalance)} đ</p>
+          <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{formatCurrency(stats.escrowBalance)} VND</p>
         </div>
       </div>
 
@@ -200,7 +200,7 @@ const MentorHome = () => {
                       <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded-full ${getStatusStyle(order.status)}`}>
                         {order.status}
                       </span>
-                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(order.totalPrice)} đ</p>
+                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(order.totalPrice)} VND</p>
                     </div>
                   </div>
                 </div>
@@ -287,7 +287,7 @@ const MentorHome = () => {
                       {proposal.status}
                     </span>
                     {proposal.price != null && (
-                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(proposal.price)} đ</p>
+                      <p className="text-xs text-neutral-500 mt-1">{formatCurrency(proposal.price)} VND</p>
                     )}
                   </div>
                 </div>

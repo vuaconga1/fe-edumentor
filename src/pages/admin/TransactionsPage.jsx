@@ -25,9 +25,9 @@ const TransactionsPage = () => {
   const [verifyNote, setVerifyNote] = useState("");
   const [verifyLoading, setVerifyLoading] = useState(false);
 
-  // ===== PAGINATION (basic) =====
-  const [pageNumber] = useState(1);
-  const [pageSize] = useState(50);
+  // ===== PAGINATION =====
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
 
   // ===== FETCH LIST =====
   useEffect(() => {
@@ -39,10 +39,10 @@ const TransactionsPage = () => {
         setError("");
 
         const res = await adminApi.getTransactions({
-          pageNumber,
-          pageSize,
-          status: filterStatus, // BE: if supports
-          type: filterType, // BE: if supports
+          pageNumber: 1,
+          pageSize: 200,
+          status: filterStatus,
+          type: filterType,
         });
 
         const raw = res?.data;
@@ -80,7 +80,7 @@ const TransactionsPage = () => {
     return () => {
       mounted = false;
     };
-  }, [pageNumber, pageSize, filterStatus, filterType]);
+  }, [filterStatus, filterType]);
 
   // Debounce searchKeyword
   useEffect(() => {
@@ -109,6 +109,14 @@ const TransactionsPage = () => {
     });
   }, [transactions, filterType, filterStatus, debouncedKeyword]);
 
+  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
+  const paginatedTransactions = filteredTransactions.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+
+  // Reset page on filter change
+  useEffect(() => {
+    setPageNumber(1);
+  }, [filterStatus, filterType, debouncedKeyword]);
+
   const handleView = (tx) => {
     setSelectedTx(tx);
     setIsDetailOpen(true);
@@ -116,7 +124,7 @@ const TransactionsPage = () => {
 
   const formatCurrency = (amount) => {
     const num = Number(amount) || 0;
-    return new Intl.NumberFormat("vi-VN").format(num) + "đ";
+    return new Intl.NumberFormat("vi-VN").format(num) + " VND";
   };
 
   const formatDate = (dateString) => {
@@ -517,10 +525,35 @@ const TransactionsPage = () => {
       {/* Table */}
       <DataTable
         columns={columns}
-        data={loading ? [] : filteredTransactions}
+        data={loading ? [] : paginatedTransactions}
         searchPlaceholder="Search transactions."
         emptyMessage={loading ? "Loading..." : "No transactions found"}
       />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-4 sm:px-5 py-3 sm:py-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-sm text-neutral-500 text-center sm:text-left">
+            Page {pageNumber} of {totalPages} ({filteredTransactions.length} transactions)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={pageNumber === 1}
+              onClick={() => setPageNumber((p) => p - 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              disabled={pageNumber === totalPages}
+              onClick={() => setPageNumber((p) => p + 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       <Modal

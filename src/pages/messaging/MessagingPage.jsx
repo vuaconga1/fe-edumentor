@@ -413,10 +413,10 @@ const MessagingPage = () => {
         setActiveGroup(null);
         setGroupMessages([]);
       }
-      toast.success("Đã rời nhóm thành công!");
+      toast.success("Left group successfully!");
     } catch (e) {
       console.error("Leave group failed", e);
-      toast.error("Rời nhóm thất bại!");
+      toast.error("Failed to leave group!");
       throw e;
     }
   };
@@ -481,7 +481,7 @@ const MessagingPage = () => {
     // Validate file is a valid File/Blob object
     if (!(file instanceof File) && !(file instanceof Blob)) {
       console.error("Invalid file object:", fileData);
-      toast.error("File không hợp lệ");
+      toast.error("Invalid file");
       return;
     }
 
@@ -1437,7 +1437,7 @@ const MessagingPage = () => {
   };
   const handleResumeWork = async () => {
     // tạm thời: chưa có backend resume
-    toast.info("Resume chưa implement backend. Cần API/Hub RequestResumeWork.");
+    toast.info("Resume not yet implemented. Backend API/Hub RequestResumeWork needed.");
   };
   // ===== Send image/file (keep your current behavior) =====
   const handleSendImage = async ({ file, desc }) => {
@@ -1764,16 +1764,16 @@ const MessagingPage = () => {
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    {workSession.status === "running" && "Đang làm việc"}
-                    {workSession.status === "paused" && "Đang tạm dừng"}
-                    {workSession.status === "pending" && "Chờ đối phương xác nhận..."}
+                    {workSession.status === "running" && "Working"}
+                    {workSession.status === "paused" && "Paused"}
+                    {workSession.status === "pending" && "Waiting for confirmation..."}
                   </div>
                   <div className="text-lg font-mono text-neutral-900 dark:text-neutral-100">
                     {formatHMS(elapsedSeconds)}
                   </div>
                   {workSession.status === "pending" && (
                     <div className="text-xs text-neutral-500 dark:text-neutral-400">
-                      ({workSession.pendingActionType === "pause" ? "Yêu cầu tạm dừng" : "Yêu cầu kết thúc"})
+                      ({workSession.pendingActionType === "pause" ? "Pause request" : "End request"})
                     </div>
                   )}
                 </div>
@@ -1793,7 +1793,7 @@ const MessagingPage = () => {
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handlePauseWork}
                         disabled={workSession.status !== "running"}
-                        title="Pause (cần đối phương đồng ý)"
+                        title="Pause (requires partner approval)"
                       >
                         Pause
                       </button>
@@ -1803,7 +1803,7 @@ const MessagingPage = () => {
                                    disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleEndWork}
                         disabled={workSession.status === "pending"}
-                        title="End (cần đối phương đồng ý)"
+                        title="End (requires partner approval)"
                       >
                         End
                       </button>

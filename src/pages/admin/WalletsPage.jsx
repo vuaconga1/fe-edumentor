@@ -33,7 +33,7 @@ export default function WalletsPage() {
 
     const handleSearch = () => { setPageNumber(1); fetchWallets(); };
 
-    const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount || 0) + "đ";
+    const formatCurrency = (amount) => new Intl.NumberFormat("vi-VN").format(amount || 0) + " VND";
     const formatDate = (d) => d ? new Date(d.endsWith?.('Z') ? d : d + 'Z').toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
     const totalPages = Math.ceil(totalCount / pageSize);
     const [showFilters, setShowFilters] = useState(false);

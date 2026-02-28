@@ -16,25 +16,25 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-5xl font-bold mb-4">
-              Nhanh chóng,<br />
-              Đáng tin cậy,<br />
-              <span className="text-blue-600">Kết nối Toàn cầu.</span>
+              Fast,<br />
+              Reliable,<br />
+              <span className="text-blue-600">Global Connections.</span>
             </h1>
             <p className="text-gray-600 mb-8 leading-relaxed">
-              Mang lưới lớn các mentor-student hàng đầu của chúng tôi lớp vào thành phố, cùng cấp hỗ trợ học tập chuyên nghiệp và quản lý chuyển gia trong quy định hợp lý.
+              Our extensive network of top mentors and students brings professional learning support and expert guidance right to your city, all within a streamlined process.
             </p>
             <div className="flex gap-4">
               <Link 
                 to="/login" 
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
               >
-                Bắt đầu ngay
+                Get Started
               </Link>
               <Link 
                 to="/register" 
                 className="border border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
               >
-                Đăng nhập
+                Sign In
               </Link>
             </div>
           </div>
@@ -54,7 +54,7 @@ const HomePage = () => {
           <div className="flex justify-around items-center flex-wrap gap-8 text-center">
             <div>
               <div className="text-3xl font-bold text-blue-600">1000+</div>
-              <div className="text-gray-500 text-sm mt-1">Học viên</div>
+              <div className="text-gray-500 text-sm mt-1">Students</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-600">200+</div>
@@ -62,11 +62,11 @@ const HomePage = () => {
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-600">50+</div>
-              <div className="text-gray-500 text-sm mt-1">Lĩnh vực</div>
+              <div className="text-gray-500 text-sm mt-1">Fields</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-blue-600">98%</div>
-              <div className="text-gray-500 text-sm mt-1">Hài lòng</div>
+              <div className="text-gray-500 text-sm mt-1">Satisfied</div>
             </div>
           </div>
         </div>
@@ -76,36 +76,36 @@ const HomePage = () => {
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h3 className="text-blue-600 font-semibold mb-2">TÍNH NĂNG</h3>
-            <h2 className="text-3xl font-bold mb-4">Lợi thế vượt trội bạn sẽ nhận được</h2>
-            <p className="text-gray-600">Tự chuyên môn học tập của chúng tôi</p>
+            <h3 className="text-blue-600 font-semibold mb-2">FEATURES</h3>
+            <h2 className="text-3xl font-bold mb-4">Outstanding advantages you will receive</h2>
+            <p className="text-gray-600">Our professional learning expertise</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="bg-blue-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                 <ShieldCheckIcon className="w-7 h-7 text-blue-600" />
               </div>
-              <h4 className="text-xl font-bold mb-2">Thanh toán An toàn</h4>
+              <h4 className="text-xl font-bold mb-2">Secure Payments</h4>
               <p className="text-gray-600 text-sm">
-                Ví escrow đảm bảo giao dịch, chi trả ngăn kín toàn thành
+                Escrow wallet ensures safe transactions with full payment protection
               </p>
             </div>
             <div className="p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="bg-gray-800 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                 <ClockIcon className="w-7 h-7 text-white" />
               </div>
-              <h4 className="text-xl font-bold mb-2">Tinh thì Tư động</h4>
+              <h4 className="text-xl font-bold mb-2">Auto Billing</h4>
               <p className="text-gray-600 text-sm">
-                Hệ thống tự động tính phí mỗi nửa 15k + theo giờ
+                Automatic billing system charges every 15 minutes based on hourly rate
               </p>
             </div>
             <div className="p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="bg-green-100 w-14 h-14 rounded-lg flex items-center justify-center mb-4">
                 <StarIcon className="w-7 h-7 text-green-600" />
               </div>
-              <h4 className="text-xl font-bold mb-2">Đánh giá Minh bạch</h4>
+              <h4 className="text-xl font-bold mb-2">Transparent Reviews</h4>
               <p className="text-gray-600 text-sm">
-                Hệ thống đánh giá 2 chiều sau mỗi buổi học
+                Two-way review system after each learning session
               </p>
             </div>
           </div>
@@ -116,57 +116,57 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Dịch vụ của chúng tôi</h2>
+            <h2 className="text-3xl font-bold mb-4">Our Services</h2>
             <p className="text-gray-600">
-              Trải nghiệm sự đa dạng trong kết nối với mentor miễn phí. Chúng tôi xử lý tất cả các bước từ kết nối, lịch hẹn, thanh toán và giao hàng delivery.
+              Experience diverse connections with mentors for free. We handle everything from matching, scheduling, payments and delivery.
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
               <img 
                 src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&h=250&fit=crop" 
-                alt="Kết nối Mentor" 
+                alt="Mentor Connection" 
                 className="w-full h-48 object-cover"
               />
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <AcademicCapIcon className="w-6 h-6 text-blue-600" />
-                  <h4 className="text-xl font-bold">Kết nối Mentor</h4>
+                  <h4 className="text-xl font-bold">Mentor Connection</h4>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Tìm kiếm và kết nối với mentor phù hợp để học tập chuyên môn và nhận bảo đặn hàn
+                  Find and connect with the right mentor for professional learning and personalized guidance
                 </p>
               </div>
             </div>
             <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
               <img 
                 src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=400&h=250&fit=crop" 
-                alt="Chat Thời gian thực" 
+                alt="Real-time Chat" 
                 className="w-full h-48 object-cover"
               />
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <ChatBubbleLeftRightIcon className="w-6 h-6 text-blue-600" />
-                  <h4 className="text-xl font-bold">Chat Thời gian thực</h4>
+                  <h4 className="text-xl font-bold">Real-time Chat</h4>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Giao tiếp trực tiếp, thương thảo và hỏi đáp, trao cơ hội học tập
+                  Communicate directly, discuss and ask questions, creating learning opportunities
                 </p>
               </div>
             </div>
             <div className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
               <img 
                 src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&h=250&fit=crop" 
-                alt="Quản lý Lịch học" 
+                alt="Schedule Management" 
                 className="w-full h-48 object-cover"
               />
               <div className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <CalendarDaysIcon className="w-6 h-6 text-blue-600" />
-                  <h4 className="text-xl font-bold">Quản lý Lịch học</h4>
+                  <h4 className="text-xl font-bold">Schedule Management</h4>
                 </div>
                 <p className="text-gray-600 text-sm">
-                  Đặt lịch học linh hoạt, quản lý thời gian học tập hiệu quả
+                  Flexible scheduling and efficient time management for your learning
                 </p>
               </div>
             </div>
@@ -184,7 +184,7 @@ const HomePage = () => {
               ))}
             </div>
             <blockquote className="text-gray-700 text-lg italic mb-6">
-              "EduMentor đã giúp tôi kết nối với những mentor giỏi nhất trong lĩnh vực lập trình. Nhờ sự hướng dẫn tận tình, tôi đã tự tin hơn rất nhiều và tìm được công việc mơ ước chỉ sau 3 tháng."
+              "EduMentor helped me connect with the best mentors in programming. Thanks to their dedicated guidance, I became much more confident and landed my dream job in just 3 months."
             </blockquote>
             <div className="flex items-center justify-center gap-3">
               <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
@@ -192,7 +192,7 @@ const HomePage = () => {
               </div>
               <div className="text-left">
                 <div className="font-bold">Minh Thư</div>
-                <div className="text-sm text-gray-500">Sinh viên CNTT</div>
+                <div className="text-sm text-gray-500">IT Student</div>
               </div>
             </div>
           </div>
@@ -203,17 +203,17 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">
-            Chúng tôi kết nối toàn cầu,<br />
-            Sẵn sàng kết nối với chúng tôi?
+            We connect globally,<br />
+            Ready to connect with us?
           </h2>
           <p className="text-blue-200 mb-8">
-            Đội ngũ của chúng tôi sẵn sàng 24/7 phục vụ kỳ tiêu cầu mentor của bạn bất cứ nơi đâu trên hành tinh.
+            Our team is available 24/7 to serve your mentoring needs anywhere on the planet.
           </p>
           <Link 
             to="/login" 
             className="inline-block bg-blue-600 text-white px-8 py-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg"
           >
-            Bắt đầu ngay
+            Get Started
           </Link>
         </div>
       </section>
@@ -227,23 +227,23 @@ const HomePage = () => {
               <span className="font-bold text-xl">EduMentor</span>
             </div>
             <p className="text-gray-600 text-sm">
-              Nền tảng kết nối mentor - student hàng đầu Việt Nam. Nâm try sinh viên, phát triển và mentor cùa bạn theo đúng.
+              The leading mentor-student connection platform. Empowering students to grow and develop with the right mentor.
             </p>
           </div>
           <div>
-            <h4 className="font-bold mb-4">Dịch vụ</h4>
+            <h4 className="font-bold mb-4">Services</h4>
             <ul className="space-y-2 text-gray-600 text-sm">
-              <li><Link to="/student/find" className="hover:text-blue-600">Kết nối Mentor</Link></li>
+              <li><Link to="/student/find" className="hover:text-blue-600">Mentor Connection</Link></li>
               <li><Link to="/community" className="hover:text-blue-600">Chat Realtime</Link></li>
-              <li><Link to="/mentor/schedule" className="hover:text-blue-600">Quản lý Lịch</Link></li>
+              <li><Link to="/mentor/schedule" className="hover:text-blue-600">Schedule Management</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold mb-4">Hỗ trợ</h4>
+            <h4 className="font-bold mb-4">Support</h4>
             <ul className="space-y-2 text-gray-600 text-sm">
-              <li><a href="#" className="hover:text-blue-600">Về chúng tôi</a></li>
-              <li><a href="#" className="hover:text-blue-600">Liên hệ</a></li>
-              <li><a href="#" className="hover:text-blue-600">Trợ giúp</a></li>
+              <li><a href="#" className="hover:text-blue-600">About Us</a></li>
+              <li><a href="#" className="hover:text-blue-600">Contact</a></li>
+              <li><a href="#" className="hover:text-blue-600">Help Center</a></li>
             </ul>
           </div>
         </div>

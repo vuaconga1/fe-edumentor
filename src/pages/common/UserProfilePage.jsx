@@ -1,13 +1,18 @@
 // src/pages/common/UserProfilePage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { HiMail, HiLocationMarker, HiPhone, HiStar, HiArrowLeft, HiCheckCircle, HiTag } from "react-icons/hi";
-import { FolderOpen, Clock, Globe, GraduationCap, BookOpen } from "lucide-react";
+import { FolderOpen, Clock, Globe, GraduationCap, BookOpen, Users, UserPlus, UserMinus } from "lucide-react";
 import userApi from "../../api/userApi";
 import requestApi from "../../api/requestApi";
+import communityApi from "../../api/communityApi";
+import reviewApi from "../../api/reviewApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import { useAuth } from "../../context/AuthContext";
 import BookRequestModal from "../../components/request/BookRequestModal";
+import FollowersModal from "../../components/profile/FollowersModal";
+import ReviewSummary from "../../components/review/ReviewSummary";
+import ReviewCard from "../../components/review/ReviewCard";
 
 const UserProfilePage = () => {
   const { id } = useParams();
@@ -18,6 +23,24 @@ const UserProfilePage = () => {
   const [profile, setProfile] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Follow state
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+  const [showFollowingModal, setShowFollowingModal] = useState(false);
+
+  // Reviews state
+  const [showReviews, setShowReviews] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsFetched, setReviewsFetched] = useState(false);
+  const reviewsRef = useRef(null);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -99,6 +122,135 @@ const UserProfilePage = () => {
 
     return () => (mounted = false);
   }, [id]);
+
+  // Fetch follow data
+  useEffect(() => {
+    if (!id) return;
+    const fetchFollowData = async () => {
+      try {
+        const [followersRes, followingRes] = await Promise.all([
+          communityApi.getFollowers(id),
+          communityApi.getFollowing(id),
+        ]);
+        if (followersRes.data?.success) {
+          setFollowersCount(followersRes.data.data.count);
+          setFollowers(followersRes.data.data.users.map(u => ({
+            id: u.id,
+            name: u.fullName,
+            avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+            role: u.isMentor ? 'mentor' : 'student'
+          })));
+        }
+        if (followingRes.data?.success) {
+          setFollowingCount(followingRes.data.data.count);
+          setFollowing(followingRes.data.data.users.map(u => ({
+            id: u.id,
+            name: u.fullName,
+            avatar: normalizeAvatarUrl(u.avatarUrl) || buildDefaultAvatarUrl({ id: u.id, fullName: u.fullName }),
+            role: u.isMentor ? 'mentor' : 'student'
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch follow data", err);
+      }
+    };
+    fetchFollowData();
+  }, [id]);
+
+  // Check if current user is following this profile
+  useEffect(() => {
+    if (!id || !currentUser) return;
+    const isOwnId = String(currentUser.id) === String(id);
+    if (isOwnId) return;
+    const checkFollowing = async () => {
+      try {
+        const res = await communityApi.isFollowing(id);
+        if (res.data?.success) {
+          // Backend returns data as a raw boolean (true/false)
+          setIsFollowing(!!res.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to check following status", err);
+      }
+    };
+    checkFollowing();
+  }, [id, currentUser]);
+
+  const handleFollow = async () => {
+    if (!id || followLoading) return;
+    try {
+      setFollowLoading(true);
+      if (isFollowing) {
+        await communityApi.unfollowUser(id);
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+        setFollowers(prev => prev.filter(f => f.id !== currentUser?.id));
+      } else {
+        await communityApi.followUser(id);
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error("Follow/unfollow failed", err);
+      // If already following but state was wrong, fix it
+      const msg = err?.response?.data?.message || "";
+      if (msg.includes("already following")) {
+        setIsFollowing(true);
+      } else if (msg.includes("not following")) {
+        setIsFollowing(false);
+      }
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  const handleViewReviews = async () => {
+    if (!profile?.id || !profile?.isMentor) return;
+    setShowReviews(prev => !prev);
+    // Scroll to reviews section after state update
+    setTimeout(() => {
+      reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    if (reviewsFetched) return;
+    try {
+      setReviewsLoading(true);
+      setReviewsFetched(true);
+      const [summaryRes, reviewsRes] = await Promise.all([
+        reviewApi.getMentorReviewSummary(profile.id),
+        reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
+      ]);
+      const summaryData = summaryRes?.data?.data;
+      if (summaryData) {
+        setReviewSummary({
+          averageRating: summaryData.averageRating || 0,
+          totalReviews: summaryData.totalReviews || 0,
+          distribution: {
+            5: summaryData.fiveStarCount || 0,
+            4: summaryData.fourStarCount || 0,
+            3: summaryData.threeStarCount || 0,
+            2: summaryData.twoStarCount || 0,
+            1: summaryData.oneStarCount || 0
+          }
+        });
+      }
+      const reviewItems = reviewsRes?.data?.data?.items || [];
+      setReviews(reviewItems.map(r => ({
+        id: r.id,
+        studentId: r.studentId,
+        studentName: r.studentName || 'Anonymous',
+        studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
+        courseName: r.orderTitle || 'Mentoring Session',
+        rating: r.rating,
+        date: r.createdAt,
+        comment: r.comment || '',
+        tags: []
+      })));
+    } catch (err) {
+      console.error("Failed to load reviews", err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   const isOwnProfile = currentUser?.id === profile?.id;
   const isCurrentUserStudent = currentUser?.role === "Student" || currentUser?.role === 0;
@@ -236,22 +388,61 @@ const UserProfilePage = () => {
 
                 {/* Rating (mentors only) */}
                 {p.isMentor && p.ratingCount > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <HiStar className="w-4 h-4 text-yellow-500" />
-                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      {Number(p.ratingAvg).toFixed(1)}
-                    </span>
-                    <span className="text-xs text-neutral-500">
+                  <button
+                    onClick={handleViewReviews}
+                    className="flex items-center gap-1.5 mt-2 hover:opacity-80 transition-opacity cursor-pointer"
+                    title="View reviews"
+                  >
+                    <span className="text-xs text-blue-600 dark:text-blue-400 underline">
                       ({p.ratingCount} reviews)
                     </span>
-                  </div>
+                  </button>
+                )}
+
+                {/* Followers/Following Stats */}
+                <div className="flex justify-center gap-6 mt-4">
+                  <button
+                    onClick={() => setShowFollowersModal(true)}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followersCount}</span>
+                    <span className="text-xs text-neutral-500">Followers</span>
+                  </button>
+                  <button
+                    onClick={() => setShowFollowingModal(true)}
+                    className="flex flex-col items-center px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followingCount}</span>
+                    <span className="text-xs text-neutral-500">Following</span>
+                  </button>
+                </div>
+
+                {/* Follow / Unfollow Button */}
+                {!isOwnProfile && currentUser && (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className={`mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium shadow transition-colors ${
+                      isFollowing
+                        ? "bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
+                  >
+                    {followLoading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                    ) : isFollowing ? (
+                      <><UserMinus size={16} /> Unfollow</>
+                    ) : (
+                      <><UserPlus size={16} /> Follow</>
+                    )}
+                  </button>
                 )}
 
                 {/* Book button (only if viewing a mentor's profile as a student) */}
                 {p.isMentor && isCurrentUserStudent && !isOwnProfile && (
                   <button
                     onClick={handleBook}
-                    className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow transition-colors"
+                    className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow transition-colors"
                   >
                     Book
                   </button>
@@ -338,6 +529,52 @@ const UserProfilePage = () => {
                 {p.bio || "No bio yet."}
               </p>
             </div>
+
+            {/* Reviews Section (shown when clicking reviews link) */}
+            {p.isMentor && showReviews && (
+              <div ref={reviewsRef} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                    <HiStar className="w-4 h-4 text-yellow-500" />
+                    Reviews
+                  </h2>
+                  <button
+                    onClick={() => setShowReviews(false)}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    Hide
+                  </button>
+                </div>
+                {reviewsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    {reviewSummary && (
+                      <div className="mb-4">
+                        <ReviewSummary
+                          averageRating={reviewSummary.averageRating}
+                          totalReviews={reviewSummary.totalReviews}
+                          distribution={reviewSummary.distribution}
+                        />
+                      </div>
+                    )}
+                    {reviews.length > 0 ? (
+                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {reviews.map((review) => (
+                          <ReviewCard key={review.id} review={review} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+                        No reviews yet.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Mentor-specific sections */}
             {p.isMentor && (
@@ -461,6 +698,22 @@ const UserProfilePage = () => {
             onSuccess={handleBookSuccess}
           />
         )}
+
+        {/* Followers Modal */}
+        <FollowersModal
+          isOpen={showFollowersModal}
+          onClose={() => setShowFollowersModal(false)}
+          followers={followers}
+          title="Followers"
+        />
+
+        {/* Following Modal */}
+        <FollowersModal
+          isOpen={showFollowingModal}
+          onClose={() => setShowFollowingModal(false)}
+          followers={following}
+          title="Following"
+        />
       </div>
     </div>
   );

@@ -230,10 +230,10 @@ const FindMentorPage = () => {
   // Price range options (in VND)
   const priceRangeOptions = [
     { value: "", label: "Any Price" },
-    { value: "0-100000", label: "Dưới 100K/hr" },
+    { value: "0-100000", label: "Under 100K/hr" },
     { value: "100000-300000", label: "100K - 300K/hr" },
     { value: "300000-500000", label: "300K - 500K/hr" },
-    { value: "500000+", label: "Trên 500K/hr" },
+    { value: "500000+", label: "Over 500K/hr" },
   ];
 
   // Build query params
@@ -721,7 +721,7 @@ const FindMentorPage = () => {
                   <span className="text-[10px] sm:text-xs text-neutral-400">From</span>
                   <div className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
                     {formatPrice(mentor.price)}
-                    <span className="text-xs sm:text-sm font-normal text-neutral-400">đ/hr</span>
+                    <span className="text-xs sm:text-sm font-normal text-neutral-400"> VND/hr</span>
                   </div>
                 </div>
 
