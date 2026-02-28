@@ -70,6 +70,10 @@ const Community = () => {
   const [hasNewPosts, setHasNewPosts] = useState(false);
   const [lastFetchTime, setLastFetchTime] = useState(Date.now());
 
+  // Infinite scroll
+  const sentinelRef = useRef(null);
+  const loadingMore = useRef(false);
+
   // Get current user's avatar
   const currentUserAvatar = currentUser?.avatar || buildDefaultAvatarUrl({
     id: currentUser?.id,
@@ -279,12 +283,32 @@ const Community = () => {
     }
   };
 
-  // Load more
-  const loadMore = () => {
+  // Load more (infinite scroll)
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore || loadingMore.current) return;
+    loadingMore.current = true;
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchPosts(nextPage, true);
-  };
+    fetchPosts(nextPage, true).finally(() => {
+      loadingMore.current = false;
+    });
+  }, [page, loading, hasMore, fetchPosts]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading) {
+          loadMore();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, loading]);
 
   const handleCreatePost = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
@@ -464,7 +488,7 @@ const Community = () => {
                     <HiChevronDown className={`w-2.5 sm:w-3 h-2.5 sm:h-3 transition-transform ${showHashtagDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showHashtagDropdown && (
-                    <div className="absolute top-full right-0 mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
+                    <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-1 w-48 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
                       <button
                         onClick={() => { setHashtagFilter(null); setShowHashtagDropdown(false); }}
                         className={`w-full px-4 py-2 text-left text-sm hover:bg-neutral-50 dark:hover:bg-neutral-700 ${!hashtagFilter ? 'text-primary-600 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}
@@ -666,26 +690,22 @@ const Community = () => {
               </div>
             )}
 
-            {/* Load More */}
-            {!loading && hasMore && posts.length > 0 && (
-              <div className="mt-6 text-center">
-                <button
-                  onClick={loadMore}
-                  disabled={loading}
-                  className="px-6 py-3 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-xl transition-colors disabled:opacity-50"
-                >
-                  Load more posts
-                </button>
+            {/* Infinite scroll sentinel */}
+            {hasMore && posts.length > 0 && (
+              <div ref={sentinelRef} className="mt-6 text-center py-4">
+                {loading && (
+                  <div className="inline-flex items-center gap-2 text-neutral-500">
+                    <HiRefresh className="w-5 h-5 animate-spin" />
+                    <span>Loading more...</span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Loading more indicator */}
-            {loading && posts.length > 0 && (
-              <div className="mt-6 text-center">
-                <div className="inline-flex items-center gap-2 text-neutral-500">
-                  <HiRefresh className="w-5 h-5 animate-spin" />
-                  <span>Loading more...</span>
-                </div>
+            {/* End of feed */}
+            {!hasMore && posts.length > 0 && (
+              <div className="mt-6 text-center py-4">
+                <p className="text-sm text-neutral-400 dark:text-neutral-500">You've reached the end</p>
               </div>
             )}
           </main>
