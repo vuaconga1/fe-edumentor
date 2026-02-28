@@ -191,15 +191,19 @@ const MentorProfilePage = () => {
 
                 {/* Rating */}
                 {p.ratingCount > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2">
+                  <button
+                    onClick={() => navigate("/mentor/reviews")}
+                    className="flex items-center gap-1.5 mt-2 hover:opacity-80 transition-opacity cursor-pointer"
+                    title="View my reviews"
+                  >
                     <HiStar className="w-4 h-4 text-yellow-500" />
                     <span className="text-sm font-semibold text-neutral-900 dark:text-white">
                       {p.ratingAvg.toFixed(1)}
                     </span>
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 underline">
                       ({p.ratingCount} reviews)
                     </span>
-                  </div>
+                  </button>
                 )}
 
                 {/* Followers/Following Stats */}

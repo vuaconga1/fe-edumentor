@@ -94,11 +94,11 @@ const Dashboard = () => {
     { label: "Total Users", value: totalUsers, icon: HiUsers, onClick: () => navigate("/admin/users") },
     { label: "Mentors", value: mentors, icon: HiAcademicCap, onClick: () => navigate("/admin/users") },
     { label: "Students", value: students, icon: HiUserGroup, onClick: () => navigate("/admin/users") },
-    { label: "Revenue", value: `${((totalRevenue || 0) / 1000000).toFixed(1)}M đ`, icon: HiCurrencyDollar, onClick: () => navigate("/admin/transactions") },
+    { label: "Revenue", value: `${((totalRevenue || 0) / 1000000).toFixed(1)}M VND`, icon: HiCurrencyDollar, onClick: () => navigate("/admin/transactions") },
   ];
 
   const formatCurrency = (amount) =>
-    new Intl.NumberFormat("vi-VN").format(amount) + " đ";
+    new Intl.NumberFormat("vi-VN").format(amount) + " VND";
 
   const formatDate = (dateString) => {
     if (!dateString) return "";

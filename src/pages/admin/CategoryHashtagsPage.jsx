@@ -27,6 +27,10 @@ export default function CategoryHashtagsPage() {
   const [query, setQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
 
+  // Pagination
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
+
   // Modal states
   const [openModal, setOpenModal] = useState(false);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
@@ -121,6 +125,14 @@ export default function CategoryHashtagsPage() {
       return true;
     });
   }, [mappings, query, filterCategory]);
+
+  const totalPages = Math.ceil(filteredCategoryMappings.length / pageSize);
+  const paginatedMappings = filteredCategoryMappings.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPageNumber(1);
+  }, [query, filterCategory]);
 
   // Get hashtags not yet mapped to selected category
   const availableHashtags = useMemo(() => {
@@ -386,13 +398,13 @@ export default function CategoryHashtagsPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredCategoryMappings.map((m, idx) => (
+                  paginatedMappings.map((m, idx) => (
                     <tr
                       key={m.categoryId}
                       className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                     >
                       <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400 font-mono">
-                        {idx + 1}
+                        {(pageNumber - 1) * pageSize + idx + 1}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-neutral-900 dark:text-white">
                         {m.categoryName}
@@ -450,9 +462,32 @@ export default function CategoryHashtagsPage() {
             </table>
           </div>
 
-          {/* Footer Info */}
-          <div className="px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400">
-            Showing {filteredCategoryMappings.length} categor{filteredCategoryMappings.length === 1 ? 'y' : 'ies'}
+          {/* Footer / Pagination */}
+          <div className="px-4 py-3 border-t border-neutral-100 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-sm text-neutral-500">
+              Showing {filteredCategoryMappings.length} categor{filteredCategoryMappings.length === 1 ? 'y' : 'ies'}
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-neutral-500">
+                  Page {pageNumber} of {totalPages}
+                </span>
+                <button
+                  disabled={pageNumber === 1}
+                  onClick={() => setPageNumber((p) => p - 1)}
+                  className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+                >
+                  Prev
+                </button>
+                <button
+                  disabled={pageNumber === totalPages}
+                  onClick={() => setPageNumber((p) => p + 1)}
+                  className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

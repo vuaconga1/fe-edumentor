@@ -18,6 +18,10 @@ const ReportsPage = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchKeyword, setSearchKeyword] = useState('');
 
+  // Pagination
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
+
   const filteredReports = reports.filter(report => {
     if (filterType !== 'all' && report.reason !== filterType) return false;
     if (filterStatus !== 'all' && report.status !== filterStatus) return false;
@@ -40,7 +44,7 @@ const ReportsPage = () => {
         setIsLoading(true);
         setError("");
 
-        const res = await adminApi.getReports({ pageNumber: 1, pageSize: 50, status: filterStatus });
+        const res = await adminApi.getReports({ pageNumber: 1, pageSize: 200, status: filterStatus });
         const data = res?.data?.data ?? res?.data;
 
         // backend thường trả { items: [...] }
@@ -58,6 +62,15 @@ const ReportsPage = () => {
     // nếu muốn filter status gọi server luôn, để filterStatus vào deps
     fetchReports();
   }, [filterStatus]);
+
+  const totalPages = Math.ceil(filteredReports.length / pageSize);
+  const paginatedReports = filteredReports.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
+
+  // Reset page on filter changes
+  useEffect(() => {
+    setPageNumber(1);
+  }, [filterStatus, filterType, searchKeyword]);
+
   const handleView = async (report) => {
     try {
       setIsDetailOpen(true);
@@ -125,7 +138,7 @@ const ReportsPage = () => {
     try {
       setIsLoading(true);
       setError("");
-      const res = await adminApi.getReports({ pageNumber: 1, pageSize: 50, status: filterStatus });
+      const res = await adminApi.getReports({ pageNumber: 1, pageSize: 200, status: filterStatus });
       const data = res?.data?.data ?? res?.data;
       const list = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
       setReports(list);
@@ -405,9 +418,34 @@ const ReportsPage = () => {
       {/* Table */}
       <DataTable
         columns={columns}
-        data={isLoading ? [] : filteredReports}
+        data={isLoading ? [] : paginatedReports}
         emptyMessage={isLoading ? "Loading..." : "No reports found"}
       />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-4 sm:px-5 py-3 sm:py-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-sm text-neutral-500 text-center sm:text-left">
+            Page {pageNumber} of {totalPages} ({filteredReports.length} reports)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={pageNumber === 1}
+              onClick={() => setPageNumber((p) => p - 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              disabled={pageNumber === totalPages}
+              onClick={() => setPageNumber((p) => p + 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="text-sm text-red-500">{error}</div>

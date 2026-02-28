@@ -53,7 +53,7 @@ const formatDate = (d) => {
 
 const formatCurrency = (amount) => {
   if (!amount) return "-";
-  return new Intl.NumberFormat("vi-VN").format(Number(amount)) + "đ";
+  return new Intl.NumberFormat("vi-VN").format(Number(amount)) + " VND";
 };
 
 const normalizeRequestStatus = (statusDisplay) => {
@@ -373,6 +373,11 @@ const MyRequestsPage = () => {
                           </div>
                           <div className="col-span-1">
                             <span className={`text-xs font-medium ${cfg.style}`}>{cfg.label}</span>
+                            {statusText === "Rejected" && req.rejectReason && (
+                              <p className="text-xs text-red-500 dark:text-red-400 mt-0.5 line-clamp-2" title={req.rejectReason}>
+                                {req.rejectReason}
+                              </p>
+                            )}
                           </div>
                           <div className="col-span-2 flex items-center justify-end gap-2">
                             {(statusText === "InOrder" || statusText === "Accepted" || statusText === 4 || statusText === 1) && (
@@ -403,7 +408,12 @@ const MyRequestsPage = () => {
                               <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{req.title}</p>
                               <p className="text-xs text-gray-500 dark:text-neutral-400 mt-0.5 line-clamp-2">{req.description}</p>
                             </div>
-                            <span className={`text-xs font-medium whitespace-nowrap ${cfg.style}`}>{cfg.label}</span>
+                            <div className="text-right">
+                              <span className={`text-xs font-medium whitespace-nowrap ${cfg.style}`}>{cfg.label}</span>
+                              {statusText === "Rejected" && req.rejectReason && (
+                                <p className="text-xs text-red-500 dark:text-red-400 mt-0.5 max-w-[140px] line-clamp-2">{req.rejectReason}</p>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 dark:text-neutral-400">
                             <span>{formatCurrency(req.expectedBudget)}</span>

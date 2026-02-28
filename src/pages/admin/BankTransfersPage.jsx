@@ -10,6 +10,10 @@ const BankTransfersPage = () => {
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState("");
 
+  // Pagination
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize] = useState(10);
+
   // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // { type: 'confirm'|'reject', ref: string }
@@ -22,7 +26,7 @@ const BankTransfersPage = () => {
     try {
       setLoading(true);
       setError("");
-      const res = await walletApi.getPendingBankTransfers({ pageNumber: 1, pageSize: 50 });
+      const res = await walletApi.getPendingBankTransfers({ pageNumber: 1, pageSize: 200 });
       const data = res?.data?.data;
       const list = data?.items ?? data ?? [];
       setTransfers(Array.isArray(list) ? list : []);
@@ -90,6 +94,9 @@ const BankTransfersPage = () => {
       minute: "2-digit",
     });
   };
+
+  const totalPages = Math.ceil(transfers.length / pageSize);
+  const paginatedTransfers = transfers.slice((pageNumber - 1) * pageSize, pageNumber * pageSize);
 
   return (
     <div className="space-y-6">
@@ -181,7 +188,7 @@ const BankTransfersPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                {transfers.map((tx) => (
+                {paginatedTransfers.map((tx) => (
                   <tr
                     key={tx.id}
                     className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
@@ -228,6 +235,31 @@ const BankTransfersPage = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-4 sm:px-5 py-3 sm:py-4 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-sm text-neutral-500 text-center sm:text-left">
+            Page {pageNumber} of {totalPages} ({transfers.length} transfers)
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              disabled={pageNumber === 1}
+              onClick={() => setPageNumber((p) => p - 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Prev
+            </button>
+            <button
+              disabled={pageNumber === totalPages}
+              onClick={() => setPageNumber((p) => p + 1)}
+              className="px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Confirm Dialog */}
       <ConfirmDialog

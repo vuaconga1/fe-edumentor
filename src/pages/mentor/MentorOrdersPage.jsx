@@ -269,7 +269,7 @@ const MentorOrdersPage = () => {
           <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-3 sm:p-4">
             <p className="text-xs text-gray-500 mb-1">Total Earned</p>
             <p className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white">
-              {formatCurrency(totalEarned)}đ
+              {formatCurrency(totalEarned)} VND
             </p>
           </div>
         </div>
@@ -337,7 +337,7 @@ const MentorOrdersPage = () => {
                       {/* Amount */}
                       <div className="col-span-2">
                         <span className="text-sm font-medium text-gray-800 dark:text-white">
-                          {formatCurrency(order.total)}đ
+                          {formatCurrency(order.total)} VND
                         </span>
                       </div>
 
@@ -390,7 +390,7 @@ const MentorOrdersPage = () => {
                           <span>{order.duration}</span>
                         </div>
                         <span className="text-sm font-medium text-gray-800 dark:text-white">
-                          {formatCurrency(order.total)}đ
+                          {formatCurrency(order.total)} VND
                         </span>
                       </div>
                     </div>

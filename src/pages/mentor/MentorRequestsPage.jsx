@@ -53,7 +53,7 @@ const formatDate = (d) => {
 
 const formatCurrency = (amount) => {
   if (!amount) return "-";
-  return new Intl.NumberFormat("vi-VN").format(Number(amount)) + "đ";
+  return new Intl.NumberFormat("vi-VN").format(Number(amount)) + " VND";
 };
 
 const normalizeRequestStatus = (statusDisplay) => {

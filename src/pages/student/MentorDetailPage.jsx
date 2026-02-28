@@ -1,12 +1,15 @@
 // src/pages/student/MentorDetailPage.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { HiMail, HiLocationMarker, HiPhone, HiStar, HiTag, HiArrowLeft, HiCheckCircle } from "react-icons/hi";
 import { FolderOpen, Clock, Globe } from "lucide-react";
 import mentorApi from "../../api/mentorApi";
 import requestApi from "../../api/requestApi";
+import reviewApi from "../../api/reviewApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import BookRequestModal from "../../components/request/BookRequestModal";
+import ReviewSummary from "../../components/review/ReviewSummary";
+import ReviewCard from "../../components/review/ReviewCard";
 
 const MentorDetailPage = () => {
   const { id } = useParams();
@@ -16,6 +19,14 @@ const MentorDetailPage = () => {
   const [profile, setProfile] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Reviews state
+  const [showReviews, setShowReviews] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsFetched, setReviewsFetched] = useState(false);
+  const reviewsRef = useRef(null);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -96,6 +107,53 @@ const MentorDetailPage = () => {
 
     return () => (mounted = false);
   }, [id]);
+
+  const handleViewReviews = async () => {
+    if (!profile?.id) return;
+    setShowReviews(prev => !prev);
+    setTimeout(() => {
+      reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+    if (reviewsFetched) return;
+    try {
+      setReviewsLoading(true);
+      setReviewsFetched(true);
+      const [summaryRes, reviewsRes] = await Promise.all([
+        reviewApi.getMentorReviewSummary(profile.id),
+        reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
+      ]);
+      const summaryData = summaryRes?.data?.data;
+      if (summaryData) {
+        setReviewSummary({
+          averageRating: summaryData.averageRating || 0,
+          totalReviews: summaryData.totalReviews || 0,
+          distribution: {
+            5: summaryData.fiveStarCount || 0,
+            4: summaryData.fourStarCount || 0,
+            3: summaryData.threeStarCount || 0,
+            2: summaryData.twoStarCount || 0,
+            1: summaryData.oneStarCount || 0
+          }
+        });
+      }
+      const reviewItems = reviewsRes?.data?.data?.items || [];
+      setReviews(reviewItems.map(r => ({
+        id: r.id,
+        studentId: r.studentId,
+        studentName: r.studentName || 'Anonymous',
+        studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
+        courseName: r.orderTitle || 'Mentoring Session',
+        rating: r.rating,
+        date: r.createdAt,
+        comment: r.comment || '',
+        tags: []
+      })));
+    } catch (err) {
+      console.error("Failed to load reviews", err);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
 
   const isPendingStatus = (status) => {
     if (typeof status === 'number') return status === 0;
@@ -224,15 +282,28 @@ const MentorDetailPage = () => {
 
                 {/* Rating */}
                 {p.ratingCount > 0 && (
-                  <div className="flex items-center gap-1.5 mt-2">
+                  <button
+                    onClick={handleViewReviews}
+                    className="flex items-center gap-1.5 mt-2 hover:opacity-80 transition-opacity cursor-pointer"
+                    title="View reviews"
+                  >
                     <HiStar className="w-4 h-4 text-yellow-500" />
                     <span className="text-sm font-semibold text-neutral-900 dark:text-white">
                       {Number(p.ratingAvg).toFixed(1)}
                     </span>
-                    <span className="text-xs text-neutral-500">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 underline">
                       ({p.ratingCount} reviews)
                     </span>
-                  </div>
+                  </button>
+                )}
+                {/* View Reviews button (when no rating yet) */}
+                {p.ratingCount === 0 && (
+                  <button
+                    onClick={handleViewReviews}
+                    className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline transition-colors"
+                  >
+                    View Reviews
+                  </button>
                 )}
 
                 <button
@@ -317,6 +388,52 @@ const MentorDetailPage = () => {
 
           {/* Right Column - Details (2/3 width on xl) */}
           <div className="xl:col-span-2 space-y-6">
+            {/* Reviews Section */}
+            {showReviews && (
+              <div ref={reviewsRef} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
+                    <HiStar className="w-4 h-4 text-yellow-500" />
+                    Reviews
+                  </h2>
+                  <button
+                    onClick={() => setShowReviews(false)}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    Hide
+                  </button>
+                </div>
+                {reviewsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    {reviewSummary && (
+                      <div className="mb-4">
+                        <ReviewSummary
+                          averageRating={reviewSummary.averageRating}
+                          totalReviews={reviewSummary.totalReviews}
+                          distribution={reviewSummary.distribution}
+                        />
+                      </div>
+                    )}
+                    {reviews.length > 0 ? (
+                      <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {reviews.map((review) => (
+                          <ReviewCard key={review.id} review={review} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+                        No reviews yet.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Pricing Card */}
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">

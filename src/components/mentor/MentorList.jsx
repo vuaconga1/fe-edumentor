@@ -11,7 +11,7 @@ const MentorList = () => {
   if (mentors.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">Không tìm thấy mentor nào.</p>
+        <p className="text-gray-500 text-lg">No mentors found.</p>
       </div>
     );
   }

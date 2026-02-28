@@ -20,7 +20,7 @@ export default function GroupList({ onSelectGroup }) {
             }
         } catch (error) {
             console.error('Error loading groups:', error);
-            toast.error('Không thể tải danh sách nhóm');
+            toast.error('Failed to load groups');
         } finally {
             setLoading(false);
         }
@@ -30,19 +30,19 @@ export default function GroupList({ onSelectGroup }) {
         const inviteLink = `${window.location.origin}/groups/join/${inviteCode}`;
         navigator.clipboard.writeText(inviteLink);
         setCopiedCode(inviteCode);
-        toast.success('Đã sao chép link mời!');
+        toast.success('Invite link copied!');
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
     if (loading) {
-        return <div className="p-4 text-center">Đang tải...</div>;
+        return <div className="p-4 text-center">Loading...</div>;
     }
 
     return (
         <div className="space-y-2">
             {groups.length === 0 ? (
                 <div className="p-4 text-center text-gray-500">
-                    Chưa có nhóm nào
+                    No groups yet
                 </div>
             ) : (
                 groups.map((group) => (
@@ -59,7 +59,7 @@ export default function GroupList({ onSelectGroup }) {
                                 )}
                                 <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
                                     <Users size={14} />
-                                    <span>{group.memberCount} thành viên</span>
+                                    <span>{group.memberCount} members</span>
                                 </div>
                             </div>
                             <button
@@ -68,7 +68,7 @@ export default function GroupList({ onSelectGroup }) {
                                     copyInviteCode(group.inviteCode);
                                 }}
                                 className="p-2 hover:bg-gray-200 rounded"
-                                title="Sao chép link mời"
+                                title="Copy invite link"
                             >
                                 {copiedCode === group.inviteCode ? (
                                     <Check size={16} className="text-green-600" />

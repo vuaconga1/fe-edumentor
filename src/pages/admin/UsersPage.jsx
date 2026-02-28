@@ -325,7 +325,7 @@ const UsersPage = () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + 'đ';
+    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
   };
 
   const columns = [

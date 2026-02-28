@@ -41,7 +41,7 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(inviteCode);
-    toast.success('Đã copy mã mời!');
+    toast.success('Invite code copied!');
   };
 
   const handleAddMember = async (userId) => {
@@ -50,15 +50,15 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
       // Call API to add member to group
       const res = await groupApi.addMember(group.id, userId);
       if (res?.data?.success) {
-        toast.success('Đã thêm thành viên vào nhóm!');
+        toast.success('Member added to group!');
         setAddedUserIds(prev => new Set([...prev, userId]));
         onMemberAdded?.();
       } else {
-        toast.error(res?.data?.message || 'Không thể thêm thành viên');
+        toast.error(res?.data?.message || 'Failed to add member');
       }
     } catch (e) {
       console.error('Add member failed', e);
-      toast.error(e?.response?.data?.message || 'Không thể thêm thành viên');
+      toast.error(e?.response?.data?.message || 'Failed to add member');
     } finally {
       setAddingUserId(null);
     }
@@ -71,7 +71,7 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
       <div className="bg-white dark:bg-neutral-900 rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mời vào nhóm</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Invite to Group</h2>
           <button
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
@@ -83,7 +83,7 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
         {/* Invite Code Section */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Mã mời nhóm
+            Group Invite Code
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -95,26 +95,26 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
             <button
               onClick={handleCopyCode}
               className="p-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              title="Copy mã mời"
+              title="Copy invite code"
             >
               <HiClipboardCopy className="w-5 h-5" />
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Chia sẻ mã này để mời người khác vào nhóm
+            Share this code to invite others to the group
           </p>
         </div>
 
         {/* Followers Section */}
         <div className="flex-1 min-h-0 flex flex-col">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            Thêm từ danh sách người theo dõi
+            Add from followers list
           </h3>
 
           <div className="flex-1 overflow-y-auto space-y-2">
             {followers.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-4">
-                Không có người theo dõi nào
+                No followers found
               </p>
             ) : (
               followers.map((follower) => {
@@ -150,7 +150,7 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
                           ? 'bg-gray-100 text-gray-400 cursor-wait'
                           : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
                       }`}
-                      title={isAdded ? 'Đã thêm' : 'Thêm vào nhóm'}
+                      title={isAdded ? 'Added' : 'Add to group'}
                     >
                       {isAdded ? (
                         <HiCheck className="w-5 h-5" />
@@ -173,7 +173,7 @@ export default function InviteToGroupModal({ isOpen, onClose, group, onMemberAdd
             onClick={onClose}
             className="w-full py-2 rounded-lg bg-neutral-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
           >
-            Đóng
+            Close
           </button>
         </div>
       </div>
