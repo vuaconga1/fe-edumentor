@@ -133,7 +133,12 @@ const NotificationDropdown = () => {
     // Order related (9, 10, 11)
     else if (type === 9 || type === 10 || type === 11 || 
              type === "OrderStarted" || type === "OrderCompleted" || type === "OrderDisputed") {
-      navigate(`${baseRoute}/orders`);
+      // If notification has conversationId, go to messenger (e.g. complete order request)
+      if (data.conversationId) {
+        navigate(`${baseRoute}/messaging?conversationId=${data.conversationId}`);
+      } else {
+        navigate(`${baseRoute}/orders`);
+      }
     }
     // Wallet (12)
     else if (type === 12 || type === "WalletTransaction") {
