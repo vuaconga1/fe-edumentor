@@ -13,6 +13,7 @@ import BookRequestModal from "../../components/request/BookRequestModal";
 import FollowersModal from "../../components/profile/FollowersModal";
 import ReviewSummary from "../../components/review/ReviewSummary";
 import ReviewCard from "../../components/review/ReviewCard";
+import PostCard from "../../components/community/PostCard";
 
 const UserProfilePage = () => {
   const { id } = useParams();
@@ -35,12 +36,17 @@ const UserProfilePage = () => {
   const [showFollowingModal, setShowFollowingModal] = useState(false);
 
   // Reviews state
-  const [showReviews, setShowReviews] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsFetched, setReviewsFetched] = useState(false);
   const reviewsRef = useRef(null);
+
+  // User posts state
+  const [userPosts, setUserPosts] = useState([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsPage, setPostsPage] = useState(1);
+  const [hasMorePosts, setHasMorePosts] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -176,6 +182,58 @@ const UserProfilePage = () => {
     checkFollowing();
   }, [id, currentUser]);
 
+  // Fetch user posts
+  const mapPostData = (post) => ({
+    id: post.id,
+    author: {
+      id: post.authorId,
+      name: post.authorName || 'Unknown',
+      avatar: post.authorAvatar || buildDefaultAvatarUrl({ id: post.authorId, fullName: post.authorName }),
+      avatarUrl: post.authorAvatar,
+      role: post.authorRole || 'Student'
+    },
+    title: post.title,
+    content: post.contentPreview || post.content,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    isFollowing: post.isFollowing || false,
+    files: post.files || [],
+    categoryId: post.categoryId,
+    categoryName: post.categoryName,
+    stats: {
+      likes: post.likeCount || 0,
+      comments: post.commentCount || 0,
+      shares: 0,
+      views: 0
+    },
+    tags: post.hashtags || [],
+    proposalCount: post.proposalCount || 0,
+    hasProposals: (post.proposalCount || 0) > 0
+  });
+
+  const fetchUserPosts = async (page = 1) => {
+    if (!id) return;
+    try {
+      setPostsLoading(true);
+      const res = await communityApi.getUserPosts(id, { pageNumber: page, pageSize: 6 });
+      const data = res?.data?.data;
+      if (data) {
+        const mapped = (data.items || []).map(mapPostData);
+        setUserPosts(prev => page === 1 ? mapped : [...prev, ...mapped]);
+        setHasMorePosts(page < (data.totalPages || 1));
+        setPostsPage(page);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user posts", err);
+    } finally {
+      setPostsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUserPosts(1);
+  }, [id]);
+
   const handleFollow = async () => {
     if (!id || followLoading) return;
     try {
@@ -204,52 +262,57 @@ const UserProfilePage = () => {
     }
   };
 
-  const handleViewReviews = async () => {
-    if (!profile?.id || !profile?.isMentor) return;
-    setShowReviews(prev => !prev);
-    // Scroll to reviews section after state update
+  // Auto-fetch reviews when profile loads (for mentors)
+  useEffect(() => {
+    if (!profile?.id || !profile?.isMentor || reviewsFetched) return;
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewsFetched(true);
+        const [summaryRes, reviewsRes] = await Promise.all([
+          reviewApi.getMentorReviewSummary(profile.id),
+          reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
+        ]);
+        const summaryData = summaryRes?.data?.data;
+        if (summaryData) {
+          setReviewSummary({
+            averageRating: summaryData.averageRating || 0,
+            totalReviews: summaryData.totalReviews || 0,
+            distribution: {
+              5: summaryData.fiveStarCount || 0,
+              4: summaryData.fourStarCount || 0,
+              3: summaryData.threeStarCount || 0,
+              2: summaryData.twoStarCount || 0,
+              1: summaryData.oneStarCount || 0
+            }
+          });
+        }
+        const reviewItems = reviewsRes?.data?.data?.items || [];
+        setReviews(reviewItems.map(r => ({
+          id: r.id,
+          studentId: r.studentId,
+          studentName: r.studentName || 'Anonymous',
+          studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
+          courseName: r.orderTitle || 'Mentoring Session',
+          rating: r.rating,
+          date: r.createdAt,
+          comment: r.comment || '',
+          tags: []
+        })));
+      } catch (err) {
+        console.error("Failed to load reviews", err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [profile?.id, profile?.isMentor]);
+
+  const handleViewReviews = () => {
+    // Scroll to reviews section
     setTimeout(() => {
       reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-    if (reviewsFetched) return;
-    try {
-      setReviewsLoading(true);
-      setReviewsFetched(true);
-      const [summaryRes, reviewsRes] = await Promise.all([
-        reviewApi.getMentorReviewSummary(profile.id),
-        reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
-      ]);
-      const summaryData = summaryRes?.data?.data;
-      if (summaryData) {
-        setReviewSummary({
-          averageRating: summaryData.averageRating || 0,
-          totalReviews: summaryData.totalReviews || 0,
-          distribution: {
-            5: summaryData.fiveStarCount || 0,
-            4: summaryData.fourStarCount || 0,
-            3: summaryData.threeStarCount || 0,
-            2: summaryData.twoStarCount || 0,
-            1: summaryData.oneStarCount || 0
-          }
-        });
-      }
-      const reviewItems = reviewsRes?.data?.data?.items || [];
-      setReviews(reviewItems.map(r => ({
-        id: r.id,
-        studentId: r.studentId,
-        studentName: r.studentName || 'Anonymous',
-        studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
-        courseName: r.orderTitle || 'Mentoring Session',
-        rating: r.rating,
-        date: r.createdAt,
-        comment: r.comment || '',
-        tags: []
-      })));
-    } catch (err) {
-      console.error("Failed to load reviews", err);
-    } finally {
-      setReviewsLoading(false);
-    }
+    }, 50);
   };
 
   const isOwnProfile = currentUser?.id === profile?.id;
@@ -386,15 +449,19 @@ const UserProfilePage = () => {
                   </p>
                 )}
 
-                {/* Rating (mentors only) */}
-                {p.isMentor && p.ratingCount > 0 && (
+                {/* Rating (mentors only) - uses live data from DB */}
+                {p.isMentor && reviewSummary && reviewSummary.totalReviews > 0 && (
                   <button
                     onClick={handleViewReviews}
                     className="flex items-center gap-1.5 mt-2 hover:opacity-80 transition-opacity cursor-pointer"
                     title="View reviews"
                   >
-                    <span className="text-xs text-blue-600 dark:text-blue-400 underline">
-                      ({p.ratingCount} reviews)
+                    <HiStar className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                      {reviewSummary.averageRating.toFixed(1)}
+                    </span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      ({reviewSummary.totalReviews} reviews)
                     </span>
                   </button>
                 )}
@@ -530,21 +597,13 @@ const UserProfilePage = () => {
               </p>
             </div>
 
-            {/* Reviews Section (shown when clicking reviews link) */}
-            {p.isMentor && showReviews && (
+            {/* Reviews Section */}
+            {p.isMentor && (
               <div ref={reviewsRef} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                    <HiStar className="w-4 h-4 text-yellow-500" />
-                    Reviews
-                  </h2>
-                  <button
-                    onClick={() => setShowReviews(false)}
-                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    Hide
-                  </button>
-                </div>
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2 mb-4">
+                  <HiStar className="w-4 h-4 text-yellow-500" />
+                  Reviews
+                </h2>
                 {reviewsLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -678,6 +737,41 @@ const UserProfilePage = () => {
                 </div>
               </>
             )}
+
+            {/* User Posts */}
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Posts
+                {userPosts.length > 0 && (
+                  <span className="text-xs text-neutral-400 font-normal">({userPosts.length})</span>
+                )}
+              </h2>
+              {postsLoading && userPosts.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : userPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {userPosts.map(post => (
+                    <PostCard key={post.id} post={post} onRefresh={() => fetchUserPosts(1)} hideAuthor />
+                  ))}
+                  {hasMorePosts && (
+                    <button
+                      onClick={() => fetchUserPosts(postsPage + 1)}
+                      disabled={postsLoading}
+                      className="w-full py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors disabled:opacity-50"
+                    >
+                      {postsLoading ? "Loading..." : "Load more"}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+                  No posts yet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

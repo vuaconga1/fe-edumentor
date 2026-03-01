@@ -311,16 +311,33 @@ const ReportsPage = () => {
     {
       key: 'reason',
       label: 'Type',
-      render: (value) => (
-        <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getTypeColor(value)}`}>
-          {value}
-        </span>
+      render: (value, row) => (
+        <div className="space-y-1">
+          <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getTypeColor(value)}`}>
+            {value}
+          </span>
+          {row.reportedContentType && (
+            <span className="block text-[10px] text-neutral-400 font-medium uppercase">
+              {row.reportedContentType}
+            </span>
+          )}
+        </div>
       )
     },
     {
-      key: 'details',
-      label: 'Reason',
-      render: (value) => <span className="text-neutral-900 dark:text-white font-medium">{value || '-'}</span>
+      key: 'reportedContentPreview',
+      label: 'Content',
+      render: (value, row) => (
+        <div className="max-w-xs">
+          {value ? (
+            <p className="text-xs text-neutral-700 dark:text-neutral-300 line-clamp-2">{value}</p>
+          ) : row.details ? (
+            <p className="text-xs text-neutral-500 line-clamp-2">{row.details}</p>
+          ) : (
+            <span className="text-neutral-400 text-xs">-</span>
+          )}
+        </div>
+      )
     },
     {
       key: 'reportedUserName',
@@ -485,10 +502,113 @@ const ReportsPage = () => {
 
             <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl space-y-3">
               <div>
-                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Reason</p>
-                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.details || '-'}</p>
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Report Reason</p>
+                <p className="text-neutral-900 dark:text-white font-medium">{selectedReport.reason || '-'}</p>
               </div>
+              {selectedReport.details && (
+                <div>
+                  <p className="text-xs text-neutral-500 uppercase tracking-wide mb-1">Details</p>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-line">{selectedReport.details}</p>
+                </div>
+              )}
             </div>
+
+            {/* Reported Content - Review */}
+            {selectedReport.review && (
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30 rounded-xl space-y-2">
+                <p className="text-xs text-amber-600 dark:text-amber-400 uppercase tracking-wide font-semibold mb-2">
+                  Reported Review
+                </p>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <span key={star} className={`text-sm ${star <= (selectedReport.review.rating || 0) ? 'text-amber-400' : 'text-neutral-300 dark:text-neutral-600'}`}>★</span>
+                    ))}
+                  </div>
+                  <span className="text-xs text-neutral-500">{selectedReport.review.rating}/5</span>
+                </div>
+                <p className="text-sm text-neutral-900 dark:text-white leading-relaxed">
+                  "{selectedReport.review.comment || 'No comment'}"
+                </p>
+                <div className="flex items-center gap-3 text-xs text-neutral-500 mt-2">
+                  <span>From: <strong className="text-neutral-700 dark:text-neutral-300">{selectedReport.review.fromUserName || '-'}</strong></span>
+                  <span>To: <strong className="text-neutral-700 dark:text-neutral-300">{selectedReport.review.toUserName || '-'}</strong></span>
+                </div>
+              </div>
+            )}
+
+            {/* Reported Content - Post */}
+            {selectedReport.post && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide font-semibold">
+                    Reported Post #{selectedReport.post.id}
+                  </p>
+                  {selectedReport.post.isHidden ? (
+                    <span className="px-2 py-0.5 text-[10px] font-medium bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full">
+                      Hidden
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 text-[10px] font-medium bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-full">
+                      Visible
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm font-semibold text-neutral-900 dark:text-white">
+                  {selectedReport.post.title || 'Untitled'}
+                </p>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed whitespace-pre-line">
+                  {selectedReport.post.contentPreview || 'No content'}
+                </p>
+                <div className="flex items-center gap-3 text-xs text-neutral-500 mt-2">
+                  <span>Author: <strong className="text-neutral-700 dark:text-neutral-300">{selectedReport.post.authorName || '-'}</strong></span>
+                  {selectedReport.post.createdAt && <span>{formatDate(selectedReport.post.createdAt)}</span>}
+                </div>
+                {selectedReport.post.isHidden ? (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await adminApi.unhidePost(selectedReport.post.id);
+                        setSelectedReport(prev => ({
+                          ...prev,
+                          post: { ...prev.post, isHidden: false }
+                        }));
+                      } catch (err) {
+                        alert(err?.response?.data?.message || 'Failed to unhide post.');
+                      }
+                    }}
+                    className="mt-2 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                  >
+                    Unhide Post
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await adminApi.hidePost(selectedReport.post.id, 'Violated policies');
+                        setSelectedReport(prev => ({
+                          ...prev,
+                          post: { ...prev.post, isHidden: true }
+                        }));
+                      } catch (err) {
+                        alert(err?.response?.data?.message || 'Failed to hide post.');
+                      }
+                    }}
+                    className="mt-2 px-3 py-1.5 text-xs font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  >
+                    Hide Post
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Reported Content Preview (when no review/post object but have preview) */}
+            {!selectedReport.review && !selectedReport.post && selectedReport.reportedContentPreview && (
+              <div className="p-4 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl">
+                <p className="text-xs text-neutral-500 uppercase tracking-wide mb-2">Reported Content</p>
+                <p className="text-sm text-neutral-700 dark:text-neutral-300">{selectedReport.reportedContentPreview}</p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-xl">
               <div>

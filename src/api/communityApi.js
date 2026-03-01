@@ -28,6 +28,13 @@ const communityApi = {
     return axiosClient.get("/api/Community/posts/my-posts", { params });
   },
 
+  // Posts by a specific user
+  getUserPosts(userId, params = {}) {
+    return axiosClient.get("/api/Community/posts", {
+      params: { ...params, authorId: userId }
+    });
+  },
+
   // Post detail
   getPostDetail(postId) {
     return axiosClient.get(`/api/Community/posts/${postId}`);

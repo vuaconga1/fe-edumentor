@@ -290,6 +290,10 @@ const adminApi = {
     return axiosClient.post(`/api/admin/posts/${postId}/hide`, { reason });
   },
 
+  unhidePost(postId) {
+    return axiosClient.post(`/api/admin/posts/${postId}/unhide`);
+  },
+
   // ============ COMMUNITY COMMENTS ============
 
   getComments({ pageNumber = 1, pageSize = 10, keyword = null } = {}) {

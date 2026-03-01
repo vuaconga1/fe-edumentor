@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import communityApi from '../../api/communityApi';
 import requestApi from '../../api/requestApi';
 
-const PostCard = ({ post, onRefresh }) => {
+const PostCard = ({ post, onRefresh, hideAuthor = false }) => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const isMentor = currentUser?.role === 'Mentor' || currentUser?.role === 1;
@@ -169,7 +169,7 @@ const PostCard = ({ post, onRefresh }) => {
     <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 shadow-sm hover:shadow-lg transition-all duration-300">
 
       {/* --- HEADER --- */}
-      <div className="flex items-start justify-between mb-3 relative">
+      {!hideAuthor && <div className="flex items-start justify-between mb-3 relative">
         <div className="flex items-center gap-3">
           <img
             src={normalizeAvatarUrl(author.avatarUrl || author.avatar) || buildDefaultAvatarUrl({ id: author.id, fullName: author.name })}
@@ -245,7 +245,7 @@ const PostCard = ({ post, onRefresh }) => {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* --- TITLE --- */}
       {title && (
