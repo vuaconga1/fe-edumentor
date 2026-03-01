@@ -15,11 +15,11 @@ export default function ChatWindow({
   onBack,
   currentUserId,
   workSession,
-  workContext, // ✅ Added to check orderId
+  workContext,
   onStartWork,
   onPauseWork,
   onEndWork,
-  onCompleteOrder, // ✅ Added
+  onCompleteOrder,
   completingOrder = false, // disable button while pending
   pendingCompleteRequest = null, // pending complete request from the other side
   onLoadMore,
@@ -112,7 +112,7 @@ export default function ChatWindow({
 
   return (
     <div className="relative flex flex-col h-full min-h-0">
-      {/* ✅ Work pinned bar (top-middle overlay inside chat window) */}
+      {/* Work pinned bar (top-middle overlay inside chat window) */}
       {workSession && workSession.status !== "idle" && (
         <WorkSessionPinnedBar
           status={workSession.status}
@@ -160,7 +160,7 @@ export default function ChatWindow({
             </div>
           </div>
 
-          {/* ✅ Complete Order button - show when there's an active order (not completed/cancelled) */}
+          {/* Complete Order button - show when there's an active order (not completed/cancelled) */}
           <div className="flex items-center gap-2">
             {workContext?.orderId && !["Completed", "Cancelled"].includes(workContext?.orderStatus) && (
               <button

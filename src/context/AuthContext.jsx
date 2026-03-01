@@ -1,9 +1,25 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import userProfileApi from '../api/userProfile';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../utils/avatar';
-import { getRoleName } from '../utils/userRole';
+import { getRoleName, UserRole } from '../utils/userRole';
 
 const AuthContext = createContext(null);
+
+/**
+ * Normalize role from API (could be number, string name, or string number) to numeric UserRole.
+ */
+const normalizeRole = (role) => {
+  if (typeof role === 'number') return role;
+  if (typeof role === 'string') {
+    const lower = role.toLowerCase();
+    if (lower === 'student') return UserRole.Student;
+    if (lower === 'mentor') return UserRole.Mentor;
+    if (lower === 'admin') return UserRole.Admin;
+    const parsed = Number(role);
+    if (!isNaN(parsed)) return parsed;
+  }
+  return -1;
+};
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -31,8 +47,8 @@ export function AuthProvider({ children }) {
             email: u.email,
             fullName: u.fullName
           }),
-          role: u.role, // 0=Student, 1=Mentor, 2=Admin
-          roleName: getRoleName(u.role),
+          role: normalizeRole(u.role), // 0=Student, 1=Mentor, 2=Admin
+          roleName: getRoleName(normalizeRole(u.role)),
           raw: u // keep raw data if needed
         });
       } else {

@@ -1,8 +1,6 @@
 import axiosClient from "./axios";
 
-const userProfileApi = {
-  // ✅ dùng cho EditMentorProfilePage load form
-  getProfile() {
+const userProfileApi = {  getProfile() {
     return axiosClient.get("/api/User/profile");
   },
 
@@ -11,7 +9,6 @@ const userProfileApi = {
     return axiosClient.get("/api/User/profile");
   },
 
-  // ✅ dùng cho EditMentorProfilePage submit user info
   updateUserProfile(payload) {
     return axiosClient.put("/api/User/profile", payload);
   },
@@ -21,7 +18,6 @@ const userProfileApi = {
     return axiosClient.put("/api/User/profile", payload);
   },
 
-  // ✅ submit mentor profile
   updateMentorProfile(payload) {
     return axiosClient.put("/api/User/mentor-profile", payload);
   },

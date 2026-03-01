@@ -53,7 +53,7 @@ const ConversationList = ({ conversations = [], activeConversationId, onSelectCo
                 key={id}
                 conversation={conversation}
                 isActive={activeConversationId === id}
-                onClick={() => onSelectConversation(id)} // ✅ đúng: truyền id
+                onClick={() => onSelectConversation(id)}
               />
             );
           })

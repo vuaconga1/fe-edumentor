@@ -23,7 +23,7 @@ export default function MessageInput({ onSend, onStartWork }) {
     if (!text) return;
 
     try {
-      await onSend?.(text); // ✅ gọi đúng prop
+      await onSend?.(text);
       setMessage("");
       inputRef.current?.focus();
     } catch (e) {
@@ -87,7 +87,7 @@ export default function MessageInput({ onSend, onStartWork }) {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown} // ✅ dùng onKeyDown
+            onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             className="w-full px-5 py-3 bg-neutral-100 dark:bg-neutral-950 border border-transparent focus:border-blue-500/50 rounded-2xl text-sm text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
           />

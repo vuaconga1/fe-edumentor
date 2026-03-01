@@ -40,7 +40,7 @@ export default function ProfileDropdown() {
       fullName: user?.fullName
     });
 
-  // ✅ Xác định profile path dựa trên ROLE thực từ API, không dựa vào URL
+  // Determine profile path based on actual ROLE from API, not from URL
   const getProfilePath = () => {
     if (!user) return "/student/profile"; // fallback
     

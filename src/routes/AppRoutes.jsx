@@ -1,4 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
+import { UserRole } from '../utils/userRole';
 
 import LandingLayout from '../layouts/LandingLayout';
 import AdminLayout from '../layouts/AdminLayout';
@@ -67,7 +69,11 @@ const AppRoutes = () => {
       </Route>
 
       {/* Admin */}
-      <Route path="/admin" element={<AdminLayout />}>
+      <Route path="/admin" element={
+        <ProtectedRoute allowedRoles={UserRole.Admin}>
+          <AdminLayout />
+        </ProtectedRoute>
+      }>
         <Route index element={<AdminDashboard />} />
         <Route path="profile" element={<AdminProfilePage />} />
         <Route path="profile/edit" element={<EditAdminProfilePage />} />
@@ -90,7 +96,11 @@ const AppRoutes = () => {
       </Route>
 
       {/* Mentor */}
-      <Route path="/mentor" element={<MentorLayout />}>
+      <Route path="/mentor" element={
+        <ProtectedRoute allowedRoles={UserRole.Mentor}>
+          <MentorLayout />
+        </ProtectedRoute>
+      }>
         <Route index element={<MentorHome />} />
         <Route path="community" element={<Community />} />
         <Route path="messaging" element={<MessagingPage />} />
@@ -106,7 +116,11 @@ const AppRoutes = () => {
       </Route>
 
       {/* Student */}
-      <Route path="/student" element={<StudentLayout />}>
+      <Route path="/student" element={
+        <ProtectedRoute allowedRoles={UserRole.Student}>
+          <StudentLayout />
+        </ProtectedRoute>
+      }>
         <Route index element={<StudentHome />} />
         <Route path="profile" element={<StudentProfilePage />} />
         <Route path="profile/edit" element={<EditStudentProfilePage />} />
