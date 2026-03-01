@@ -128,15 +128,11 @@ Session recordings are kept for 90 days unless you request earlier deletion.`
       title: 'Contact Us',
       content: `Questions about privacy? Reach out:
 
-    **Email:** privacy@edumentor.com
+    **Email:** nguyentranminhthu322@gmail.com
 
+    **Email:** letrongtinnn@gmail.com
 
-
-    **Address:** 123 Tech Street, San Francisco, CA
-
-
-
-    **Data Protection Officer:** dpo@edumentor.com`
+    **Address:** Ho Chi Minh City, Vietnam`
     }
   ];
 

@@ -64,7 +64,7 @@ const FAQPage = () => {
     },
     {
       q: 'How do I contact support?',
-      a: 'Our support team is available via email at support@edumentor.com or through the live chat on our website. Enterprise customers enjoy priority support with guaranteed response times. We typically respond within 24 hours.'
+      a: 'Our support team is available via email at nguyentranminhthu322@gmail.com or letrongtinnn@gmail.com. We typically respond within 24 hours.'
     }
   ];
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { HiEye, HiEyeOff, HiCheckCircle, HiShieldCheck, HiX } from 'react-icons/hi';
 import authApi from "../../api/authApi";
 import { useUIContext } from '../../context/UIContext';
+import { stopChatHub } from '../../signalr/chatHub';
 
 const ChangePasswordModal = () => {
     const { isChangePasswordOpen, closeChangePasswordModal } = useUIContext();
@@ -83,11 +84,12 @@ const ChangePasswordModal = () => {
             setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
             // Auto logout after 2 seconds
-            setTimeout(() => {
+            setTimeout(async () => {
                 setSuccess(false);
                 closeChangePasswordModal();
 
                 // Clear tokens and redirect to login
+                try { await stopChatHub(); } catch {}
                 localStorage.removeItem("token");
                 localStorage.removeItem("refreshToken");
                 navigate("/login");

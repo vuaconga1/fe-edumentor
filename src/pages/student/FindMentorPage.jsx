@@ -1,5 +1,5 @@
 // src/pages/student/FindMentorPage.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   HiSearch, HiFilter, HiX, HiStar, HiClock, HiChevronRight, HiChatAlt2,
@@ -12,6 +12,7 @@ import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import locationApi from "../../api/locationApi";
 import CustomSelect from "../../components/common/CustomSelect";
 import BookRequestModal from "../../components/request/BookRequestModal";
+import { isConnected, getOnlineUsers, on } from "../../signalr/chatHub";
 
 const FindMentorPage = () => {
   const navigate = useNavigate();
@@ -264,7 +265,7 @@ const FindMentorPage = () => {
       }
     }
 
-    if (filterValues.rating) params.MinRating = Number(filterValues.rating);
+    // rating filter is sort direction ("asc"/"desc"), not a numeric value — don't send as MinRating
     if (filterValues.city.trim()) params.City = filterValues.city.trim();
 
     return params;
@@ -314,10 +315,19 @@ const FindMentorPage = () => {
               email: m.email,
               fullName: m.fullName
             }),
+          userId: m.userId ?? m.id,
           isOnline: false,
         }));
 
         setMentors(normalized);
+
+        // Query online status for loaded mentors
+        if (isConnected()) {
+          const userIds = normalized.map((m) => Number(m.userId)).filter(Boolean);
+          if (userIds.length) {
+            try { getOnlineUsers(userIds); } catch {}
+          }
+        }
       } catch (err) {
         if (!alive) return;
         setApiError(err?.response?.data?.message || "Failed to load mentors");
@@ -332,6 +342,36 @@ const FindMentorPage = () => {
       clearTimeout(t);
     };
   }, [queryParams]);
+
+  // ===== Listen for online/offline status changes from SignalR =====
+  useEffect(() => {
+    const cleanups = [];
+
+    cleanups.push(on("OnlineUsers", (onlineIds) => {
+      const set = new Set((onlineIds || []).map(Number));
+      setMentors((prev) =>
+        prev.map((m) => ({ ...m, isOnline: set.has(Number(m.userId)) }))
+      );
+    }));
+
+    cleanups.push(on("UserOnline", (userId) => {
+      setMentors((prev) =>
+        prev.map((m) =>
+          Number(m.userId) === Number(userId) ? { ...m, isOnline: true } : m
+        )
+      );
+    }));
+
+    cleanups.push(on("UserOffline", (userId) => {
+      setMentors((prev) =>
+        prev.map((m) =>
+          Number(m.userId) === Number(userId) ? { ...m, isOnline: false } : m
+        )
+      );
+    }));
+
+    return () => cleanups.forEach((fn) => fn());
+  }, []);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -669,12 +709,16 @@ const FindMentorPage = () => {
                       }`}
                   />
                 </div>
-                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                  <HiStar className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs sm:text-sm font-bold text-yellow-700 dark:text-yellow-400">
-                    {Number(mentor.rating || 0).toFixed(1)}
-                  </span>
-                </div>
+                {mentor.reviews > 0 ? (
+                  <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <HiStar className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
+                    <span className="text-xs sm:text-sm font-bold text-yellow-700 dark:text-yellow-400">
+                      {Number(mentor.rating).toFixed(1)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-[10px] sm:text-xs text-neutral-400 dark:text-neutral-500">No reviews</span>
+                )}
               </div>
 
               {/* Info */}
@@ -693,7 +737,7 @@ const FindMentorPage = () => {
                     <HiClock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                     {mentor.experience}
                   </span>
-                  <span>{mentor.reviews} reviews</span>
+                  {mentor.reviews > 0 && <span>{mentor.reviews} reviews</span>}
                 </div>
                 {mentor.city && (
                   <div className="flex items-center gap-0.5 sm:gap-1 mt-1 text-[10px] sm:text-xs text-neutral-400">

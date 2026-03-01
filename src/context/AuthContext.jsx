@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import userProfileApi from '../api/userProfile';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../utils/avatar';
 import { getRoleName, UserRole } from '../utils/userRole';
+import { stopChatHub } from '../signalr/chatHub';
 
 const AuthContext = createContext(null);
 
@@ -62,7 +63,8 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try { await stopChatHub(); } catch {}
     localStorage.removeItem('token');
     setUser(null);
   };

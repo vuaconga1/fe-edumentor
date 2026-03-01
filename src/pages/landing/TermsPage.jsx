@@ -126,24 +126,24 @@ Our total liability won't exceed what you paid us in the 12 months before your c
     {
       id: 'disputes',
       title: 'Dispute Resolution',
-      content: `**First Step** — Contact us to resolve issues informally at legal@edumentor.com.
+      content: `**First Step** — Contact us to resolve issues informally at nguyentranminhthu322@gmail.com.
 
-**Arbitration** — Unresolved disputes go to binding arbitration under JAMS rules.
+**Arbitration** — Unresolved disputes go to binding arbitration under applicable rules.
 
 **No Class Actions** — Disputes are resolved individually, not as class or representative actions.`
     },
     {
       id: 'governing',
       title: 'Governing Law',
-      content: `These Terms are governed by California law. You consent to jurisdiction in San Francisco courts.`
+      content: `These Terms are governed by the laws of Vietnam.`
     },
     {
       id: 'contact',
       title: 'Contact',
       content: `Questions about these Terms?
 
-**Email:** legal@edumentor.com
-**Address:** 123 Tech Street, San Francisco, CA 94102`
+**Email:** nguyentranminhthu322@gmail.com
+**Address:** Ho Chi Minh City, Vietnam`
     }
   ];
 

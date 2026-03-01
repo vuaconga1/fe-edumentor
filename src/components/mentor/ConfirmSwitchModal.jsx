@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import { HiCheck, HiX, HiSparkles } from "react-icons/hi";
 import mentorApi from "../../api/mentorApi";
 import { useNavigate } from "react-router-dom";
+import { stopChatHub } from "../../signalr/chatHub";
 
 export default function ConfirmSwitchModal({ isOpen, onClose, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const navigate = useNavigate();
 
-    const handleLoginRedirect = () => {
+    const handleLoginRedirect = async () => {
         // Logout user and redirect to login page
+        try { await stopChatHub(); } catch {}
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         navigate("/login");
