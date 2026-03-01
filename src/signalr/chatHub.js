@@ -19,14 +19,14 @@ const handlers = {
   WorkActionState: new Set(),
   WorkSessionStarted: new Set(),
   WorkSessionPaused: new Set(),
-  WorkSessionResumed: new Set(), // ✅ Added
+  WorkSessionResumed: new Set(),
   WorkSessionEnded: new Set(),
   WorkActionRejected: new Set(),
   ReceiveGroupMessage: new Set(),
   ReceiveGroupMessage: new Set(),
   UserGroupTyping: new Set(),
   GroupMessagesRead: new Set(),
-  OrderCompleted: new Set(), // ✅ Added
+  OrderCompleted: new Set(),
   // Community real-time events
   NewComment: new Set(),
   CommentDeleted: new Set(),
@@ -56,7 +56,7 @@ export async function startChatHub(baseUrl, token) {
   connection = new signalR.HubConnectionBuilder()
     .withUrl(`${baseUrl}/hubs/chat`, {
       accessTokenFactory: () => token || "",
-      // ❌ Bỏ WS-only để SignalR tự negotiate (ổn định hơn)
+      // Removed WS-only so SignalR can auto-negotiate (more stable)
       // transport: signalR.HttpTransportType.WebSockets,
       // skipNegotiation: true,
     })
@@ -213,10 +213,10 @@ export const respondWorkAction = (requestId, accept) => {
   const rid = String(requestId ?? "").trim();
   console.log("[hub] RespondWorkAction invoke args:", { rid, accept });
 
-  // ❗ nếu rid rỗng thì stop ngay (tránh gọi server)
+  // Stop immediately if rid is empty (avoid calling server)
   if (!rid) throw new Error("Missing requestId");
 
-  // ✅ đúng signature BE: (string requestId, bool accept)
+  // Correct BE signature: (string requestId, bool accept)
   return connection.invoke("RespondWorkAction", rid, Boolean(accept));
 };
 

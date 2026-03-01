@@ -200,7 +200,7 @@ const MessagingPage = () => {
       )
     );
     
-    // ✅ Gọi markAsRead trên server để đánh dấu tin nhắn đã đọc
+    // Call markAsRead on server to mark messages as read
     try {
       markAsRead(id);
       refreshUnseenCount(); // Update sidebar badge
@@ -240,7 +240,7 @@ const MessagingPage = () => {
       )
     );
     
-    // ✅ Gọi markGroupAsRead trên server để cập nhật LastReadAt
+    // Call markGroupAsRead on server to update LastReadAt
     try {
       markGroupAsRead(id);
       refreshUnseenCount(); // Update sidebar badge
@@ -602,7 +602,7 @@ const MessagingPage = () => {
       try {
         await startChatHub(BASE_URL, token);
         
-        // ✅ Nếu effect đã bị cleanup (StrictMode), vẫn tiếp tục đăng ký listeners
+        // If effect was cleaned up (StrictMode), still continue registering listeners
         // vì hubStartedRef.current = true sẽ ngăn mount thứ hai chạy lại
         
         // Verify connection is actually ready before setting hubReady
@@ -937,7 +937,7 @@ const MessagingPage = () => {
 
           if (!["start", "pause", "end", "complete"].includes(actionType)) return;
 
-          // ✅ For "complete": don't show blocking modal, store separately
+          // For "complete": don't show blocking modal, store separately
           if (actionType === "complete") {
             setPendingCompleteRequest({
               requestId: rid,
@@ -948,7 +948,7 @@ const MessagingPage = () => {
             return;
           }
 
-          // ✅ store full payload (not only requestId) — modal for start/pause/end only
+          // store full payload (not only requestId) — modal for start/pause/end only
           setWorkActionPopup({
             requestId: rid,
             actionType,
@@ -984,7 +984,7 @@ const MessagingPage = () => {
             setWorkSession((prev) => {
               if (!prev) return prev;
 
-              // ❌ không set status="pending" nữa để timer không bị đứng
+              // do not set status="pending" so timer doesn't freeze
               return {
                 ...prev,
                 pendingActionType: actionType,
@@ -1179,7 +1179,7 @@ const MessagingPage = () => {
         prevConversationIdRef.current = null;
       }
       setMessages([]);
-      setWorkSession(null); // ✅ reset pinned when exit conversation (will reload when enter)
+      setWorkSession(null); // reset pinned when exit conversation (will reload when enter)
       setWorkActionPopup(null);
       setPendingCompleteRequest(null);
       setCompletingOrder(false);
@@ -1233,7 +1233,7 @@ const MessagingPage = () => {
         await joinConversation(activeConversationId);
         prevConversationIdRef.current = activeConversationId;
 
-        // ✅ Gọi markAsRead để đảm bảo server đánh dấu đã đọc
+        // Call markAsRead to ensure server marks as read
         try {
           await markAsRead(activeConversationId);
           refreshUnseenCount(); // Update sidebar badge
@@ -1241,7 +1241,7 @@ const MessagingPage = () => {
           console.error("markAsRead after join failed:", e);
         }
 
-        // ✅ Reset unreadCount trong state (đảm bảo sync)
+        // Reset unreadCount in state (ensure sync)
         setConversations((prev) =>
           (Array.isArray(prev) ? prev : []).map((c) =>
             c.id === activeConversationId ? { ...c, unreadCount: 0 } : c
@@ -1354,7 +1354,7 @@ const MessagingPage = () => {
 
         const payload = res?.data?.data ?? res?.data;
 
-        // ✅ Check order status from summary — hide button if order completed/cancelled
+        // Check order status from summary — hide button if order completed/cancelled
         const orderStatus = payload?.orderStatus;
         if (orderStatus && ["Completed", "Cancelled"].includes(orderStatus)) {
           // Update conversation's orderStatus so button hides
@@ -1558,7 +1558,7 @@ const MessagingPage = () => {
     if (!workContext?.orderId || !activeConversationId) return;
     if (completingOrder) return; // prevent double-click
 
-    // ✅ If the other side already requested complete, auto-accept their request
+    // If the other side already requested complete, auto-accept their request
     if (pendingCompleteRequest?.requestId) {
       setCompletingOrder(true);
       try {
@@ -1680,7 +1680,7 @@ const MessagingPage = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] w-full flex bg-neutral-50 dark:bg-neutral-950">
-      {/* ✅ Modal confirm (for other user) */}
+      {/* Modal confirm (for other user) */}
       <WorkActionConfirmModal
         isOpen={!!workActionPopup}
         actionType={workActionPopup?.actionType}
@@ -1817,23 +1817,23 @@ const MessagingPage = () => {
           <ChatWindow
             conversation={activeConversation}
             messages={messages}
-            onSend={handleSendText}       // ✅ text
-            onSendImage={handleSendImage} // ✅ image/file
+            onSend={handleSendText}
+            onSendImage={handleSendImage}
             onBack={() => setActiveConversationId(null)}
             currentUserId={currentUserId}
 
-            // ✅ pass handlers down in case you want a Start button in ChatWindow header/menu
+            // pass handlers down in case you want a Start button in ChatWindow header/menu
             onStartWork={handleStartWork}
-            onPauseWork={handlePauseWork} // ✅ Added
-            onEndWork={handleEndWork} // ✅ Added
-            onCompleteOrder={handleRequestCompleteOrder} // ✅ New handler
-            completingOrder={completingOrder} // ✅ Disable button while pending
-            pendingCompleteRequest={pendingCompleteRequest} // ✅ Show indicator when other side requested
+            onPauseWork={handlePauseWork}
+            onEndWork={handleEndWork}
+            onCompleteOrder={handleRequestCompleteOrder}
+            completingOrder={completingOrder}
+            pendingCompleteRequest={pendingCompleteRequest}
             workSession={workSession}
-            workContext={workContext} // ✅ Pass workContext to check orderId
+            workContext={workContext}
             onResumeWork={handleResumeWork}
             
-            // ✅ Infinite scroll support
+            // Infinite scroll support
             onLoadMore={handleLoadMoreMessages}
             hasMore={msgHasMore}
             loadingMore={msgLoadingMore}

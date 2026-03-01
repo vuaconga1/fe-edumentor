@@ -44,8 +44,8 @@ export default function MessageBubble({ message, isMine }) {
   const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i;
   const hasImageExtension = imageExtensions.test(content);
   
-  // ✅ Coi là ảnh nếu:
-  // - messageType === 2 (Image) VÀ là URL, HOẶC
+  // Treat as image if:
+  // - messageType === 2 (Image) AND is a URL, OR
   // - URL có đuôi ảnh (fallback cho tin nhắn cũ bị sai messageType)
   const isImage = (type === 2 && isUrl) || (isUrl && hasImageExtension);
 

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useLocation } from 'react-router-dom';
 import authAPI from '../../api/authAPI';
 import { jwtDecode } from "jwt-decode";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 
 export default function FlowbiteLogin() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  // If redirected from a protected route, go back there after login
+  const fromPath = location.state?.from?.pathname;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -115,13 +118,13 @@ export default function FlowbiteLogin() {
       const roleStr = String(roleRaw).toLowerCase();
 
       if (roleNum === 0 || roleStr === "student") {
-        window.location.href = "/student";
+        window.location.href = fromPath || "/student";
       } else if (roleNum === 1 || roleStr === "mentor") {
-        window.location.href = "/mentor";
+        window.location.href = fromPath || "/mentor";
       } else if (roleNum === 2 || roleStr === "admin") {
-        window.location.href = "/admin";
+        window.location.href = fromPath || "/admin";
       } else {
-        window.location.href = "/student";
+        window.location.href = fromPath || "/student";
       }
 
     } catch (err) {
