@@ -63,10 +63,6 @@ npm run build
 
 Output will be in `dist/` folder.
 
-## Documentation
-
-For port configuration details, see: [Backend PORT_CONFIGURATION.md](../MentorEdu/docs/PORT_CONFIGURATION.md)
-
 ---
 
 ## Original Vite Template Info
