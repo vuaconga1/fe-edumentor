@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { HiMail, HiPhone, HiLocationMarker } from "react-icons/hi";
+import { HiMail, HiLocationMarker } from "react-icons/hi";
 
 export default function AppFooter() {
   return (
@@ -33,15 +33,15 @@ export default function AppFooter() {
             <ul className="space-y-4">
               <li className="flex items-center gap-3 text-neutral-500 dark:text-neutral-400">
                 <HiMail className="text-lg text-primary-600 dark:text-primary-400" />
-                <span>contact@edumentor.com</span>
+                <span>nguyentranminhthu322@gmail.com</span>
               </li>
               <li className="flex items-center gap-3 text-neutral-500 dark:text-neutral-400">
-                <HiPhone className="text-lg text-primary-600 dark:text-primary-400" />
-                <span>+1 (555) 123-4567</span>
+                <HiMail className="text-lg text-primary-600 dark:text-primary-400" />
+                <span>letrongtinnn@gmail.com</span>
               </li>
               <li className="flex items-start gap-3 text-neutral-500 dark:text-neutral-400">
                 <HiLocationMarker className="text-lg mt-1 text-primary-600 dark:text-primary-400" />
-                <span>San Francisco, CA</span>
+                <span>Ho Chi Minh City, Vietnam</span>
               </li>
             </ul>
           </div>

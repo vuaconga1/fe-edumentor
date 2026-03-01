@@ -6,6 +6,7 @@ import userProfileApi from "../../api/userProfile";
 import { useUIContext } from "../../context/UIContext";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import { UserRole, getRoleName } from "../../utils/userRole";
+import { stopChatHub } from "../../signalr/chatHub";
 
 export default function ProfileDropdown() {
   const navigate = useNavigate();
@@ -63,7 +64,8 @@ export default function ProfileDropdown() {
     return "/change-password";
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await stopChatHub(); } catch {}
     localStorage.removeItem("token");
     navigate("/");
   };
