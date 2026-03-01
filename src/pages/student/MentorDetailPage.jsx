@@ -21,7 +21,6 @@ const MentorDetailPage = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   // Reviews state
-  const [showReviews, setShowReviews] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
@@ -108,51 +107,56 @@ const MentorDetailPage = () => {
     return () => (mounted = false);
   }, [id]);
 
-  const handleViewReviews = async () => {
-    if (!profile?.id) return;
-    setShowReviews(prev => !prev);
+  // Auto-fetch reviews when profile loads
+  useEffect(() => {
+    if (!profile?.id || reviewsFetched) return;
+    const fetchReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewsFetched(true);
+        const [summaryRes, reviewsRes] = await Promise.all([
+          reviewApi.getMentorReviewSummary(profile.id),
+          reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
+        ]);
+        const summaryData = summaryRes?.data?.data;
+        if (summaryData) {
+          setReviewSummary({
+            averageRating: summaryData.averageRating || 0,
+            totalReviews: summaryData.totalReviews || 0,
+            distribution: {
+              5: summaryData.fiveStarCount || 0,
+              4: summaryData.fourStarCount || 0,
+              3: summaryData.threeStarCount || 0,
+              2: summaryData.twoStarCount || 0,
+              1: summaryData.oneStarCount || 0
+            }
+          });
+        }
+        const reviewItems = reviewsRes?.data?.data?.items || [];
+        setReviews(reviewItems.map(r => ({
+          id: r.id,
+          studentId: r.studentId,
+          studentName: r.studentName || 'Anonymous',
+          studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
+          courseName: r.orderTitle || 'Mentoring Session',
+          rating: r.rating,
+          date: r.createdAt,
+          comment: r.comment || '',
+          tags: []
+        })));
+      } catch (err) {
+        console.error("Failed to load reviews", err);
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+    fetchReviews();
+  }, [profile?.id]);
+
+  const handleViewReviews = () => {
     setTimeout(() => {
       reviewsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-    if (reviewsFetched) return;
-    try {
-      setReviewsLoading(true);
-      setReviewsFetched(true);
-      const [summaryRes, reviewsRes] = await Promise.all([
-        reviewApi.getMentorReviewSummary(profile.id),
-        reviewApi.getMentorReviews(profile.id, { pageNumber: 1, pageSize: 50 })
-      ]);
-      const summaryData = summaryRes?.data?.data;
-      if (summaryData) {
-        setReviewSummary({
-          averageRating: summaryData.averageRating || 0,
-          totalReviews: summaryData.totalReviews || 0,
-          distribution: {
-            5: summaryData.fiveStarCount || 0,
-            4: summaryData.fourStarCount || 0,
-            3: summaryData.threeStarCount || 0,
-            2: summaryData.twoStarCount || 0,
-            1: summaryData.oneStarCount || 0
-          }
-        });
-      }
-      const reviewItems = reviewsRes?.data?.data?.items || [];
-      setReviews(reviewItems.map(r => ({
-        id: r.id,
-        studentId: r.studentId,
-        studentName: r.studentName || 'Anonymous',
-        studentAvatar: normalizeAvatarUrl(r.studentAvatar) || buildDefaultAvatarUrl({ fullName: r.studentName }),
-        courseName: r.orderTitle || 'Mentoring Session',
-        rating: r.rating,
-        date: r.createdAt,
-        comment: r.comment || '',
-        tags: []
-      })));
-    } catch (err) {
-      console.error("Failed to load reviews", err);
-    } finally {
-      setReviewsLoading(false);
-    }
+    }, 50);
   };
 
   const isPendingStatus = (status) => {
@@ -280,24 +284,22 @@ const MentorDetailPage = () => {
                   {p.title || p.specialization || "Mentor"}
                 </p>
 
-                {/* Rating */}
-                {p.ratingCount > 0 && (
+                {/* Rating - live data from DB */}
+                {reviewSummary && reviewSummary.totalReviews > 0 ? (
                   <button
                     onClick={handleViewReviews}
                     className="flex items-center gap-1.5 mt-2 hover:opacity-80 transition-opacity cursor-pointer"
                     title="View reviews"
                   >
-                    <HiStar className="w-4 h-4 text-yellow-500" />
+                    <HiStar className="w-4 h-4 text-yellow-400" />
                     <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-                      {Number(p.ratingAvg).toFixed(1)}
+                      {reviewSummary.averageRating.toFixed(1)}
                     </span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 underline">
-                      ({p.ratingCount} reviews)
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                      ({reviewSummary.totalReviews} reviews)
                     </span>
                   </button>
-                )}
-                {/* View Reviews button (when no rating yet) */}
-                {p.ratingCount === 0 && (
+                ) : (
                   <button
                     onClick={handleViewReviews}
                     className="mt-2 text-xs text-blue-600 dark:text-blue-400 hover:underline transition-colors"
@@ -389,20 +391,11 @@ const MentorDetailPage = () => {
           {/* Right Column - Details (2/3 width on xl) */}
           <div className="xl:col-span-2 space-y-6">
             {/* Reviews Section */}
-            {showReviews && (
-              <div ref={reviewsRef} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                    <HiStar className="w-4 h-4 text-yellow-500" />
-                    Reviews
-                  </h2>
-                  <button
-                    onClick={() => setShowReviews(false)}
-                    className="text-xs text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                  >
-                    Hide
-                  </button>
-                </div>
+            <div ref={reviewsRef} className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white flex items-center gap-2 mb-4">
+                <HiStar className="w-4 h-4 text-yellow-500" />
+                Reviews
+              </h2>
                 {reviewsLoading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -431,8 +424,7 @@ const MentorDetailPage = () => {
                     )}
                   </>
                 )}
-              </div>
-            )}
+            </div>
 
             {/* Pricing Card */}
             <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
