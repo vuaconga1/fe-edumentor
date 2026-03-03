@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { HiBell } from 'react-icons/hi';
 import { useNavigate } from 'react-router-dom';
 import notificationApi from '../../api/notificationApi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { startChatHub, on, isConnected } from '../../signalr/chatHub';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';

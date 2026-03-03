@@ -86,20 +86,20 @@ export default function ForgotPassword() {
           </div>
 
           {/* Form Card */}
-          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-8">
-            <h2 className="text-2xl font-bold text-gray-900 text-center mb-8">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl p-4 sm:p-8">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-8">
               Forgot Your Password?
             </h2>
 
             {/* Error message */}
             {error && (
-              <div className="text-red-500 text-center mb-4 text-sm">
+              <div className="text-red-500 dark:text-red-400 text-center mb-4 text-sm">
                 {error}
               </div>
             )}
 
             {submitted ? (
-              <div className="text-gray-700 text-center mb-4 text-sm">
+              <div className="text-gray-700 dark:text-neutral-300 text-center mb-4 text-sm">
                 {serverMessage ||
                   "If an account with that email exists, a password reset link has been sent."}
               </div>
@@ -136,7 +136,7 @@ export default function ForgotPassword() {
             )}
 
             <div className="mt-6 text-center">
-              <Link to="/login" className="text-blue-600 hover:underline">
+              <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
                 Back to Login
               </Link>
             </div>

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Dropdown, DropdownDivider, DropdownHeader, DropdownItem } from "flowbite-react";
 import { HiCog, HiLogout, HiUser } from "react-icons/hi";
 import userProfileApi from "../../api/userProfile";
-import { useUIContext } from "../../context/UIContext";
+import { useUIContext } from "../../hooks/useUIContext";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import { UserRole, getRoleName } from "../../utils/userRole";
 import { stopChatHub } from "../../signalr/chatHub";

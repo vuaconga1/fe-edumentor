@@ -117,14 +117,6 @@ const communityApi = {
     return axiosClient.get(`/api/Community/follow/${userId}/following`);
   },
 
-  getFollowers(userId) {
-    return axiosClient.get(`/api/Community/follow/${userId}/followers`);
-  },
-
-  getFollowing(userId) {
-    return axiosClient.get(`/api/Community/follow/${userId}/following`);
-  },
-
   // ========== Categories & Hashtags ==========
 
   // Get all categories

@@ -3,20 +3,21 @@ import 'react-toastify/dist/ReactToastify.css';
 import AppRoutes from './routes/AppRoutes';
 import ChangePasswordModal from './components/auth/ChangePasswordModal';
 import { FloatingChatButton, ChatWindow } from './components/AIChat';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import './App.css';
 
 function App() {
   return (
-    <>
+    <ErrorBoundary>
       <AppRoutes />
       <ChangePasswordModal />
-      
+
       {/* AI Chatbot */}
       <FloatingChatButton />
       <ChatWindow />
-      
-      <ToastContainer 
-        position="top-right" 
+
+      <ToastContainer
+        position="top-right"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}
@@ -35,7 +36,7 @@ function App() {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
         }}
       />
-    </>
+    </ErrorBoundary>
   );
 }
 

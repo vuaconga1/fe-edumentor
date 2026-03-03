@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import PostCard from '../../components/community/PostCard';
 import CreatePostModal from '../../components/community/CreatePostModal';
 import communityApi from '../../api/communityApi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { buildDefaultAvatarUrl } from '../../utils/avatar';
 import {
   HiSparkles,
@@ -671,14 +671,7 @@ const Community = () => {
                       : 'Be the first to share something!'
                   }
                 </p>
-                {activeTab === 'following' ? (
-                  <Link
-                    to="/student/find-mentor"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"
-                  >
-                    Find Mentors
-                  </Link>
-                ) : (
+                {activeTab !== 'following' && (
                   <button
                     onClick={handleCreatePost}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"

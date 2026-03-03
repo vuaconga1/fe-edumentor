@@ -1,331 +1,40 @@
-import React, { useEffect, useState } from 'react';
+// src/pages/admin/UsersPage.jsx
+import React from 'react';
 import { HiCheckCircle, HiXCircle, HiBan, HiShieldCheck, HiEye, HiPencil, HiTrash, HiRefresh } from 'react-icons/hi';
 import DataTable from '../../components/admin/DataTable';
 import ConfirmDialog from '../../components/admin/ConfirmDialog';
-import Modal from '../../components/admin/Modal';
 import ActionButton from '../../components/admin/ActionButton';
 import AdminFilterBar from '../../components/admin/AdminFilterBar';
-import adminApi from '../../api/adminApi';
-import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
-import { getRoleName } from '../../utils/userRole';
+
+import useUsers from '../../hooks/useUsers';
+import { getStatusColor, getRoleColor } from '../../utils/userUtils';
+
+import UserCreateModal from '../../components/admin/users/UserCreateModal';
+import UserUpdateModal from '../../components/admin/users/UserUpdateModal';
+import UserDetailModal from '../../components/admin/users/UserDetailModal';
+
 const UsersPage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  // Connect custom hook
+  const hook = useUsers();
 
-  // Pagination
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-
-  // Filters
-  const [filterRole, setFilterRole] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [debouncedKeyword, setDebouncedKeyword] = useState('');
-
-  // Modals
-  const [isActionOpen, setIsActionOpen] = useState(false);
-  const [actionType, setActionType] = useState(''); // 'activate', 'deactivate', 'ban', 'verify'
-  const [actionReason, setActionReason] = useState('');
-  const [selectedUser, setSelectedUser] = useState(null);
-
-  // CRUD Modals
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState(null);
-  const [viewingUser, setViewingUser] = useState(null);
-
-  // Form data for Create/Update
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    password: '',
-    role: 'Student'
-  });
-
-  // Fetch users from API
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const roleParam = filterRole === 'all' ? null : mapRoleToAPI(filterRole);
-      const statusParam = filterStatus === 'all' ? null : (filterStatus === 'active');
-
-      const res = await adminApi.getUsers({
-        pageNumber,
-        pageSize,
-        role: roleParam,
-        isActive: statusParam,
-        keyword: debouncedKeyword
-      });
-
-      const data = res.data?.data;
-      if (data) {
-        setUsers(data.items.map(mapUser));
-        setTotalCount(data.totalCount);
-        setTotalPages(data.totalPages);
-      }
-    } catch (err) {
-      console.error("Failed to fetch users", err);
-      setError(err.response?.data?.message || "Failed to load users");
-      showToast("Failed to load users", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Debounce searchKeyword -> debouncedKeyword
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedKeyword(searchKeyword), 400);
-    return () => clearTimeout(handler);
-  }, [searchKeyword]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, [pageNumber, pageSize, filterRole, filterStatus, debouncedKeyword]);
-
-  // Map API data to display format
-  function mapUser(apiUser) {
-    const normalized = normalizeAvatarUrl(apiUser.avatarUrl);
-
-    return {
-      id: apiUser.id,
-      name: apiUser.fullName,
-      email: apiUser.email,
-      avatar: normalized || buildDefaultAvatarUrl({
-        id: apiUser.id,
-        email: apiUser.email,
-        fullName: apiUser.fullName
-      }),
-      role: mapRoleFromAPI(apiUser.role),
-      status: apiUser.isActive ? "active" : "inactive",
-      isVerified: apiUser.isVerified,
-      phone: apiUser.phone || null,
-      gender: apiUser.gender || null,
-      school: apiUser.school || null,
-      major: apiUser.major || null,
-      bio: apiUser.bio || null,
-      city: apiUser.city || null,
-      country: apiUser.country || null,
-      createdAt: apiUser.createdAt || new Date().toISOString(),
-    };
-  }
-
-  function mapRoleFromAPI(role) {
-    // Handle both enum number (0=Student, 1=Mentor, 2=Admin) and string
-    if (typeof role === 'number') {
-      const roleMap = { 0: 'student', 1: 'mentor', 2: 'admin' };
-      return roleMap[role] || 'student';
-    }
-    return role ? role.toLowerCase() : "student";
-  }
-
-  function mapRoleToAPI(role) {
-    const roleMap = {
-      'student': 'Student',
-      'mentor': 'Mentor',
-      'admin': 'Admin'
-    };
-    return roleMap[role] || 'Student';
-  }
-
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
-  // CRUD Functions
-  const handleCreate = () => {
-    setFormData({ fullName: '', email: '', password: '', role: 'Student' });
-    setIsCreateModalOpen(true);
-  };
-
-  const handleEdit = (user) => {
-    setEditingUser(user);
-    setFormData({
-      fullName: user.name,
-      email: user.email,
-      password: '', // Don't populate password
-      role: mapRoleToAPI(user.role)
-    });
-    setIsUpdateModalOpen(true);
-  };
-
-  const handleDelete = (user) => {
-    setSelectedUser(user);
-    setIsDeleteModalOpen(true);
-  };
-
-  const handleViewDetail = (user) => {
-    setViewingUser(user);
-    setIsDetailModalOpen(true);
-  };
-
-  const submitCreate = async () => {
-    try {
-      await adminApi.createUser({
-        fullName: formData.fullName,
-        email: formData.email,
-        password: formData.password,
-        role: formData.role // adminApi will convert to number
-      });
-      showToast(`User "${formData.fullName}" has been created successfully`, 'success');
-      fetchUsers();
-      setIsCreateModalOpen(false);
-    } catch (err) {
-      console.error('Failed to create user', err);
-      // Show detailed error message from backend
-      const errorMsg = err.response?.data?.message ||
-        err.response?.data?.errors?.[0] ||
-        'Failed to create user';
-
-      // Check if API endpoint doesn't exist (405 Method Not Allowed)
-      if (err.response?.status === 405) {
-        showToast('Create user API is not implemented in backend yet. Please use registration flow.', 'error');
-      } else {
-        showToast(errorMsg, 'error');
-      }
-    }
-  };
-
-  const submitUpdate = async () => {
-    try {
-      const updateData = {
-        fullName: formData.fullName,
-        email: formData.email,
-        role: formData.role
-      };
-      // Only include password if it's provided
-      if (formData.password) {
-        updateData.password = formData.password;
-      }
-
-      await adminApi.updateUser(editingUser.id, updateData);
-      showToast(`User "${formData.fullName}" has been updated successfully`, 'success');
-      fetchUsers();
-      setIsUpdateModalOpen(false);
-    } catch (err) {
-      console.error('Failed to update user', err);
-      // Check if API endpoint doesn't exist (405 Method Not Allowed)
-      if (err.response?.status === 405) {
-        showToast('Update user API is not implemented in backend yet. Use Activate/Deactivate/Ban actions instead.', 'error');
-      } else {
-        showToast(err.response?.data?.message || 'Failed to update user', 'error');
-      }
-    }
-  };
-
-  const confirmDelete = async () => {
-    try {
-      await adminApi.deleteUser(selectedUser.id);
-      showToast(`User "${selectedUser.name}" has been deleted successfully`, 'success');
-      fetchUsers();
-      setIsDeleteModalOpen(false);
-    } catch (err) {
-      console.error('Failed to delete user', err);
-      // Check if API endpoint doesn't exist (405 Method Not Allowed)
-      if (err.response?.status === 405) {
-        // Fallback to ban user if delete is not implemented
-        try {
-          await adminApi.banUser(selectedUser.id, 'Account deleted by admin');
-          showToast(`User "${selectedUser.name}" has been banned (delete API not available)`, 'success');
-          fetchUsers();
-          setIsDeleteModalOpen(false);
-        } catch (banErr) {
-          showToast('Failed to delete/ban user', 'error');
-        }
-      } else {
-        showToast(err.response?.data?.message || 'Failed to delete user', 'error');
-      }
-    }
-  };
-
-  const handleAction = async (user, action) => {
-    setSelectedUser(user);
-    setActionType(action);
-    setActionReason('');
-    setIsActionOpen(true);
-  };
-
-  const confirmAction = async () => {
-    if (!selectedUser) return;
-
-    try {
-      switch (actionType) {
-        case 'activate':
-          await adminApi.activateUser(selectedUser.id);
-          showToast(`User "${selectedUser.name}" has been activated`, 'success');
-          break;
-        case 'deactivate':
-          await adminApi.deactivateUser(selectedUser.id);
-          showToast(`User "${selectedUser.name}" has been deactivated`, 'success');
-          break;
-        case 'ban':
-          await adminApi.banUser(selectedUser.id, actionReason || 'Violated community guidelines');
-          showToast(`User "${selectedUser.name}" has been banned`, 'success');
-          break;
-        case 'verify':
-          await adminApi.verifyUser(selectedUser.id);
-          showToast(`User "${selectedUser.name}" has been verified`, 'success');
-          break;
-        default:
-          break;
-      }
-
-      // Refresh the list
-      fetchUsers();
-      setIsActionOpen(false);
-    } catch (err) {
-      console.error(`Failed to ${actionType} user`, err);
-      showToast(err.response?.data?.message || `Failed to ${actionType} user`, 'error');
-    }
-  };
-
-  const getActionLabel = () => {
+  const getActionLabelText = () => {
     const labels = {
       'activate': 'Activate User',
       'deactivate': 'Deactivate User',
       'ban': 'Ban User',
       'verify': 'Verify User'
     };
-    return labels[actionType] || 'Confirm Action';
+    return labels[hook.actionType] || 'Confirm Action';
   };
 
-
-  const getActionMessage = () => {
+  const getActionMessageText = () => {
     const messages = {
-      'activate': `Are you sure you want to activate "${selectedUser?.name}"? They will be able to login again.`,
-      'deactivate': `Are you sure you want to deactivate "${selectedUser?.name}"? They won't be able to login.`,
-      'ban': `Are you sure you want to ban "${selectedUser?.name}"? This action will permanently restrict their account.`,
-      'verify': `Are you sure you want to verify "${selectedUser?.name}"? This will mark their account as verified.`
+      'activate': `Are you sure you want to activate "${hook.selectedUser?.name}"? They will be able to login again.`,
+      'deactivate': `Are you sure you want to deactivate "${hook.selectedUser?.name}"? They won't be able to login.`,
+      'ban': `Are you sure you want to ban "${hook.selectedUser?.name}"? This action will permanently restrict their account.`,
+      'verify': `Are you sure you want to verify "${hook.selectedUser?.name}"? This will mark their account as verified.`
     };
-    return messages[actionType] || '';
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      active: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
-      inactive: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400',
-    };
-    return colors[status] || colors.inactive;
-  };
-
-  const getRoleColor = (role) => {
-    const colors = {
-      admin: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 dark:text-purple-400',
-      mentor: 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400',
-      student: 'text-neutral-600 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-400'
-    };
-    return colors[role] || colors.student;
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' VND';
+    return messages[hook.actionType] || '';
   };
 
   const columns = [
@@ -400,21 +109,21 @@ const UsersPage = () => {
           <ActionButton
             icon={<HiEye className="w-4 h-4" />}
             tooltip="View Detail"
-            onClick={(e) => { e?.stopPropagation?.(); handleViewDetail(row); }}
+            onClick={(e) => { e?.stopPropagation?.(); hook.handleViewDetail(row); }}
             variant="info"
           />
           {row.status === 'inactive' ? (
             <ActionButton
               icon={<HiCheckCircle className="w-4 h-4" />}
               tooltip="Activate User"
-              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'activate'); }}
+              onClick={(e) => { e?.stopPropagation?.(); hook.handleAction(row, 'activate'); }}
               variant="success"
             />
           ) : (
             <ActionButton
               icon={<HiBan className="w-4 h-4" />}
               tooltip="Ban User"
-              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'ban'); }}
+              onClick={(e) => { e?.stopPropagation?.(); hook.handleAction(row, 'ban'); }}
               variant="warning"
             />
           )}
@@ -422,20 +131,20 @@ const UsersPage = () => {
             <ActionButton
               icon={<HiShieldCheck className="w-4 h-4" />}
               tooltip="Verify User"
-              onClick={(e) => { e?.stopPropagation?.(); handleAction(row, 'verify'); }}
+              onClick={(e) => { e?.stopPropagation?.(); hook.handleAction(row, 'verify'); }}
               variant="info"
             />
           )}
           <ActionButton
             icon={<HiPencil className="w-4 h-4" />}
             tooltip="Edit User"
-            onClick={(e) => { e?.stopPropagation?.(); handleEdit(row); }}
+            onClick={(e) => { e?.stopPropagation?.(); hook.handleEdit(row); }}
             variant="info"
           />
           <ActionButton
             icon={<HiTrash className="w-4 h-4" />}
             tooltip="Delete User"
-            onClick={(e) => { e?.stopPropagation?.(); handleDelete(row); }}
+            onClick={(e) => { e?.stopPropagation?.(); hook.handleDelete(row); }}
             variant="danger"
           />
         </div>
@@ -446,10 +155,9 @@ const UsersPage = () => {
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Toast Notification */}
-      {toast.show && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-          } text-white`}>
-          {toast.message}
+      {hook.toast.show && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${hook.toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`}>
+          {hook.toast.message}
         </div>
       )}
 
@@ -458,11 +166,11 @@ const UsersPage = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-white">Users</h1>
           <p className="text-neutral-500 dark:text-neutral-400 text-sm">
-            Manage platform users {totalCount > 0 && `(${totalCount} total)`}
+            Manage platform users {hook.totalCount > 0 && `(${hook.totalCount} total)`}
           </p>
         </div>
         <button
-          onClick={handleCreate}
+          onClick={hook.handleCreate}
           className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium w-full sm:w-auto"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -474,14 +182,14 @@ const UsersPage = () => {
 
       {/* Filters */}
       <AdminFilterBar
-        searchValue={searchKeyword}
-        onSearchChange={setSearchKeyword}
+        searchValue={hook.searchKeyword}
+        onSearchChange={hook.setSearchKeyword}
         searchPlaceholder="Search by name or email..."
         filters={[
           {
             label: "Role",
-            value: filterRole,
-            onChange: (v) => { setFilterRole(v); setPageNumber(1); },
+            value: hook.filterRole,
+            onChange: (v) => { hook.setFilterRole(v); hook.setPageNumber(1); },
             options: [
               { value: "all", label: "All Roles" },
               { value: "admin", label: "Admin" },
@@ -491,8 +199,8 @@ const UsersPage = () => {
           },
           {
             label: "Status",
-            value: filterStatus,
-            onChange: (v) => { setFilterStatus(v); setPageNumber(1); },
+            value: hook.filterStatus,
+            onChange: (v) => { hook.setFilterStatus(v); hook.setPageNumber(1); },
             options: [
               { value: "all", label: "All Status" },
               { value: "active", label: "Active" },
@@ -500,49 +208,49 @@ const UsersPage = () => {
             ]
           }
         ]}
-        showClear={filterRole !== 'all' || filterStatus !== 'all' || searchKeyword}
-        onClearFilters={() => { setFilterRole('all'); setFilterStatus('all'); setSearchKeyword(''); setPageNumber(1); }}
-        onRefresh={fetchUsers}
+        showClear={hook.filterRole !== 'all' || hook.filterStatus !== 'all' || hook.searchKeyword}
+        onClearFilters={() => { hook.setFilterRole('all'); hook.setFilterStatus('all'); hook.setSearchKeyword(''); hook.setPageNumber(1); }}
+        onRefresh={hook.fetchUsers}
       />
 
-      {/* Table */}
-      {loading ? (
+      {/* Table Area */}
+      {hook.loading ? (
         <div className="flex items-center justify-center py-12 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
           <div className="text-neutral-500">Loading users...</div>
         </div>
-      ) : error ? (
+      ) : hook.error ? (
         <div className="flex items-center justify-center py-12 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
-          <div className="text-red-500">{error}</div>
+          <div className="text-red-500">{hook.error}</div>
         </div>
       ) : (
         <>
           <DataTable
             columns={columns}
-            data={users}
+            data={hook.users}
             searchable={false}
             emptyMessage="No users found"
           />
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {hook.totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800">
               <div className="text-sm text-neutral-500 text-center sm:text-left">
-                Showing {((pageNumber - 1) * pageSize) + 1} to {Math.min(pageNumber * pageSize, totalCount)} of {totalCount}
+                Showing {((hook.pageNumber - 1) * hook.pageSize) + 1} to {Math.min(hook.pageNumber * hook.pageSize, hook.totalCount)} of {hook.totalCount}
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setPageNumber(p => Math.max(1, p - 1))}
-                  disabled={pageNumber === 1}
+                  onClick={() => hook.setPageNumber(p => Math.max(1, p - 1))}
+                  disabled={hook.pageNumber === 1}
                   className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   Prev
                 </button>
                 <span className="text-sm text-neutral-900 dark:text-white px-2">
-                  {pageNumber}/{totalPages}
+                  {hook.pageNumber}/{hook.totalPages}
                 </span>
                 <button
-                  onClick={() => setPageNumber(p => Math.min(totalPages, p + 1))}
-                  disabled={pageNumber === totalPages}
+                  onClick={() => hook.setPageNumber(p => Math.min(hook.totalPages, p + 1))}
+                  disabled={hook.pageNumber === hook.totalPages}
                   className="px-3 py-1.5 text-sm border border-neutral-200 dark:border-neutral-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 >
                   Next
@@ -553,24 +261,24 @@ const UsersPage = () => {
         </>
       )}
 
-      {/* Action Confirmation */}
+      {/* Action Confirmation Modal */}
       <ConfirmDialog
-        isOpen={isActionOpen}
-        onClose={() => setIsActionOpen(false)}
-        onConfirm={confirmAction}
-        title={getActionLabel()}
-        message={getActionMessage()}
-        confirmText={actionType === 'ban' ? 'Ban' : 'Confirm'}
-        danger={actionType === 'ban' || actionType === 'deactivate'}
+        isOpen={hook.isActionOpen}
+        onClose={() => hook.setIsActionOpen(false)}
+        onConfirm={hook.confirmAction}
+        title={getActionLabelText()}
+        message={getActionMessageText()}
+        confirmText={hook.actionType === 'ban' ? 'Ban' : 'Confirm'}
+        danger={hook.actionType === 'ban' || hook.actionType === 'deactivate'}
       >
-        {actionType === 'ban' && (
+        {hook.actionType === 'ban' && (
           <div className="mt-4">
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
               Reason (optional)
             </label>
             <textarea
-              value={actionReason}
-              onChange={(e) => setActionReason(e.target.value)}
+              value={hook.actionReason}
+              onChange={(e) => hook.setActionReason(e.target.value)}
               placeholder="Enter reason for banning this user..."
               className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
               rows={3}
@@ -579,279 +287,39 @@ const UsersPage = () => {
         )}
       </ConfirmDialog>
 
-      {/* Create User Modal */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Create New User"
-      >
-        <form onSubmit={(e) => { e.preventDefault(); submitCreate(); }} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              required
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Enter full name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Enter email address"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Enter password"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="Student">Student</option>
-              <option value="Mentor">Mentor</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              type="button"
-              onClick={() => setIsCreateModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create User
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Update User Modal */}
-      <Modal
-        isOpen={isUpdateModalOpen}
-        onClose={() => setIsUpdateModalOpen(false)}
-        title="Update User"
-      >
-        <form onSubmit={(e) => { e.preventDefault(); submitUpdate(); }} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              required
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Enter full name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Enter email address"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              New Password (optional)
-            </label>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-              placeholder="Leave blank to keep current password"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Role
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg text-neutral-900 dark:text-white focus:outline-none focus:border-blue-500"
-            >
-              <option value="Student">Student</option>
-              <option value="Mentor">Mentor</option>
-              <option value="Admin">Admin</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-            <button
-              type="button"
-              onClick={() => setIsUpdateModalOpen(false)}
-              className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Update User
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* Detail Modal */}
-      <Modal
-        isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
-        title="User Details"
-      >
-        {viewingUser && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-              <img
-                src={viewingUser.avatar}
-                alt={viewingUser.name}
-                className="w-20 h-20 rounded-full object-cover"
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">{viewingUser.name}</h3>
-                  {viewingUser.isVerified && (
-                    <HiShieldCheck className="w-5 h-5 text-blue-500" title="Verified" />
-                  )}
-                </div>
-                <p className="text-neutral-500">{viewingUser.email}</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">User ID</label>
-                <p className="text-neutral-900 dark:text-white">{viewingUser.id}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Role</label>
-                <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getRoleColor(viewingUser.role)}`}>
-                  {getRoleName(viewingUser.role)}
-                </span>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Status</label>
-                <span className={`inline-block px-2.5 py-1 text-xs font-medium rounded-full capitalize ${getStatusColor(viewingUser.status)}`}>
-                  {viewingUser.status}
-                </span>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Verified</label>
-                <p className="text-neutral-900 dark:text-white">{viewingUser.isVerified ? 'Yes' : 'No'}</p>
-              </div>
-              {viewingUser.phone && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">Phone</label>
-                  <p className="text-neutral-900 dark:text-white">{viewingUser.phone}</p>
-                </div>
-              )}
-              {viewingUser.gender && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">Gender</label>
-                  <p className="text-neutral-900 dark:text-white capitalize">{viewingUser.gender}</p>
-                </div>
-              )}
-              {viewingUser.school && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">School</label>
-                  <p className="text-neutral-900 dark:text-white">{viewingUser.school}</p>
-                </div>
-              )}
-              {viewingUser.major && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">Major</label>
-                  <p className="text-neutral-900 dark:text-white">{viewingUser.major}</p>
-                </div>
-              )}
-              {(viewingUser.city || viewingUser.country) && (
-                <div>
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">Location</label>
-                  <p className="text-neutral-900 dark:text-white">{[viewingUser.city, viewingUser.country].filter(Boolean).join(', ')}</p>
-                </div>
-              )}
-              {viewingUser.bio && (
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-neutral-500 mb-1">Bio</label>
-                  <p className="text-neutral-900 dark:text-white whitespace-pre-wrap">{viewingUser.bio}</p>
-                </div>
-              )}
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-neutral-500 mb-1">Joined Date</label>
-                <p className="text-neutral-900 dark:text-white">
-                  {new Date(viewingUser.createdAt?.endsWith?.('Z') ? viewingUser.createdAt : viewingUser.createdAt + 'Z').toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <button
-                onClick={() => setIsDetailModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Modal */}
       <ConfirmDialog
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        onConfirm={confirmDelete}
+        isOpen={hook.isDeleteModalOpen}
+        onClose={() => hook.setIsDeleteModalOpen(false)}
+        onConfirm={hook.confirmDelete}
         title="Delete User"
-        message={`Are you sure you want to delete "${selectedUser?.name}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${hook.selectedUser?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         danger
+      />
+
+      {/* UI Component Modals */}
+      <UserCreateModal
+        isOpen={hook.isCreateModalOpen}
+        onClose={() => { hook.setIsCreateModalOpen(false); hook.setCreateError(''); }}
+        formData={hook.formData}
+        setFormData={hook.setFormData}
+        submitCreate={hook.submitCreate}
+        createError={hook.createError}
+      />
+
+      <UserUpdateModal
+        isOpen={hook.isUpdateModalOpen}
+        onClose={() => hook.setIsUpdateModalOpen(false)}
+        formData={hook.formData}
+        setFormData={hook.setFormData}
+        submitUpdate={hook.submitUpdate}
+      />
+
+      <UserDetailModal
+        isOpen={hook.isDetailModalOpen}
+        onClose={() => hook.setIsDetailModalOpen(false)}
+        viewingUser={hook.viewingUser}
       />
     </div>
   );

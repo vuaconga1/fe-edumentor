@@ -1,99 +1,86 @@
-import React from 'react';
-import { Star, Clock, Users, ChevronRight, MessageCircle } from 'lucide-react';
-import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
+// src/components/mentor/MentorCard.jsx
+import { HiStar, HiClock, HiLocationMarker, HiChevronRight } from "react-icons/hi";
+import { buildDefaultAvatarUrl } from "../../utils/avatar";
 
-const MentorCard = ({ mentor }) => {
-  const {
-    id,
-    name = "Unknown Mentor",
-    title = "",
-    avatarUrl,
-    skills = [],
-    rating = 0,
-    reviews = 0,
-    price = 0,
-    isOnline = false,
-    experience = "",
-    totalSessions = 0
-  } = mentor || {};
-
-  // Normalize avatar URL or build default
-  const avatar = normalizeAvatarUrl(avatarUrl) || buildDefaultAvatarUrl({ id, fullName: name });
-
+export default function MentorCard({ mentor, onBook, formatPrice }) {
   return (
-    <div className="group relative bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-      {/* --- Top Section: Avatar & Badge --- */}
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 sm:p-5 hover:border-primary-200 dark:hover:border-primary-800 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
         <div className="relative">
-          <img 
-            src={avatar} 
-            alt={name} 
-            className="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-neutral-800 shadow-sm"
+          <img
+            src={mentor.avatar}
+            alt={mentor.name}
+            className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-white dark:border-neutral-800 shadow-sm group-hover:scale-105 transition-transform"
             onError={(e) => {
               e.currentTarget.onerror = null;
-              e.currentTarget.src = buildDefaultAvatarUrl({ id, fullName: name });
+              e.currentTarget.src = buildDefaultAvatarUrl({ id: mentor.id, fullName: mentor.name });
             }}
           />
+          <span
+            className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white dark:border-neutral-900 ${
+              mentor.isOnline ? "bg-green-500" : "bg-neutral-400"
+            }`}
+          />
         </div>
-        
-        <div className="flex flex-col items-end">
-          <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-lg">
-            <Star size={14} fill="currentColor" />
-            <span className="text-sm">{rating}</span>
-            <span className="text-xs text-neutral-400 font-normal">({reviews})</span>
+        {mentor.reviews > 0 && mentor.rating > 0 ? (
+          <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <HiStar className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-500 fill-yellow-500" />
+            <span className="text-xs sm:text-sm font-bold text-yellow-700 dark:text-yellow-400">
+              {Number(mentor.rating).toFixed(1)}
+            </span>
           </div>
-          <span className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{totalSessions} sessions</span>
-        </div>
-      </div>
-
-      {/* --- Info Section --- */}
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-neutral-900 dark:text-white group-hover:text-blue-600 transition-colors">
-          {name}
-        </h3>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400 font-medium mb-1 line-clamp-1">
-          {title}
-        </p>
-        <div className="flex items-center gap-2 text-xs text-neutral-400">
-          <Clock size={12} /> {experience} experience
-        </div>
-      </div>
-
-      {/* --- Skills Section --- */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {skills.map((skill, index) => (
-          <span 
-            key={index} 
-            className="px-2.5 py-1 text-xs font-medium rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300"
-          >
-            {skill}
-          </span>
-        ))}
-        {skills.length > 3 && (
-          <span className="px-2 py-1 text-xs text-neutral-400">+2</span>
+        ) : (
+          <span className="text-[10px] sm:text-xs text-neutral-400 dark:text-neutral-500">No reviews</span>
         )}
       </div>
 
-      {/* --- Footer: Price & Action --- */}
-      <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
-        <div>
-          <span className="block text-xs text-neutral-400">Hourly Rate</span>
-          <span className="text-lg font-bold text-neutral-900 dark:text-white">
-            {price > 0 ? new Intl.NumberFormat('vi-VN').format(price) + ' VND' : 'Contact'}
+      <div className="mb-3 sm:mb-4">
+        <h3
+          onClick={() => window.open(`/student/mentor/${mentor.id}`, "_blank")}
+          className="text-sm sm:text-base font-bold text-neutral-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors cursor-pointer hover:underline line-clamp-1"
+        >
+          {mentor.name}
+        </h3>
+        <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 line-clamp-1 mt-0.5">{mentor.title}</p>
+        <div className="flex items-center gap-2 sm:gap-3 mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-neutral-400">
+          <span className="flex items-center gap-0.5 sm:gap-1">
+            <HiClock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            {mentor.experience}
           </span>
+          {mentor.reviews > 0 && mentor.rating > 0 && <span>{mentor.reviews} reviews</span>}
         </div>
-        
-        <div className="flex gap-2">
-          <button className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
-            <MessageCircle size={20} />
-          </button>
-          <button className="flex items-center gap-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/30">
-            Hire now <ChevronRight size={16} />
-          </button>
+        {mentor.city && (
+          <div className="flex items-center gap-0.5 sm:gap-1 mt-1 text-[10px] sm:text-xs text-neutral-400">
+            <HiLocationMarker className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            {mentor.city}
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-4 sm:mb-5">
+        {(mentor.skills || []).slice(0, 3).map((skill, i) => (
+          <span key={i} className="px-2 py-0.5 sm:py-1 text-[10px] sm:text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-lg">
+            {skill}
+          </span>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between pt-3 sm:pt-4 border-t border-neutral-100 dark:border-neutral-800">
+        <div>
+          <span className="text-[10px] sm:text-xs text-neutral-400">From</span>
+          <div className="text-base sm:text-lg font-bold text-neutral-900 dark:text-white">
+            {formatPrice(mentor.price)}
+            <span className="text-xs sm:text-sm font-normal text-neutral-400"> VND/hr</span>
+          </div>
         </div>
+        <button
+          onClick={() => onBook(mentor)}
+          className="flex items-center gap-0.5 sm:gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-lg shadow-primary-600/20 hover:shadow-primary-600/40 hover:scale-105"
+        >
+          Book
+          <HiChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        </button>
       </div>
     </div>
   );
-};
-
-export default MentorCard;
+}

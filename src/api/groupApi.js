@@ -53,6 +53,12 @@ const groupApi = {
     return axiosClient.post(`${base}/${groupId}/members/${userId}`);
   },
 
+  // Remove (kick) member from group (by admin)
+  // POST /api/Group/{groupId}/members/{userId}/kick
+  removeMember(groupId, userId) {
+    return axiosClient.post(`${base}/${groupId}/members/${userId}/kick`);
+  },
+
   // Send message to group
   // Swagger: POST /api/Group/{groupId}/messages
   sendMessage(groupId, content, messageType = 0) {

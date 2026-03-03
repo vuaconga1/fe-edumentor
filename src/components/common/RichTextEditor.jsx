@@ -12,6 +12,8 @@ const RichTextEditor = ({ content, onChange, placeholder = "Start writing..." })
                 heading: {
                     levels: [1, 2],
                 },
+                underline: false,
+                link: false,
             }),
             Underline,
             Link.configure({

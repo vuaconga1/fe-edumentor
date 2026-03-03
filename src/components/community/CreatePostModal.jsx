@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, ChevronDown, Check, Hash, Folder, Paperclip, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { buildDefaultAvatarUrl } from '../../utils/avatar';
 import communityApi from '../../api/communityApi';
 import RichTextEditor from '../common/RichTextEditor';

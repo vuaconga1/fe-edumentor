@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useState, useCallback, useRef } from 'react';
 import aiChatApi from '../api/aiChatApi';
 
 const AIChatContext = createContext(null);
@@ -48,17 +48,17 @@ export function AIChatProvider({ children }) {
 
     try {
       const res = await aiChatApi.sendMessage(content.trim(), currentSessionId);
-      const data = res.data;
+      const data = res.data?.data;
 
       // Update session ID if new
       if (!currentSessionId) {
-        setCurrentSessionId(data.sessionId);
+        setCurrentSessionId(data?.sessionId);
       }
 
       // Replace temp message with actual and add AI response
       setMessages(prev => {
         const filtered = prev.filter(m => m.id !== tempUserMessage.id);
-        return [...filtered, data.userMessage, data.aiMessage];
+        return [...filtered, data.userMessage, data.aiMessage].filter(Boolean);
       });
     } catch (err) {
       console.error('Error sending message:', err);
@@ -82,7 +82,7 @@ export function AIChatProvider({ children }) {
   const loadSessions = useCallback(async () => {
     try {
       const res = await aiChatApi.getSessions();
-      setSessions(res.data || []);
+      setSessions(res.data?.data || []);
     } catch (err) {
       console.error('Error loading sessions:', err);
     }
@@ -94,7 +94,7 @@ export function AIChatProvider({ children }) {
     setError(null);
     try {
       const res = await aiChatApi.getSessionHistory(sessionId);
-      setMessages(res.data.messages || []);
+      setMessages(res.data?.data?.messages || []);
       setCurrentSessionId(sessionId);
     } catch (err) {
       console.error('Error loading session:', err);
@@ -140,14 +140,6 @@ export function AIChatProvider({ children }) {
       {children}
     </AIChatContext.Provider>
   );
-}
-
-export function useAIChat() {
-  const context = useContext(AIChatContext);
-  if (!context) {
-    throw new Error('useAIChat must be used within an AIChatProvider');
-  }
-  return context;
 }
 
 export default AIChatContext;
