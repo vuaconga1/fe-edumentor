@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Send, MoreHorizontal, Smile, Loader2, CornerDownRight } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../../utils/avatar';
 import communityApi from '../../api/communityApi';
 import { on, joinPostRoom, leavePostRoom, isConnected, startChatHub } from '../../signalr/chatHub';

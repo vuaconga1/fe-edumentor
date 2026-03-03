@@ -1,392 +1,29 @@
 // src/pages/mentor/EditMentorProfilePage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { HiArrowLeft, HiTag, HiChevronDown } from "react-icons/hi";
-import { Save, FolderOpen, Loader2 } from "lucide-react";
-import { HiCamera } from "react-icons/hi";
-import userProfileApi from "../../api/userProfile";
-import axiosClient from "../../api/axios";
-import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
-import locationApi from "../../api/locationApi";
+import { HiArrowLeft } from "react-icons/hi";
+import { Save } from "lucide-react";
+import { useEditMentorProfile } from "../../hooks/useEditMentorProfile";
+import AvatarUpload from "../../components/mentor/AvatarUpload";
+import CategoryHashtagSelector from "../../components/mentor/CategoryHashtagSelector";
 
 const EditMentorProfilePage = () => {
-  const toNumberOrNull = (v) => {
-    if (v === "" || v === null || v === undefined) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-  const fileInputRef = useRef(null);
-  const categoryDropdownRef = useRef(null);
-  const hashtagDropdownRef = useRef(null);
-  const [avatarPreview, setAvatarPreview] = useState("/avatar-default.jpg");
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [hashtagDropdownOpen, setHashtagDropdownOpen] = useState(false);
-
-  const API_BASE = import.meta.env.VITE_API_BASE_URL;
-  const toAbsoluteUrl = (url) => {
-    if (!url) return "/avatar-default.jpg";
-    if (url.startsWith("http")) return url;
-    return `${API_BASE}${url}`;
-  };
-
-  const openFilePicker = () => fileInputRef.current?.click();
-
-  const toIntOrNull = (v) => {
-    const n = toNumberOrNull(v);
-    return n === null ? null : Math.trunc(n);
-  };
-  const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const [form, setForm] = useState({
-    fullName: "",
-    phone: "",
-    gender: "",
-    school: "",
-    bio: "",
-    city: "",
-    country: "",
-    avatarUrl: "",
-    title: "",
-    hourlyRate: "",
-    packagePrice: "",
-    experienceYears: "",
-    introduction: "",
-    availabilityNote: "",
-    newHashtagsText: "",
-  });
-
-  const [avatarSeed, setAvatarSeed] = useState({
-    id: null,
-    email: "",
-    fullName: ""
-  });
-
-  const [allCategories, setAllCategories] = useState([]);
-  const [allHashtags, setAllHashtags] = useState([]);
-  const [loadingCatHash, setLoadingCatHash] = useState(false);
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
-  const [selectedHashtagIds, setSelectedHashtagIds] = useState([]);
-
-  // Location dropdowns
-  const [countries, setCountries] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [loadingLocations, setLoadingLocations] = useState(true);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
-        setCategoryDropdownOpen(false);
-      }
-      if (hashtagDropdownRef.current && !hashtagDropdownRef.current.contains(event.target)) {
-        setHashtagDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Load countries on mount
-  useEffect(() => {
-    const loadLocations = async () => {
-      setLoadingLocations(true);
-      const countriesData = await locationApi.getCountries();
-      setCountries(countriesData);
-      setLoadingLocations(false);
-    };
-    loadLocations();
-  }, []);
-
-  const loadCities = async (countryName) => {
-    const citiesData = await locationApi.getCitiesByCountry(countryName);
-    setCities(citiesData);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const res = await userProfileApi.getProfile();
-        const u = res?.data?.data;
-        if (!u) throw new Error("No profile data");
-
-        const mp = u.mentorProfile ?? {};
-
-        if (!mounted) return;
-        setForm((prev) => ({
-          ...prev,
-          fullName: u.fullName ?? "",
-          phone: u.phone ?? "",
-          gender: u.gender ?? "",
-          school: u.school ?? "",
-          bio: u.bio ?? "",
-          city: u.city ?? "",
-          country: u.country ?? "",
-          avatarUrl: u.avatarUrl ?? "",
-          title: mp.title ?? "",
-          hourlyRate: mp.hourlyRate ?? "",
-          packagePrice: mp.packagePrice ?? "",
-          experienceYears: mp.experienceYears ?? "",
-          introduction: mp.introduction ?? "",
-          availabilityNote: mp.availabilityNote ?? "",
-        }));
-        setAvatarSeed({
-          id: u.id,
-          email: u.email,
-          fullName: u.fullName
-        });
-
-        if (mp.categories && mp.categories.length > 0) {
-          setSelectedCategoryIds(mp.categories.map(c => c.id));
-        }
-        if (mp.hashtags && mp.hashtags.length > 0) {
-          setSelectedHashtagIds(mp.hashtags.map(h => h.id));
-        }
-
-        // Load cities nếu đã có country
-        if (u.country) {
-          loadCities(u.country);
-        }
-
-        setAvatarPreview(
-          normalizeAvatarUrl(u.avatarUrl) ||
-          buildDefaultAvatarUrl({
-            id: u.id,
-            email: u.email,
-            fullName: u.fullName
-          })
-        );
-
-      } catch (e) {
-        console.log("Load profile failed:", e);
-        setError("Load profile failed. Check console/network.");
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchCatHash = async () => {
-      try {
-        setLoadingCatHash(true);
-        const [catRes, hashRes] = await Promise.all([
-          axiosClient.get("/api/Category"),
-          axiosClient.get("/api/hashtags"),
-        ]);
-        
-        // Flatten categories: parent first, then children
-        const parentCats = catRes?.data?.data || [];
-        const flattenedCats = [];
-        parentCats.forEach(parent => {
-          flattenedCats.push(parent);
-          if (parent.children && parent.children.length > 0) {
-            parent.children.forEach(child => {
-              flattenedCats.push({ ...child, parentId: parent.id });
-            });
-          }
-        });
-        
-        setAllCategories(flattenedCats);
-        setAllHashtags(hashRes?.data?.data || []);
-      } catch (err) {
-        console.log("Fetch categories/hashtags failed:", err);
-      } finally {
-        setLoadingCatHash(false);
-      }
-    };
-    fetchCatHash();
-  }, []);
-
-  // Load hashtags when categories change
-  useEffect(() => {
-    if (selectedCategoryIds.length > 0) {
-      loadHashtagsByCategories(selectedCategoryIds);
-    }
-  }, [selectedCategoryIds]);
-
-  const loadHashtagsByCategories = async (categoryIds) => {
-    try {
-      const allHashtags = [];
-      const seenIds = new Set();
-
-      for (const catId of categoryIds) {
-        const res = await axiosClient.get(`/api/Category/${catId}/hashtags`);
-        if (res?.data?.data?.hashtags) {
-          for (const h of res.data.data.hashtags) {
-            if (!seenIds.has(h.id)) {
-              seenIds.add(h.id);
-              allHashtags.push(h);
-            }
-          }
-        }
-      }
-      setAllHashtags(allHashtags);
-    } catch (err) {
-      console.log("Failed to load hashtags by categories:", err);
-    }
-  };
-
-  const toggleCategory = (catId) => {
-    setSelectedCategoryIds((prev) => {
-      const newCategoryIds = prev.includes(catId)
-        ? prev.filter((id) => id !== catId)
-        : [...prev, catId];
-      
-      // Clear selected hashtags when unchecking category
-      if (prev.includes(catId)) {
-        setSelectedHashtagIds([]);
-      }
-      
-      return newCategoryIds;
-    });
-  };
-
-  const toggleHashtag = (hashId) => {
-    setSelectedHashtagIds((prev) =>
-      prev.includes(hashId)
-        ? prev.filter((id) => id !== hashId)
-        : [...prev, hashId]
-    );
-  };
-
-  const newHashtags = useMemo(() => {
-    const raw = form.newHashtagsText.trim();
-    if (!raw) return null;
-    const arr = raw
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean);
-    return arr.length ? arr : null;
-  }, [form.newHashtagsText]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-    // Khi đổi country, reset city và load cities mới
-    if (name === "country") {
-      setForm((prev) => ({ ...prev, city: "" }));
-      loadCities(value);
-    }
-  };
-
-  const onPickAvatar = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please choose an image file.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image is too large. Max 5MB.");
-      return;
-    }
-
-    setError("");
-
-    const previewUrl = URL.createObjectURL(file);
-    setAvatarPreview(previewUrl);
-
-    try {
-      setIsUploadingAvatar(true);
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const uploadRes = await axiosClient.post("/api/File/upload/avatar", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      const avatarUrl = uploadRes?.data?.data?.fileUrls?.[0];
-      if (!avatarUrl) throw new Error("Upload returned empty avatarUrl");
-
-      await axiosClient.put("/api/User/avatar", { avatarUrl });
-
-      setForm((prev) => ({ ...prev, avatarUrl }));
-      setAvatarPreview(
-        normalizeAvatarUrl(avatarUrl) ||
-        buildDefaultAvatarUrl(avatarSeed)
-      );
-
-    } catch (err) {
-      console.log("Upload avatar failed:", err);
-      setError(err?.response?.data?.message || "Upload avatar failed.");
-      setAvatarPreview(
-        normalizeAvatarUrl(form.avatarUrl) ||
-        buildDefaultAvatarUrl(avatarSeed)
-      );
-
-    } finally {
-      setIsUploadingAvatar(false);
-      e.target.value = "";
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setError("");
-
-    try {
-      await userProfileApi.updateUserProfile({
-        fullName: form.fullName || null,
-        phone: form.phone || null,
-        gender: form.gender || null,
-        school: form.school || null,
-        bio: form.bio || null,
-        city: form.city || null,
-        country: form.country || null,
-        avatarUrl: form.avatarUrl || null,
-      });
-
-      const mentorPayload = {
-        title: form.title || null,
-        hourlyRate: toNumberOrNull(form.hourlyRate),
-        packagePrice: toNumberOrNull(form.packagePrice),
-        experienceYears: toIntOrNull(form.experienceYears),
-        introduction: form.introduction || null,
-        availabilityNote: form.availabilityNote || null,
-        categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : null,
-        hashtagIds: selectedHashtagIds.length > 0 ? selectedHashtagIds : null,
-        newHashtags,
-      };
-
-      await userProfileApi.updateMentorProfile(mentorPayload);
-
-      navigate("/mentor/profile");
-    } catch (err) {
-      console.log("Save profile failed:", err);
-      const apiMsg =
-        err?.response?.data?.message ||
-        err?.response?.data?.title ||
-        err?.message ||
-        "Save failed";
-      setError(apiMsg);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const {
+    fileInputRef, categoryDropdownRef, hashtagDropdownRef,
+    avatarPreview, avatarSeed, isUploadingAvatar, onPickAvatar, openFilePicker,
+    loading, isSaving, error,
+    form, handleChange,
+    countries, cities, loadingLocations,
+    allCategories, allHashtags, loadingCatHash,
+    selectedCategoryIds, selectedHashtagIds, toggleCategory, toggleHashtag,
+    categoryDropdownOpen, setCategoryDropdownOpen,
+    hashtagDropdownOpen, setHashtagDropdownOpen,
+    handleSubmit, navigate,
+  } = useEditMentorProfile();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
         </div>
       </div>
     );
@@ -416,58 +53,21 @@ const EditMentorProfilePage = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            {/* Left Column - Avatar & Quick Info */}
+            {/* Left Column */}
             <div className="xl:col-span-1 space-y-6">
-              {/* Avatar Section */}
-              <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">
-                  Profile Photo
-                </h2>
-                <div className="flex flex-col items-center">
-                  <div className="relative">
-                    <img
-                      src={avatarPreview}
-                      alt="avatar"
-                      className="w-28 h-28 rounded-full object-cover border-4 border-white dark:border-neutral-800 shadow-lg"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = buildDefaultAvatarUrl(avatarSeed);
-                      }}
-                    />
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={onPickAvatar}
-                    />
-                    <button
-                      type="button"
-                      onClick={openFilePicker}
-                      disabled={isUploadingAvatar}
-                      className="absolute bottom-0 right-0 p-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-60"
-                      title="Change avatar"
-                    >
-                      <HiCamera className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <h3 className="font-medium text-neutral-900 dark:text-white mt-3">
-                    {form.fullName}
-                  </h3>
-                  {isUploadingAvatar && (
-                    <div className="text-xs text-blue-600 mt-1 flex items-center gap-1">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Uploading...
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AvatarUpload
+                avatarPreview={avatarPreview}
+                avatarSeed={avatarSeed}
+                isUploadingAvatar={isUploadingAvatar}
+                fileInputRef={fileInputRef}
+                onPickAvatar={onPickAvatar}
+                onOpenFilePicker={openFilePicker}
+                fullName={form.fullName}
+              />
 
               {/* Pricing Section */}
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">
-                  Pricing
-                </h2>
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Pricing</h2>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
@@ -501,18 +101,14 @@ const EditMentorProfilePage = () => {
               </div>
             </div>
 
-            {/* Right Column - Forms */}
+            {/* Right Column */}
             <div className="xl:col-span-2 space-y-6">
               {/* General Information */}
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">
-                  General Information
-                </h2>
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">General Information</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Full Name
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Full Name</label>
                     <input
                       type="text"
                       name="fullName"
@@ -522,9 +118,7 @@ const EditMentorProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Phone
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Phone</label>
                     <input
                       type="text"
                       name="phone"
@@ -535,9 +129,7 @@ const EditMentorProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Gender
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Gender</label>
                     <select
                       name="gender"
                       value={form.gender}
@@ -551,9 +143,7 @@ const EditMentorProfilePage = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      School
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">School</label>
                     <input
                       type="text"
                       name="school"
@@ -563,9 +153,7 @@ const EditMentorProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Country
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Country</label>
                     <select
                       name="country"
                       value={form.country}
@@ -575,9 +163,7 @@ const EditMentorProfilePage = () => {
                     >
                       <option value="">Select Country</option>
                       {countries.map((c) => (
-                        <option key={c.code} value={c.name}>
-                          {c.name}
-                        </option>
+                        <option key={c.code} value={c.name}>{c.name}</option>
                       ))}
                     </select>
                   </div>
@@ -593,11 +179,7 @@ const EditMentorProfilePage = () => {
                         className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                       >
                         <option value="">Select City</option>
-                        {cities.map((c) => (
-                          <option key={c.code} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
+                        {cities.map((c) => <option key={c.code} value={c.name}>{c.name}</option>)}
                       </select>
                     ) : (
                       <input
@@ -612,9 +194,7 @@ const EditMentorProfilePage = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Bio
-                  </label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Bio</label>
                   <textarea
                     name="bio"
                     value={form.bio}
@@ -628,14 +208,10 @@ const EditMentorProfilePage = () => {
 
               {/* Mentor Profile */}
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">
-                  Mentor Profile
-                </h2>
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Mentor Profile</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Title / Position
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Title / Position</label>
                     <input
                       type="text"
                       name="title"
@@ -646,9 +222,7 @@ const EditMentorProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                      Experience (years)
-                    </label>
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Experience (years)</label>
                     <input
                       type="number"
                       name="experienceYears"
@@ -661,9 +235,7 @@ const EditMentorProfilePage = () => {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Introduction
-                  </label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Introduction</label>
                   <textarea
                     name="introduction"
                     value={form.introduction}
@@ -674,9 +246,7 @@ const EditMentorProfilePage = () => {
                   />
                 </div>
                 <div className="mt-4">
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Availability Note
-                  </label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">Availability Note</label>
                   <input
                     type="text"
                     name="availabilityNote"
@@ -688,162 +258,24 @@ const EditMentorProfilePage = () => {
                 </div>
               </div>
 
-              {/* Categories & Hashtags */}
+              {/* Categories & Skills */}
               <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 shadow-sm p-5">
-                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">
-                  Categories & Skills
-                </h2>
-
-                {loadingCatHash ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                    <span className="ml-2 text-neutral-500">Loading...</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Categories Dropdown */}
-                    <div ref={categoryDropdownRef}>
-                      <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4 text-blue-600" />
-                        Categories <span className="text-red-500">*</span>
-                      </label>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                        Select categories that represent your expertise
-                      </p>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                          className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500"
-                        >
-                          <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                            {selectedCategoryIds.length === 0
-                              ? "Select categories..."
-                              : `${selectedCategoryIds.length} selected`}
-                          </span>
-                          <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${categoryDropdownOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {categoryDropdownOpen && (
-                          <div className="absolute z-20 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            {allCategories.map((cat) => (
-                              <label
-                                key={cat.id}
-                                className="flex items-center px-4 py-2.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer"
-                                style={{ paddingLeft: cat.parentId ? '2.5rem' : '1rem' }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedCategoryIds.includes(cat.id)}
-                                  onChange={() => toggleCategory(cat.id)}
-                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                />
-                                <span className={`ml-3 text-sm text-neutral-700 dark:text-neutral-300 ${!cat.parentId ? 'font-semibold' : ''}`}>
-                                  {cat.parentId ? '└─ ' : ''}{cat.name}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Selected Categories */}
-                      {selectedCategoryIds.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {selectedCategoryIds.map(catId => {
-                            const cat = allCategories.find(c => c.id === catId);
-                            return cat ? (
-                              <span
-                                key={catId}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg"
-                              >
-                                {cat.name}
-                                <button
-                                  type="button"
-                                  onClick={() => toggleCategory(catId)}
-                                  className="hover:text-blue-900 dark:hover:text-blue-200"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hashtags Dropdown */}
-                    <div ref={hashtagDropdownRef}>
-                      <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2 flex items-center gap-2">
-                        <HiTag className="w-4 h-4 text-blue-600" />
-                        Skills (Hashtags)
-                      </label>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-                        Select specific skills or topics (optional)
-                      </p>
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setHashtagDropdownOpen(!hashtagDropdownOpen)}
-                          className="w-full px-4 py-2.5 bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 rounded-xl text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500"
-                        >
-                          <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                            {selectedHashtagIds.length === 0
-                              ? "Select skills..."
-                              : `${selectedHashtagIds.length} selected`}
-                          </span>
-                          <HiChevronDown className={`w-5 h-5 text-neutral-500 dark:text-neutral-400 transition-transform duration-200 ${hashtagDropdownOpen ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {hashtagDropdownOpen && (
-                          <div className="absolute z-20 w-full mt-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                            {allHashtags.map((tag) => (
-                              <label
-                                key={tag.id}
-                                className="flex items-center px-4 py-2.5 hover:bg-neutral-100 dark:hover:bg-neutral-700 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedHashtagIds.includes(tag.id)}
-                                  onChange={() => toggleHashtag(tag.id)}
-                                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                                />
-                                <span className="ml-3 text-sm text-neutral-700 dark:text-neutral-300">
-                                  #{tag.name}
-                                </span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Selected Hashtags */}
-                      {selectedHashtagIds.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {selectedHashtagIds.map(tagId => {
-                            const tag = allHashtags.find(h => h.id === tagId);
-                            return tag ? (
-                              <span
-                                key={tagId}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg"
-                              >
-                                #{tag.name}
-                                <button
-                                  type="button"
-                                  onClick={() => toggleHashtag(tagId)}
-                                  className="hover:text-blue-900 dark:hover:text-blue-200"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ) : null;
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
-                )}
+                <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-4">Categories & Skills</h2>
+                <CategoryHashtagSelector
+                  allCategories={allCategories}
+                  allHashtags={allHashtags}
+                  selectedCategoryIds={selectedCategoryIds}
+                  selectedHashtagIds={selectedHashtagIds}
+                  toggleCategory={toggleCategory}
+                  toggleHashtag={toggleHashtag}
+                  loadingCatHash={loadingCatHash}
+                  categoryDropdownOpen={categoryDropdownOpen}
+                  setCategoryDropdownOpen={setCategoryDropdownOpen}
+                  hashtagDropdownOpen={hashtagDropdownOpen}
+                  setHashtagDropdownOpen={setHashtagDropdownOpen}
+                  categoryDropdownRef={categoryDropdownRef}
+                  hashtagDropdownRef={hashtagDropdownRef}
+                />
               </div>
 
               {/* Actions */}
@@ -855,7 +287,6 @@ const EditMentorProfilePage = () => {
                 >
                   Cancel
                 </button>
-
                 <button
                   type="submit"
                   disabled={isSaving}

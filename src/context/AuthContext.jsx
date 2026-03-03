@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import userProfileApi from '../api/userProfile';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from '../utils/avatar';
 import { getRoleName, UserRole } from '../utils/userRole';
@@ -79,13 +79,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
 
 export default AuthContext;

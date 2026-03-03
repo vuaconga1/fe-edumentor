@@ -100,22 +100,22 @@ const GroupList = ({ groups = [], activeGroupId, onSelectGroup, activeGroup, onR
                 onClick={() => handleDropdownClick("create")}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-left"
               >
-                <HiPlus className="w-5 h-5 text-green-600" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Tạo nhóm mới</span>
+                <HiPlus className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Create new group</span>
               </button>
               <button
                 onClick={() => handleDropdownClick("invite")}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-left border-t border-neutral-100 dark:border-neutral-700"
               >
                 <HiUserAdd className="w-5 h-5 text-blue-600" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Mời vào nhóm</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Invite to group</span>
               </button>
               <button
                 onClick={() => handleDropdownClick("join")}
                 className="w-full flex items-center gap-3 px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-left border-t border-neutral-100 dark:border-neutral-700"
               >
-                <HiLogin className="w-5 h-5 text-purple-600" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Tham gia nhóm</span>
+                <HiLogin className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Join group</span>
               </button>
             </div>
           )}

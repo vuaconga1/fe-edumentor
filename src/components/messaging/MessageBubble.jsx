@@ -1,24 +1,14 @@
 import React from "react";
 import { FileIcon, ExternalLink, Info } from "lucide-react";
 import { formatTime } from "../../utils/dateUtils";
+import { normalizeMessageType } from "../../utils/messageUtils";
 
 export default function MessageBubble({ message, isMine }) {
   const senderName = message?.senderName || "Unknown";
 
   // Handle both number and string messageType
   // C# enum: Text=0, File=1, Image=2, System=3
-  const rawType = message?.messageType ?? 0;
-  let type;
-  if (typeof rawType === 'string') {
-    // Backend trả về dạng string enum name
-    if (rawType === 'Image') type = 2;
-    else if (rawType === 'File') type = 1;
-    else if (rawType === 'System') type = 3;
-    else if (rawType === 'Text') type = 0;
-    else type = Number(rawType) || 0;
-  } else {
-    type = Number(rawType);
-  }
+  const type = normalizeMessageType(message?.messageType ?? 0);
 
   // System message (type=3): centered, special style
   if (type === 3) {
@@ -34,16 +24,16 @@ export default function MessageBubble({ message, isMine }) {
       </div>
     );
   }
-  
+
   const content = String(message?.content ?? "");
-  
+
   // Check if content is a URL pointing to uploads
   const isUrl = /^https?:\/\//i.test(content) || content.startsWith("/uploads/");
-  
+
   // Check if URL has image extension (fallback for old messages with wrong messageType)
   const imageExtensions = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i;
   const hasImageExtension = imageExtensions.test(content);
-  
+
   // Treat as image if:
   // - messageType === 2 (Image) AND is a URL, OR
   // - URL có đuôi ảnh (fallback cho tin nhắn cũ bị sai messageType)

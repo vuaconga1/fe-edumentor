@@ -2,23 +2,31 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { HiMail, HiLocationMarker, HiPhone, HiStar, HiTag, HiArrowLeft, HiCheckCircle } from "react-icons/hi";
-import { FolderOpen, Clock, Globe } from "lucide-react";
+import { FolderOpen, Clock, Globe, UserPlus, UserMinus } from "lucide-react";
 import mentorApi from "../../api/mentorApi";
 import requestApi from "../../api/requestApi";
 import reviewApi from "../../api/reviewApi";
+import communityApi from "../../api/communityApi";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
 import BookRequestModal from "../../components/request/BookRequestModal";
 import ReviewSummary from "../../components/review/ReviewSummary";
 import ReviewCard from "../../components/review/ReviewCard";
+import { useAuth } from "../../hooks/useAuth";
 
 const MentorDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState(null);
   const [showBookModal, setShowBookModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Follow
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
 
   // Reviews state
   const [reviews, setReviews] = useState([]);
@@ -106,6 +114,28 @@ const MentorDetailPage = () => {
 
     return () => (mounted = false);
   }, [id]);
+
+  // Load followers count
+  useEffect(() => {
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await communityApi.getFollowers(id);
+        if (res.data?.success) setFollowersCount(res.data.data.count);
+      } catch {}
+    })();
+  }, [id]);
+
+  // Check follow status
+  useEffect(() => {
+    if (!id || !currentUser || String(currentUser.id) === String(id)) return;
+    (async () => {
+      try {
+        const res = await communityApi.isFollowing(id);
+        if (res.data?.success) setIsFollowing(!!res.data.data);
+      } catch {}
+    })();
+  }, [id, currentUser]);
 
   // Auto-fetch reviews when profile loads
   useEffect(() => {
@@ -203,6 +233,28 @@ const MentorDetailPage = () => {
   const handleBookSuccess = () => {
     setSuccessMessage("Request sent successfully! The mentor will respond soon.");
     setTimeout(() => setSuccessMessage(""), 5000);
+  };
+
+  const handleFollow = async () => {
+    if (!id || followLoading) return;
+    try {
+      setFollowLoading(true);
+      if (isFollowing) {
+        await communityApi.unfollowUser(id);
+        setIsFollowing(false);
+        setFollowersCount((prev) => Math.max(0, prev - 1));
+      } else {
+        await communityApi.followUser(id);
+        setIsFollowing(true);
+        setFollowersCount((prev) => prev + 1);
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || "";
+      if (msg.includes("already following")) setIsFollowing(true);
+      else if (msg.includes("not following")) setIsFollowing(false);
+    } finally {
+      setFollowLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -308,9 +360,34 @@ const MentorDetailPage = () => {
                   </button>
                 )}
 
+                <div className="flex justify-center gap-6 mt-4">
+                  <div className="flex flex-col items-center px-3 py-2 rounded-xl">
+                    <span className="text-lg font-bold text-neutral-900 dark:text-white">{followersCount}</span>
+                    <span className="text-xs text-neutral-500">Followers</span>
+                  </div>
+                </div>
+
+                {currentUser && String(currentUser.id) !== String(id) && (
+                  <button
+                    onClick={handleFollow}
+                    disabled={followLoading}
+                    className={`mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium shadow transition-colors ${
+                      isFollowing
+                        ? "bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-200 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-400"
+                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                    }`}
+                  >
+                    {followLoading
+                      ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current" />
+                      : isFollowing
+                        ? <><UserMinus size={16} /> Unfollow</>
+                        : <><UserPlus size={16} /> Follow</>}
+                  </button>
+                )}
+
                 <button
                   onClick={handleBook}
-                  className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow transition-colors"
+                  className="mt-2 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-medium shadow transition-colors"
                 >
                   Book
                 </button>

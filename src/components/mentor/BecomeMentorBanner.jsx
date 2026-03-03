@@ -1,17 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { HiSparkles, HiX, HiArrowRight } from "react-icons/hi";
+import { useState } from "react";
+import { HiX } from "react-icons/hi";
 
 export default function BecomeMentorBanner({ onTryIt }) {
-    const [isVisible, setIsVisible] = useState(true);
-
-    // Check if banner was previously dismissed
-    useEffect(() => {
-        const dismissed = localStorage.getItem("mentorBannerDismissed");
-        if (dismissed) {
-            setIsVisible(false);
-        }
-    }, []);
-
+    const [isVisible, setIsVisible] = useState(
+        () => !localStorage.getItem("mentorBannerDismissed")
+    );
     const handleDismiss = () => {
         setIsVisible(false);
         localStorage.setItem("mentorBannerDismissed", "true");

@@ -1,7 +1,7 @@
 import { HiMenu, HiSun, HiMoon } from "react-icons/hi";
 import ProfileDropdown from "./ProfileDropdown";
 import NotificationDropdown from "../notification/NotificationDropdown";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 
 export default function Topbar({ onMenuClick, title = "Dashboard", user }) {
   const { isDark, toggleTheme } = useTheme();

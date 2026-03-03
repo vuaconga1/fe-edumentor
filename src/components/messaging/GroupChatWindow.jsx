@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { HiArrowLeft, HiUserGroup, HiUsers, HiLogout, HiX } from "react-icons/hi";
+import { HiArrowLeft, HiUserGroup, HiUsers, HiLogout, HiX, HiUserRemove } from "react-icons/hi";
 import MessageBubble from "./MessageBubble";
 import ActionPopup from "./ActionPopup";
 import ActionModals from "./ActionModals";
 import { normalizeAvatarUrl, buildDefaultAvatarUrl } from "../../utils/avatar";
+import { normalizeMessageType } from "../../utils/messageUtils";
 
 export default function GroupChatWindow({
   group,
@@ -13,6 +14,7 @@ export default function GroupChatWindow({
   onBack,
   currentUserId,
   onLeaveGroup,
+  onKickMember,
   onLoadMore,
   hasMore = false,
   loadingMore = false,
@@ -23,9 +25,15 @@ export default function GroupChatWindow({
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [kickingUserId, setKickingUserId] = useState(null);
+
+  // Determine if current user is admin of this group
+  const isCurrentUserAdmin = (group?.members || []).some(
+    (m) => (m.userId === currentUserId || m.id === currentUserId) && m.role === "Admin"
+  );
   const isFirstLoad = useRef(true);
   const prevScrollHeight = useRef(0);
-  
+
   // For file/image upload
   const [openActions, setOpenActions] = useState(false);
   const [modalType, setModalType] = useState(null);
@@ -192,7 +200,8 @@ export default function GroupChatWindow({
           </div>
         ) : (
           list.map((msg, index) => {
-            if (msg.messageType === "System" || msg.messageType === 3 || msg.type === "system") {
+            const type = normalizeMessageType(msg.messageType ?? msg.type ?? 0);
+            if (type === 3) {
               return (
                 <div key={msg.id ?? index} className="flex justify-center my-2">
                   <div className="px-4 py-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full text-xs text-neutral-500 dark:text-neutral-400 shadow-sm">
@@ -335,10 +344,13 @@ export default function GroupChatWindow({
                 const avatarUrl = member.avatarUrl
                   ? normalizeAvatarUrl(member.avatarUrl)
                   : buildDefaultAvatarUrl(member.userName || "U");
+                const memberId = member.userId || member.id;
+                const isAdmin = member.role === "Admin";
+                const isKicking = kickingUserId === memberId;
 
                 return (
                   <div
-                    key={member.userId}
+                    key={memberId}
                     className="flex items-center gap-3 px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
                     <img
@@ -354,13 +366,35 @@ export default function GroupChatWindow({
                         {member.userName || "Unknown"}
                       </p>
                       <p className="text-xs text-neutral-500">
-                        {member.role === "Admin" ? "Administrator" : "Member"}
+                        {isAdmin ? "Administrator" : "Member"}
                       </p>
                     </div>
-                    {member.role === "Admin" && (
+                    {isAdmin && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                         Admin
                       </span>
+                    )}
+                    {isCurrentUserAdmin && !isAdmin && memberId !== currentUserId && (
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Remove ${member.userName || "this member"} from the group?`)) return;
+                          setKickingUserId(memberId);
+                          try {
+                            await onKickMember?.(group.id, memberId);
+                          } finally {
+                            setKickingUserId(null);
+                          }
+                        }}
+                        disabled={isKicking}
+                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                        title="Remove from group"
+                      >
+                        {isKicking ? (
+                          <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <HiUserRemove className="w-4 h-4" />
+                        )}
+                      </button>
                     )}
                   </div>
                 );

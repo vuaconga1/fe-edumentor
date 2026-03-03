@@ -1,7 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import SidebarLayout from './SidebarLayout';
 import { STUDENT_MENU } from '../config/menus';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import useUnseenMessages from '../hooks/useUnseenMessages';
 
 export default function StudentLayout() {

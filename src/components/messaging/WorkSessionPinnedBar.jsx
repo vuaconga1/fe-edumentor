@@ -18,7 +18,7 @@ const WorkSessionPinnedBar = ({
   onPause,
   onEnd,
 }) => {
-  const [tick, setTick] = useState(Date.now());
+  const [tick, setTick] = useState(() => Date.now());
 
   const isRunning = status === "running";
   const isPaused = status === "paused";

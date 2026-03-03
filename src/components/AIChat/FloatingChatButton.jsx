@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X } from 'lucide-react';
-import { useAIChat } from '../../context/AIChatContext';
+import { useAIChat } from '../../hooks/useAIChat';
 
 export default function FloatingChatButton() {
   const { toggleChat, isOpen } = useAIChat();

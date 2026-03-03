@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import chatApi from '../api/chatApi';
 import groupApi from '../api/groupApi';
+import { on } from '../signalr/chatHub';
 
 // Custom event name for triggering unseen count refresh
 export const UNSEEN_COUNT_REFRESH_EVENT = 'unseen-messages-refresh';
@@ -34,16 +35,29 @@ export default function useUnseenMessages() {
   useEffect(() => {
     fetchUnseenCounts();
 
-    // Refresh every 30 seconds
+    // Refresh every 30 seconds as fallback
     const interval = setInterval(fetchUnseenCounts, 30000);
 
     // Listen for manual refresh events
     const handleRefresh = () => fetchUnseenCounts();
     window.addEventListener(UNSEEN_COUNT_REFRESH_EVENT, handleRefresh);
 
+    // Real-time: update badge immediately when a new 1:1 message arrives (sent to this user only)
+    const cleanupNewMsg = on('NewMessageNotification', () => {
+      setUnseenCount(prev => prev + 1);
+    });
+
+    // Real-time: refetch when a group message arrives
+    // (ReceiveGroupMessage fires for all members; refetch to get accurate count)
+    const cleanupGroupMsg = on('ReceiveGroupMessage', () => {
+      fetchUnseenCounts();
+    });
+
     return () => {
       clearInterval(interval);
       window.removeEventListener(UNSEEN_COUNT_REFRESH_EVENT, handleRefresh);
+      cleanupNewMsg();
+      cleanupGroupMsg();
     };
   }, [fetchUnseenCounts]);
 

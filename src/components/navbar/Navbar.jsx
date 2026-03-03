@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { HiSun, HiMoon, HiMenu, HiX } from "react-icons/hi";
-import { useTheme } from "../../context/ThemeContext";
+import { useTheme } from "../../hooks/useTheme";
 import { useState } from "react";
 
 export default function AppNavbar() {

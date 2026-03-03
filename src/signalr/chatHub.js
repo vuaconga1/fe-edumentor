@@ -3,6 +3,7 @@ import * as signalR from "@microsoft/signalr";
 let connection = null;
 let startingPromise = null;
 let stoppingPromise = null;
+let intentionallyStopped = false;
 
 // ===== Event handlers =====
 const handlers = {
@@ -23,7 +24,6 @@ const handlers = {
   WorkSessionEnded: new Set(),
   WorkActionRejected: new Set(),
   ReceiveGroupMessage: new Set(),
-  ReceiveGroupMessage: new Set(),
   UserGroupTyping: new Set(),
   GroupMessagesRead: new Set(),
   OrderCompleted: new Set(),
@@ -35,16 +35,16 @@ const handlers = {
 
 // ===== Start Hub (safe, no race) =====
 export async function startChatHub(baseUrl, token) {
-  // Nếu đã connected/connecting → trả về luôn
+  // Nếu đang start → chờ start xong
+  if (startingPromise) return startingPromise;
+
+  // Nếu đã connected → trả về luôn
   if (
     connection &&
-    connection.state !== signalR.HubConnectionState.Disconnected
+    connection.state === signalR.HubConnectionState.Connected
   ) {
     return connection;
   }
-
-  // Nếu đang start → chờ start xong
-  if (startingPromise) return startingPromise;
 
   // Nếu đang stop → chờ stop xong rồi mới start
   if (stoppingPromise) {
@@ -53,6 +53,7 @@ export async function startChatHub(baseUrl, token) {
     } catch { }
   }
 
+  intentionallyStopped = false;
   connection = new signalR.HubConnectionBuilder()
     .withUrl(`${baseUrl}/hubs/chat`, {
       accessTokenFactory: () => token || "",
@@ -60,9 +61,31 @@ export async function startChatHub(baseUrl, token) {
       // transport: signalR.HttpTransportType.WebSockets,
       // skipNegotiation: true,
     })
-    .withAutomaticReconnect([0, 2000, 5000, 10000])
-    .configureLogging(signalR.LogLevel.Information)
+    .withAutomaticReconnect({
+      // Retry indefinitely: 0s, 2s, 5s, then every 10s forever
+      nextRetryDelayInMilliseconds: (retryContext) => {
+        if (retryContext.previousRetryCount === 0) return 0;
+        if (retryContext.previousRetryCount === 1) return 2000;
+        if (retryContext.previousRetryCount === 2) return 5000;
+        return 10000;
+      }
+    })
+    .configureLogging(signalR.LogLevel.Warning)
     .build();
+
+  // Fallback: nếu onclose (sau khi hết retry), tự thử lại sau 15s
+  connection.onclose(async () => {
+    if (intentionallyStopped) return; // Đã logout, không retry
+    console.warn("[SignalR] Connection closed. Retrying in 15s...");
+    await new Promise(r => setTimeout(r, 15000));
+    if (intentionallyStopped) return;
+    try {
+      await connection.start();
+      console.info("[SignalR] Reconnected after close.");
+    } catch {
+      // Sẽ thử lại lần tiếp theo khi startChatHub được gọi
+    }
+  });
 
   // Bind server events → local handlers
   Object.keys(handlers).forEach((event) => {
@@ -94,6 +117,7 @@ export async function stopChatHub() {
 
   if (stoppingPromise) return stoppingPromise;
 
+  intentionallyStopped = true;
   stoppingPromise = connection
     .stop()
     .finally(() => {
@@ -163,9 +187,8 @@ export function markAsRead(conversationId) {
   );
 }
 export function getOnlineUsers(userIds) {
-  const conn = ensureConnected();
-  if (!conn) return Promise.resolve(); // hub chưa ready → bỏ qua
-  return conn.invoke("GetOnlineUsers", userIds.map(Number));
+  if (!isConnected()) return Promise.resolve(); // hub chưa ready → bỏ qua
+  return connection.invoke("GetOnlineUsers", userIds.map(Number));
 }
 export const requestStartWork = (conversationId, orderId, mentorId, studentId) => {
   return connection.invoke(

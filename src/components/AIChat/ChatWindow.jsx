@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, History, Plus, Trash2, Loader2 } from 'lucide-react';
-import { useAIChat } from '../../context/AIChatContext';
+import { useAIChat } from '../../hooks/useAIChat';
 
 // Chat Message Component
 function ChatMessage({ message }) {
@@ -309,7 +309,7 @@ export default function ChatWindow() {
             </div>
           ) : (
             <>
-              {messages.map((message) => (
+              {messages.filter(Boolean).map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
               {isLoading && <TypingIndicator />}

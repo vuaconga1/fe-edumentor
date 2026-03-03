@@ -1,14 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useState } from 'react';
 
 const UIContext = createContext();
 
-export const useUIContext = () => {
-    const context = useContext(UIContext);
-    if (!context) {
-        throw new Error('useUIContext must be used within a UIProvider');
-    }
-    return context;
-};
+export default UIContext;
 
 export const UIProvider = ({ children }) => {
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import ReviewSummary from '../../components/review/ReviewSummary';
 import ReviewCard from '../../components/review/ReviewCard';
 import ReportModal from '../../components/review/ReportModal';

@@ -6,7 +6,7 @@ import SendProposalModal from './SendProposalModal';
 import ReportPostModal from './ReportPostModal';
 import { getRoleName } from '../../utils/userRole';
 import { normalizeAvatarUrl, buildDefaultAvatarUrl, normalizeFileUrl } from '../../utils/avatar';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import communityApi from '../../api/communityApi';
 import requestApi from '../../api/requestApi';
 
