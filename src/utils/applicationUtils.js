@@ -64,7 +64,7 @@ export const getActionColor = (action) => {
     return colors[action] ?? colors[0];
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://localhost:7082";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://edumentor-bdayc0d9adc7ckhw.eastasia-01.azurewebsites.net";
 
 export const toAbsoluteUrl = (url) => {
     if (!url) return "";
