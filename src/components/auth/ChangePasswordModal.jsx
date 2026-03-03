@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiEye, HiEyeOff, HiCheckCircle, HiShieldCheck, HiX } from 'react-icons/hi';
-import authApi from "../../api/authApi";
+import authApi from "../../api/authAPI";
 import { useUIContext } from '../../hooks/useUIContext';
 import { stopChatHub } from '../../signalr/chatHub';
 

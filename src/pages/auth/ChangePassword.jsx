@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiEye, HiEyeOff, HiCheckCircle, HiShieldCheck } from 'react-icons/hi';
-import authApi from "../../api/authApi"; // <-- thêm dòng này
+import authApi from "../../api/authAPI";
 
 const ChangePassword = () => {
   const navigate = useNavigate();
